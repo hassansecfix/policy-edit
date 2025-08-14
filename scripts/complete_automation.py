@@ -61,8 +61,46 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, output_c
     
     return run_command(cmd, "Generating edits with Claude Sonnet 4")
 
+def commit_and_push_csv(edits_csv):
+    """Commit and push the generated CSV file to GitHub."""
+    try:
+        # Add the CSV file
+        result = subprocess.run(['git', 'add', edits_csv], capture_output=True, text=True)
+        if result.returncode != 0:
+            return False, f"Failed to add CSV: {result.stderr}"
+        
+        # Commit the CSV file
+        commit_msg = f"Add AI-generated edits CSV: {edits_csv}"
+        result = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
+        if result.returncode != 0:
+            # Check if it's because there are no changes
+            if "nothing to commit" in result.stdout:
+                print("✅ CSV file already committed")
+                return True, "No changes to commit"
+            return False, f"Failed to commit CSV: {result.stderr}"
+        
+        # Push to GitHub
+        result = subprocess.run(['git', 'push'], capture_output=True, text=True)
+        if result.returncode != 0:
+            return False, f"Failed to push CSV: {result.stderr}"
+        
+        print("✅ CSV file committed and pushed to GitHub")
+        return True, "CSV pushed successfully"
+        
+    except Exception as e:
+        return False, f"Git operations failed: {e}"
+
 def trigger_github_actions(policy_path, edits_csv, output_name, github_token=None):
     """Trigger GitHub Actions workflow (manual instructions if no token)."""
+    
+    # First, commit and push the CSV file
+    print("📤 Committing and pushing CSV to GitHub...")
+    success, message = commit_and_push_csv(edits_csv)
+    if not success:
+        print(f"❌ Failed to push CSV: {message}")
+        print("💡 You'll need to manually commit and push the CSV file")
+    else:
+        print(f"✅ {message}")
     
     if not github_token:
         print("\n🔗 GitHub Actions Manual Trigger Required:")
