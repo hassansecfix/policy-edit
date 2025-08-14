@@ -31,14 +31,37 @@ def install_python_packages():
     
     print("📦 Installing Python packages...")
     for package in packages:
+        # Try normal install first
         try:
             result = subprocess.run([
                 sys.executable, "-m", "pip", "install", package
             ], capture_output=True, text=True, check=True)
             print(f"✅ {package}")
+            continue
+        except subprocess.CalledProcessError:
+            pass
+        
+        # Try with --break-system-packages (for macOS externally-managed Python)
+        try:
+            result = subprocess.run([
+                sys.executable, "-m", "pip", "install", "--break-system-packages", package
+            ], capture_output=True, text=True, check=True)
+            print(f"✅ {package} (with --break-system-packages)")
+            continue
+        except subprocess.CalledProcessError:
+            pass
+        
+        # Try with --user flag
+        try:
+            result = subprocess.run([
+                sys.executable, "-m", "pip", "install", "--user", package
+            ], capture_output=True, text=True, check=True)
+            print(f"✅ {package} (with --user)")
+            continue
         except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to install {package}: {e}")
-            print("💡 Try: pip3 install --break-system-packages " + package)
+            print(f"❌ Failed to install {package} with all methods")
+            print(f"   Error: {e}")
+            print(f"💡 Manual install: pip3 install --break-system-packages {package}")
             return False
     return True
 

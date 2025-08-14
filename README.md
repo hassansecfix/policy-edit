@@ -25,8 +25,9 @@ python3 scripts/complete_automation.py \
 ```
 
 **What happens**:
+
 1. ✅ AI (Claude Sonnet 4) reads your policy + questionnaire
-2. ✅ AI generates perfect edits CSV automatically  
+2. ✅ AI generates perfect edits CSV automatically
 3. ✅ GitHub Actions creates tracked changes DOCX
 4. ✅ You get professional suggestions to accept/reject
 
@@ -39,11 +40,12 @@ python3 scripts/complete_automation.py \
 For when you want control over each step.
 
 **Step-by-step AI workflow**:
+
 ```bash
 # 1. Convert questionnaire
 python3 scripts/xlsx_to_csv_converter.py data/questionnaire.xlsx data/responses.csv
 
-# 2. Generate edits with AI  
+# 2. Generate edits with AI
 python3 scripts/ai_policy_processor.py \
   --policy data/policy.docx \
   --questionnaire data/responses.csv \

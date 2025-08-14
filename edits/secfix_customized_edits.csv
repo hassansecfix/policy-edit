@@ -1,0 +1,13 @@
+Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
+[Company Name],Secfix GmbH,FALSE,TRUE,FALSE,"Company name replacement",RULE_01
+<Company Name>,Secfix GmbH,FALSE,TRUE,FALSE,"Company name replacement in angle brackets",RULE_01
+[Company Address],"Salvatorplatz 3, 80333 München",FALSE,TRUE,FALSE,"Company address replacement",RULE_02
+[Version Control System],Gitlab,FALSE,TRUE,FALSE,"Version control tool",RULE_05
+[Password Manager],1Password,FALSE,TRUE,FALSE,"Password management tool",RULE_06
+[Ticketing System],Clickup,FALSE,TRUE,FALSE,"Ticket management system",RULE_07
+[Access Request Method],Ticketing system,FALSE,TRUE,FALSE,"Access request process",RULE_07
+[Review Frequency],Quarterly,FALSE,TRUE,FALSE,"Access review frequency",RULE_08
+[Termination Timeframe],24 business hours,FALSE,TRUE,FALSE,"Account termination timeframe",RULE_09
+[Policy Owner],branko@secfix.com,FALSE,TRUE,FALSE,"Policy owner email",RULE_10
+[Exception Approver],CISO,FALSE,TRUE,FALSE,"Exception approver role",RULE_11
+[Violations Reporter],CISO,FALSE,TRUE,FALSE,"Violations reporter role",RULE_12
