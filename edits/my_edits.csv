@@ -1,6 +1,0 @@
-Find,Replace,MatchCase,WholeWord,Wildcards
-ACME,Acme,,,
-v1\.([0-9]+),v2.\1,,,
-"""foo bar""","""foobar""",,,
-Company,Corporation,,,
-2023,2024,,,
