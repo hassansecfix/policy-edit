@@ -17,9 +17,11 @@ Apply find/replace edits to DOCX files with **automated tracked changes** that c
 For any DOCX document with simple find/replace needs.
 
 #### 1. Prepare Your Files
+
 **Input Document**: Place your DOCX file in `docs/` directory
 
 **Edit Rules**: Create a CSV file in `edits/` directory with this format:
+
 ```csv
 Find,Replace,MatchCase,WholeWord,Wildcards
 ACME,Acme,TRUE,TRUE,FALSE
@@ -28,6 +30,7 @@ Company,Corporation,FALSE,TRUE,FALSE
 ```
 
 #### 2. Run Automation
+
 1. **Go to GitHub Actions**: Click "Actions" tab in this repository
 2. **Find workflow**: "Redline DOCX (LibreOffice headless)"
 3. **Click "Run workflow"**
@@ -38,6 +41,7 @@ Company,Corporation,FALSE,TRUE,FALSE
 For policy documents with questionnaire data - fully automated from customer responses to tracked changes.
 
 #### 1. Convert Questionnaire Data
+
 ```bash
 # Convert Excel questionnaire to CSV for AI processing
 python3 scripts/xlsx_to_csv_converter.py \
@@ -46,6 +50,7 @@ python3 scripts/xlsx_to_csv_converter.py \
 ```
 
 #### 2. Generate Edits with AI
+
 - **Give AI these inputs**:
   - `data/updated_policy_instructions_v4.0.md` (AI prompt)
   - `data/questionnaire_responses.csv` (customer data)
@@ -54,6 +59,7 @@ python3 scripts/xlsx_to_csv_converter.py \
 - **Save result** as `edits/policy_edits.csv`
 
 #### 3. Apply Automated Tracking
+
 Run the same GitHub Actions workflow with your generated CSV!
 
 ## 📁 Project Structure
@@ -86,6 +92,7 @@ Run the same GitHub Actions workflow with your generated CSV!
 ## 📋 CSV Format Reference
 
 ### Basic Format
+
 - **Find**: Text to search for
 - **Replace**: Text to replace with
 - **MatchCase**: TRUE/FALSE for case sensitivity
@@ -93,6 +100,7 @@ Run the same GitHub Actions workflow with your generated CSV!
 - **Wildcards**: TRUE/FALSE for regex patterns (ICU format)
 
 ### Extended Format (AI-Generated)
+
 ```csv
 Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
 [Company Name],Acme Corp,FALSE,TRUE,FALSE,"Company name replacement",RULE_01
@@ -102,18 +110,21 @@ Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
 ## ✨ Examples
 
 **Simple replacement**:
+
 ```csv
 Find,Replace,MatchCase,WholeWord,Wildcards
 ACME,Acme,TRUE,TRUE,FALSE
 ```
 
 **Regex pattern**:
+
 ```csv
 Find,Replace,MatchCase,WholeWord,Wildcards
 v1\.([0-9]+),v2.\1,FALSE,FALSE,TRUE
 ```
 
 **AI-generated policy customization**:
+
 ```csv
 Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
 [Company Name],Secfix GmbH,FALSE,TRUE,FALSE,"Company name replacement",RULE_01
@@ -125,6 +136,7 @@ Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
 ## 🎉 Results
 
 ### What You Get
+
 1. **Download the result** from GitHub Actions artifacts
 2. **Open in LibreOffice Writer**:
    - Go to Edit → Track Changes → Manage
@@ -133,8 +145,9 @@ Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
 3. **Professional tracked changes** that work exactly like manual editing
 
 ### Expected Results
+
 - ✅ **Professional tracked changes** in policy documents
-- ✅ **Accept/reject interface** for each customization  
+- ✅ **Accept/reject interface** for each customization
 - ✅ **Automated application** of customer-specific data
 - ✅ **Audit trail** of what was changed and why
 - ✅ **Time savings** - minutes instead of hours
