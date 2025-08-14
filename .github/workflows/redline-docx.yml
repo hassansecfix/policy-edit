@@ -34,14 +34,14 @@ jobs:
         id: lo_py
         run: |
           set -e
-          
+
           # Set up environment for UNO
           export PYTHONPATH="/usr/lib/python3/dist-packages:/usr/lib/libreoffice/program:$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
-          
+
           echo "Testing Python UNO import..."
           echo "PYTHONPATH: $PYTHONPATH"
-          
+
           # Test if system Python can import uno
           if python3 -c "import sys; sys.path.insert(0, '/usr/lib/python3/dist-packages'); import uno; print('UNO import successful')" 2>/dev/null; then
             echo "✅ System Python with UNO works!"
@@ -82,11 +82,11 @@ jobs:
           mkdir -p build
           echo "Using Python: $LO_PY"
           echo "PYTHONPATH: $PYTHONPATH"
-          
+
           # Set up environment and run script
           export PYTHONPATH="$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
-          
+
           "$LO_PY" scripts/apply_tracked_edits_libre.py \
             --in "${{ github.event.inputs.input_docx }}" \
             --csv "${{ github.event.inputs.edits_csv }}" \
