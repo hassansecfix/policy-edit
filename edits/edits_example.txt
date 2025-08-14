@@ -1,0 +1,14 @@
+Find: [ACME]
+Replace with: [Acme]
+
+Find: [v1\.([0-9]+)]
+Replace with: [v2.\1]
+
+Find: ["foo bar"]
+Replace with: ["foobar"]
+
+Find: [Company]
+Replace with: [Corporation]
+
+Find: [2023]
+Replace with: [2024]

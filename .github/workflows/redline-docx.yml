@@ -1,0 +1,55 @@
+name: Redline DOCX (LibreOffice headless)
+
+on:
+  workflow_dispatch:
+    inputs:
+      input_docx:
+        description: 'Path to input .docx'
+        required: true
+        default: 'docs/input.docx'
+      edits_csv:
+        description: 'Path to edits CSV'
+        required: true
+        default: 'edits/edits_sample.csv'
+      output_docx:
+        description: 'Path to output .docx'
+        required: true
+        default: 'build/output.docx'
+
+jobs:
+  redline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LibreOffice
+        run: sudo apt-get update && sudo apt-get install -y libreoffice
+
+      # Use the LibreOffice-bundled Python to guarantee 'uno' availability
+      - name: Find LibreOffice Python
+        id: lo_py
+        run: |
+          set -e
+          LO_PY="/usr/lib/libreoffice/program/python"
+          if [ ! -x "$LO_PY" ]; then
+            echo "LibreOffice Python not found at $LO_PY" >&2
+            exit 1
+          fi
+          echo "path=$LO_PY" >> $GITHUB_OUTPUT
+
+      - name: Run redline job
+        env:
+          LO_PY: ${{ steps.lo_py.outputs.path }}
+        run: |
+          mkdir -p build
+          "$LO_PY" scripts/apply_tracked_edits_libre.py \
+            --in "${{ github.event.inputs.input_docx }}" \
+            --csv "${{ github.event.inputs.edits_csv }}" \
+            --out "${{ github.event.inputs.output_docx }}" \
+            --launch
+
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        with:
+          name: redlined-docx
+          path: ${{ github.event.inputs.output_docx }}

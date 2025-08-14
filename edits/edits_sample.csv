@@ -1,0 +1,6 @@
+Find,Replace,MatchCase,WholeWord,Wildcards
+ACME,Acme,TRUE,TRUE,FALSE
+v1\.([0-9]+),v2.\1,FALSE,FALSE,TRUE
+"foo bar","foobar",FALSE,TRUE,FALSE
+Company,Corporation,FALSE,TRUE,FALSE
+2023,2024,FALSE,FALSE,FALSE
