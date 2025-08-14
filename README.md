@@ -10,9 +10,51 @@ Apply find/replace edits to DOCX files with **automated tracked changes** that c
 - ✅ **Professional results** - works exactly like manual track changes
 - ✅ **AI-powered policy customization** - from questionnaire to tracked changes
 
-## 🚀 Two Ways to Use This System
+## 🚀 Three Ways to Use This System
 
-### Option A: Basic Usage (Any Document)
+### ⭐ Option A: Complete AI Automation (Recommended) 🤖
+
+**One command** → From questionnaire to tracked changes automatically!
+
+```bash
+python3 scripts/complete_automation.py \
+  --policy data/your_policy.docx \
+  --questionnaire data/customer_responses.xlsx \
+  --output-name "customized_policy" \
+  --api-key YOUR_CLAUDE_API_KEY
+```
+
+**What happens**:
+1. ✅ AI (Claude Sonnet 4) reads your policy + questionnaire
+2. ✅ AI generates perfect edits CSV automatically  
+3. ✅ GitHub Actions creates tracked changes DOCX
+4. ✅ You get professional suggestions to accept/reject
+
+**Setup**: Get Claude API key from https://console.anthropic.com/
+
+**📖 Full Guide**: See `COMPLETE_AI_AUTOMATION.md` for detailed setup and usage.
+
+### Option B: Manual AI Processing
+
+For when you want control over each step.
+
+**Step-by-step AI workflow**:
+```bash
+# 1. Convert questionnaire
+python3 scripts/xlsx_to_csv_converter.py data/questionnaire.xlsx data/responses.csv
+
+# 2. Generate edits with AI  
+python3 scripts/ai_policy_processor.py \
+  --policy data/policy.docx \
+  --questionnaire data/responses.csv \
+  --prompt data/updated_policy_instructions_v4.0.md \
+  --output edits/policy_edits.csv \
+  --api-key YOUR_CLAUDE_API_KEY
+
+# 3. Apply via GitHub Actions (manual trigger)
+```
+
+### Option C: Basic Usage (Any Document)
 
 For any DOCX document with simple find/replace needs.
 

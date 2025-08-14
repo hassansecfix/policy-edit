@@ -1,0 +1,17 @@
+# Environment Setup for AI Policy Automation
+# Copy this to .env or set as environment variables
+
+# Claude AI API Configuration
+# Get your API key from: https://console.anthropic.com/
+export CLAUDE_API_KEY="your_claude_api_key_here"
+
+# GitHub Token (Optional - for auto-triggering workflows)
+# Create at: https://github.com/settings/tokens
+# Needs 'workflow' and 'repo' permissions
+export GITHUB_TOKEN="your_github_token_here"
+
+# Usage:
+# 1. Copy this file: cp env_setup.example .env
+# 2. Edit .env with your actual keys
+# 3. Source it: source .env
+# 4. Run automation: python3 scripts/complete_automation.py ...
