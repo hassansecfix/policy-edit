@@ -37,7 +37,7 @@ def convert_json_to_csv(json_path, csv_path):
     
     # Add header
     csv_rows.append([
-        'Find', 'Replace', 'MatchCase', 'WholeWord', 'Wildcards', 'Description', 'Rule', 'Comment'
+        'Find', 'Replace', 'MatchCase', 'WholeWord', 'Wildcards', 'Description', 'Rule', 'Comment', 'Author'
     ])
     
     # Convert each operation
@@ -48,6 +48,7 @@ def convert_json_to_csv(json_path, csv_path):
             action = operation['action']
             replacement = operation.get('replacement', '')
             comment = operation.get('comment', '')
+            comment_author = operation.get('comment_author', 'AI Assistant')
             
             # Handle different action types
             if action == 'replace':
@@ -90,7 +91,8 @@ def convert_json_to_csv(json_path, csv_path):
                 wildcards,
                 description,
                 rule_id,
-                full_comment
+                full_comment,
+                comment_author
             ])
             
         except KeyError as e:
