@@ -1,21 +1,21 @@
-Question Number,Question Text,field,Response Type,Secfix Response
-1,Company legal name,onboarding.company_legal_name,Text input,Secfix GmbH
-2,What's the company's main address?,onboarding.company_address,Text input,"Salvatorplatz 3, 80333 München"
-3,Do you have an office?,onboarding.has_office,Radio buttons,No
-4,Do you provide your own company devices to your employees?,onboarding.provides_company_devices,Radio buttons,Yes
-5,What do you use for version control?,onboarding.version_control_tools,Dropdown,Gitlab
-6,What kind of services do you provide?,onboarding.service_type,Dropdown,SaaS
-7,What do you use for password management?,onboarding.password_management_tool,Dropdown,1Password (recommended)
-8,Number of employees,onboarding.employee_count,Number input,24
-9,Number of contractors?,onboarding.contractor_count,Number input,3
-10,What do you use for ticket / project management?,onboarding.ticket_management_tools,Dropdown,Clickup
-11,Please upload your company logo,onboarding.company_logo,File upload,https://app.ashbyhq.com/api/images/org-theme-social/9f57512d-58dc-4008-b5c8-ad772681c9b9/1dc178c9-c9a6-45c5-ae7c-0d277f7cf29b/7f51053b-b167-4ba3-af74-01094c36b8c9.png
-12,Who is the owner of this access control policy?,user_response.policy_owner_email,Email/User selector,branko@secfix.com
-13,Who has authority to approve this policy?,user_response.policy_approver_email,Email/User selector,branko@secfix.com
-14,When should this policy become effective?,user_response.effective_date,Date picker,2025-09-28 00:00:00
-15,Do you require Multi-Factor Authentication (MFA) for privileged access?,user_response.require_mfa,Radio buttons,Yes
-16,How often do you perform user access reviews?,user_response.review_frequency,Dropdown,Quarterly (Recommended)
-17,How long after termination should access be revoked?,user_response.termination_timeframe,Dropdown,24 business hours
-18,Who is responsible for approving exceptions to this policy?,user_response.exception_approver,Dropdown,CISO
-19,Who do you report policy violations to?,user_response.violations_reporter,Dropdown,CISO
-20,How do you handle access requests and approvals?,user_response.access_request_method,Radio buttons,Ticketing system (Jira/ServiceNow/etc.)
+﻿Question Number;Question Text;field;Response Type;Secfix Response
+1;Company legal name;onboarding.company_legal_name;Text input;Secfix GmbH
+2;What's the company's main address?;onboarding.company_address;Text input;Salvatorplatz 3, 80333 München
+3;Do you have an office?;onboarding.has_office;Radio buttons;No
+4;Do you provide your own company devices to your employees?;onboarding.provides_company_devices;Radio buttons;Yes
+5;What do you use for version control?;onboarding.version_control_tools;Dropdown;Gitlab
+6;What kind of services do you provide?;onboarding.service_type;Dropdown;SaaS
+7;What do you use for password management?;onboarding.password_management_tool;Dropdown;1Password (recommended)
+8;Number of employees;onboarding.employee_count;Number input;24
+9;Number of contractors?;onboarding.contractor_count;Number input;3
+10;What do you use for ticket / project management?;onboarding.ticket_management_tools;Dropdown;Clickup
+11;Please upload your company logo;onboarding.company_logo;File upload;https://app.ashbyhq.com/api/images/org-theme-social/9f57512d-58dc-4008-b5c8-ad772681c9b9/1dc178c9-c9a6-45c5-ae7c-0d277f7cf29b/7f51053b-b167-4ba3-af74-01094c36b8c9.png
+12;Who is the owner of this access control policy?;user_response.policy_owner_email;Email/User selector;branko@secfix.com
+13;Who has authority to approve this policy?;user_response.policy_approver_email;Email/User selector;branko@secfix.com
+14;When should this policy become effective?;user_response.effective_date;Date picker;28.09.25
+15;Do you require Multi-Factor Authentication (MFA) for privileged access?;user_response.require_mfa;Radio buttons;Yes
+16;How often do you perform user access reviews?;user_response.review_frequency;Dropdown;Quarterly (Recommended)
+17;How long after termination should access be revoked?;user_response.termination_timeframe;Dropdown;24 business hours
+18;Who is responsible for approving exceptions to this policy?;user_response.exception_approver;Dropdown;CISO
+19;Who do you report policy violations to?;user_response.violations_reporter;Dropdown;CISO
+20;How do you handle access requests and approvals?;user_response.access_request_method;Radio buttons;Ticketing system (Jira/ServiceNow/etc.)
