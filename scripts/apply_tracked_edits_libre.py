@@ -369,8 +369,8 @@ def main():
                                     # Method 2: Try creating postit annotation (Word-compatible)
                                     try:
                                         annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
-                                annotation.setPropertyValue("Author", author)
-                                annotation.setPropertyValue("Content", comment_content)
+                                        annotation.setPropertyValue("Author", author)
+                                        annotation.setPropertyValue("Content", comment_content)
                                         
                                         # Set current date/time properly for LibreOffice
                                         annotation.setPropertyValue("Date", create_libreoffice_datetime())
