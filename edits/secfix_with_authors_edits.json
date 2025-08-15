@@ -3,7 +3,7 @@
     "generated_timestamp": "2024-02-13T10:00:00Z",
     "company_name": "Secfix GmbH",
     "format_version": "operations",
-    "total_operations": 10,
+    "total_operations": 11,
     "generator": "PolicyWorkflow v2.0"
   },
   "instructions": {
@@ -74,6 +74,12 @@
         "action": "replace",
         "replacement": "CISO",
         "comment": "You indicated that the CISO is responsible for handling policy violations, so the IT Manager placeholder should be updated.\\n\\nCan be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Access to Program Source Code",
+        "action": "comment",
+        "comment": "You indicated you use Gitlab for version control, so this section about source code access should remain.\\n\\nNo version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       }
     ]
