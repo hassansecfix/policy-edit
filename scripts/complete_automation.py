@@ -50,11 +50,11 @@ def convert_xlsx_to_csv(xlsx_path, csv_path):
     cmd = f"python3 scripts/xlsx_to_csv_converter.py '{xlsx_path}' '{csv_path}'"
     return run_command(cmd, "Converting Excel to CSV")
 
-def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, output_csv, api_key):
-    """Generate JSON instructions using AI, then convert to CSV."""
+def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, api_key):
+    """Generate JSON instructions using AI."""
     
-    # Step 1: Generate JSON with AI
-    print("🧠 Step 2a: Generating JSON instructions with Claude Sonnet 4...")
+    # Generate JSON with AI
+    print("🧠 Step 2: Generating JSON instructions with Claude Sonnet 4...")
     cmd = f"""python3 scripts/ai_policy_processor.py \
         --policy '{policy_path}' \
         --questionnaire '{questionnaire_csv}' \
@@ -63,54 +63,46 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
         --output '{output_json}' \
         --api-key '{api_key}'"""
     
-    success, output = run_command(cmd, "Generating JSON instructions")
-    if not success:
-        return False, output
-    
-    # Step 2: Convert JSON to CSV for GitHub Actions
-    print("🔄 Step 2b: Converting JSON to CSV format...")
-    cmd = f"""python3 scripts/json_to_csv_converter.py '{output_json}' '{output_csv}'"""
-    
-    return run_command(cmd, "Converting JSON to CSV")
+    return run_command(cmd, "Generating JSON instructions")
 
-def commit_and_push_csv(edits_csv):
-    """Commit and push the generated CSV file to GitHub."""
+def commit_and_push_json(edits_json):
+    """Commit and push the generated JSON file to GitHub."""
     try:
-        # Add the CSV file
-        result = subprocess.run(['git', 'add', edits_csv], capture_output=True, text=True)
+        # Add the JSON file
+        result = subprocess.run(['git', 'add', edits_json], capture_output=True, text=True)
         if result.returncode != 0:
-            return False, f"Failed to add CSV: {result.stderr}"
+            return False, f"Failed to add JSON: {result.stderr}"
         
-        # Commit the CSV file
-        commit_msg = f"Add AI-generated edits CSV: {edits_csv}"
+        # Commit the JSON file
+        commit_msg = f"Add AI-generated edits JSON: {edits_json}"
         result = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
         if result.returncode != 0:
             # Check if it's because there are no changes
             if "nothing to commit" in result.stdout:
-                print("✅ CSV file already committed")
+                print("✅ JSON file already committed")
                 return True, "No changes to commit"
-            return False, f"Failed to commit CSV: {result.stderr}"
+            return False, f"Failed to commit JSON: {result.stderr}"
         
         # Push to GitHub
         result = subprocess.run(['git', 'push'], capture_output=True, text=True)
         if result.returncode != 0:
-            return False, f"Failed to push CSV: {result.stderr}"
+            return False, f"Failed to push JSON: {result.stderr}"
         
-        print("✅ CSV file committed and pushed to GitHub")
-        return True, "CSV pushed successfully"
+        print("✅ JSON file committed and pushed to GitHub")
+        return True, "JSON pushed successfully"
         
     except Exception as e:
         return False, f"Git operations failed: {e}"
 
-def trigger_github_actions(policy_path, edits_csv, output_name, github_token=None):
+def trigger_github_actions(policy_path, edits_json, output_name, github_token=None):
     """Trigger GitHub Actions workflow (manual instructions if no token)."""
     
-    # First, commit and push the CSV file
-    print("📤 Committing and pushing CSV to GitHub...")
-    success, message = commit_and_push_csv(edits_csv)
+    # First, commit and push the JSON file
+    print("📤 Committing and pushing JSON to GitHub...")
+    success, message = commit_and_push_json(edits_json)
     if not success:
-        print(f"❌ Failed to push CSV: {message}")
-        print("💡 You'll need to manually commit and push the CSV file")
+        print(f"❌ Failed to push JSON: {message}")
+        print("💡 You'll need to manually commit and push the JSON file")
     else:
         print(f"✅ {message}")
     
@@ -123,7 +115,7 @@ def trigger_github_actions(policy_path, edits_csv, output_name, github_token=Non
         print("4. Click 'Run workflow'")
         print("5. Fill in these values:")
         print(f"   - Input DOCX path: {policy_path}")
-        print(f"   - Edits CSV path: {edits_csv}")
+        print(f"   - Edits CSV/JSON path: {edits_json}")
         print(f"   - Output DOCX path: build/{output_name}.docx")
         print("6. Click 'Run workflow' button")
         print("7. Wait for completion and download from Artifacts")
@@ -161,7 +153,7 @@ def trigger_github_actions(policy_path, edits_csv, output_name, github_token=Non
             'ref': 'main',
             'inputs': {
                 'input_docx': policy_path,
-                'edits_csv': edits_csv,
+                'edits_csv': edits_json,
                 'output_docx': f'build/{output_name}.docx'
             }
         }
@@ -212,7 +204,6 @@ def main():
     # Create intermediate file paths
     questionnaire_csv = f"data/{args.output_name}_questionnaire.csv"
     edits_json = f"edits/{args.output_name}_edits.json"
-    edits_csv = f"edits/{args.output_name}_edits.csv"
     prompt_path = "data/prompt.md"
     policy_instructions_path = "data/updated_policy_instructions_v4.0.md"
     
@@ -229,11 +220,11 @@ def main():
             questionnaire_csv = args.questionnaire
             print(f"\n📊 STEP 1: Using existing CSV: {questionnaire_csv}")
         
-        # Step 2: Generate edits with AI (JSON → CSV)
+        # Step 2: Generate edits with AI (JSON only)
         print("\n🧠 STEP 2: Generating Edits with Claude Sonnet 4")
         success, output = generate_edits_with_ai(
             args.policy, questionnaire_csv, prompt_path, policy_instructions_path, 
-            edits_json, edits_csv, api_key
+            edits_json, api_key
         )
         if not success:
             print(f"❌ AI generation failed: {output}")
@@ -243,7 +234,7 @@ def main():
         if not args.skip_github:
             print("\n⚙️  STEP 3: Triggering Automated Tracked Changes")
             success, output = trigger_github_actions(
-                args.policy, edits_csv, args.output_name, github_token
+                args.policy, edits_json, args.output_name, github_token
             )
             if not success:
                 print(f"❌ GitHub Actions trigger failed: {output}")
@@ -257,7 +248,6 @@ def main():
         print("✅ Generated Files:")
         print(f"   📊 Questionnaire CSV: {questionnaire_csv}")
         print(f"   📋 JSON Instructions: {edits_json}")
-        print(f"   📝 CSV for GitHub Actions: {edits_csv}")
         
         if not args.skip_github:
             print(f"   📄 Final DOCX: build/{args.output_name}.docx (via GitHub Actions)")
@@ -267,7 +257,7 @@ def main():
             print("3. Open in LibreOffice Writer")
             print("4. Review tracked changes and accept/reject")
         else:
-            print(f"\n🔗 Manual Step: Run GitHub Actions with {edits_csv}")
+            print(f"\n🔗 Manual Step: Run GitHub Actions with {edits_json}")
         
         print("\n🏆 Your policy is ready for review with automated suggestions!")
         

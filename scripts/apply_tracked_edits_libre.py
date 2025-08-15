@@ -254,9 +254,18 @@ def main():
             except Exception:
                 pass
 
+            # Enhance replacement text with comment if provided
+            enhanced_repl = repl
+            if comment_text:
+                # Add comment as a subtle inline note
+                comment_summary = comment_text.replace('\n', ' ').strip()
+                if len(comment_summary) > 100:
+                    comment_summary = comment_summary[:97] + "..."
+                enhanced_repl = f"{repl} [AI: {comment_summary}]"
+
             rd = doc.createReplaceDescriptor()
             rd.SearchString = find
-            rd.ReplaceString = repl
+            rd.ReplaceString = enhanced_repl
             rd.SearchCaseSensitive = match_case
             rd.SearchWords = whole_word
             # Use ICU regex if requested
@@ -270,40 +279,84 @@ def main():
             
             # Add comment if provided and replacements were made
             if comment_text and count_replaced > 0:
-                # Try to find the most recent tracked change and attach comment to it
+                # Try multiple approaches to add the comment
                 try:
-                    # Access the redlines (tracked changes) collection
+                    # Method 1: Try to find and modify the most recent tracked change
                     redlines = doc.getPropertyValue("Redlines")
                     if redlines and redlines.getCount() > 0:
                         # Get the last redline (most recent change)
                         last_redline = redlines.getByIndex(redlines.getCount() - 1)
+                        
+                        # Try to set comment on the redline itself
                         try:
-                            # Try to set the description/comment for this redline
+                            last_redline.setPropertyValue("Comment", comment_text)
+                            print(f"✅ Added comment to tracked change: {comment_text[:80]}...")
+                        except Exception as e:
+                            print(f"Could not set redline comment: {e}")
+                            
+                        # Try to set description
+                        try:
                             last_redline.setPropertyValue("Description", comment_text)
-                            print(f"Added description to tracked change by {author_name}: {comment_text[:100]}...")
+                            print(f"✅ Added description to tracked change")
                         except Exception as e:
                             print(f"Could not set redline description: {e}")
-                            
-                        # Also try to add an annotation at the redline location
+                        
+                        # Method 2: Add visible annotation at the change location
                         try:
                             redline_range = last_redline.getAnchor()
+                            
+                            # Create annotation with formatted comment
                             annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                            annotation.setPropertyValue("Content", f"[{author_name}] {comment_text}")
+                            formatted_comment = f"💡 {author_name}: {comment_text}"
+                            annotation.setPropertyValue("Content", formatted_comment)
                             annotation.setPropertyValue("Author", author_name)
                             annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
                             
-                            # Insert the annotation at the redline location
-                            redline_range.insertTextContent(redline_range.getStart(), annotation, False)
-                            print(f"Added annotation by {author_name}")
+                            # Insert at the end of the changed range for visibility
+                            redline_range.insertTextContent(redline_range.getEnd(), annotation, False)
+                            print(f"✅ Added visible annotation by {author_name}")
                         except Exception as e:
                             print(f"Could not add annotation: {e}")
-                    else:
-                        print("No tracked changes found to attach comment to")
+                            
+                        # Method 3: Try to add comment to redline properties
+                        try:
+                            redline_props = last_redline.getPropertySetInfo()
+                            available_props = [prop.Name for prop in redline_props.getProperties()]
+                            print(f"Available redline properties: {', '.join(available_props[:5])}...")
+                            
+                            # Try various comment property names
+                            for prop_name in ['RedlineComment', 'RedlineText', 'Comment']:
+                                try:
+                                    if redline_props.hasPropertyByName(prop_name):
+                                        last_redline.setPropertyValue(prop_name, comment_text)
+                                        print(f"✅ Set {prop_name}: {comment_text[:50]}...")
+                                        break
+                                except Exception:
+                                    continue
+                        except Exception as e:
+                            print(f"Could not analyze redline properties: {e}")
+                    
+                    # Method 4: As fallback, add a visible text comment near the change
+                    try:
+                        # Find the replaced text to add comment nearby
+                        search_desc = doc.createSearchDescriptor()
+                        search_desc.SearchString = enhanced_repl if enhanced_repl else find
+                        search_desc.SearchCaseSensitive = match_case
+                        search_desc.SearchWords = False  # Don't use whole word since we added comment
+                        
+                        found_range = doc.findFirst(search_desc)
+                        if found_range:
+                            print(f"✅ Comment included in replacement text")
+                        else:
+                            print(f"Could not find enhanced replacement text for additional comment")
+                    except Exception as e:
+                        print(f"Could not verify comment integration: {e}")
+                        
                 except Exception as e:
                     print(f"Warning: Could not process comment: {e}")
             
             if count_replaced > 0:
-                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
+                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{enhanced_repl}' by {author_name}")
     finally:
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)
