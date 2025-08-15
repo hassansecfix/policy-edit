@@ -130,28 +130,10 @@ def main():
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
 
-    # Ensure Track Changes on and set user info
+    # Ensure Track Changes on
     try:
         # For Writer documents this should be available:
         doc.RecordChanges = True
-        
-        # Try to set user information for tracked changes
-        try:
-            # Get the component context and create user data service
-            ctx = doc.getCurrentController().getFrame().getContainerWindow().getComponentContext()
-            config_provider = ctx.getServiceManager().createInstanceWithContext("com.sun.star.configuration.ConfigurationProvider", ctx)
-            
-            # Set user profile data
-            config_access = config_provider.createInstanceWithArguments("com.sun.star.configuration.ConfigurationUpdateAccess",
-                (uno.Any("com.sun.star.beans.PropertyValue", uno.createUnoStruct("com.sun.star.beans.PropertyValue", "nodepath", "/org.openoffice.UserProfile/Data")),))
-            
-            # This will be the default author, but we'll override it per change
-            config_access.setPropertyValue("Author", "AI Assistant")
-            config_access.commitChanges()
-            
-        except Exception as e:
-            print(f"Note: Could not configure user profile for tracked changes: {e}")
-            
     except Exception:
         pass
 
