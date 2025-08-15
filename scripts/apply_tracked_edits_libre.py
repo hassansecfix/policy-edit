@@ -330,10 +330,10 @@ def main():
                                     annotation.setPropertyValue("Author", author)
                                     annotation.setPropertyValue("Content", comment_content)
                                     
-                                    # Insert at the end of the found range
+                                    # Insert annotation to cover the entire found range
                                     cursor = found_range.getText().createTextCursorByRange(found_range)
-                                    cursor.collapseToEnd()
-                                    cursor.getText().insertTextContent(cursor, annotation, False)
+                                    # Don't collapse - keep the full range selected for the comment
+                                    cursor.getText().insertTextContent(cursor, annotation, True)
                                     
                                     print(f"✅ Added annotation comment to '{target_text[:50]}...' by {author}")
                                     
@@ -348,8 +348,8 @@ def main():
                                         annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
                                         
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        cursor.collapseToEnd()
-                                        cursor.getText().insertTextContent(cursor, annotation, False)
+                                        # Keep the full range selected for the comment
+                                        cursor.getText().insertTextContent(cursor, annotation, True)
                                         
                                         print(f"✅ Added PostIt comment to '{target_text[:50]}...' by {author}")
                                         
@@ -365,8 +365,8 @@ def main():
                                                 annotation.Content = comment_content
                                                 annotation.Date = time.strftime("%Y-%m-%dT%H:%M:%S")
                                                 
-                                                # Insert directly
-                                                found_range.getText().insertTextContent(found_range.getEnd(), annotation, False)
+                                                # Insert to cover the entire found range
+                                                found_range.getText().insertTextContent(found_range, annotation, True)
                                                 print(f"✅ Added basic annotation to '{target_text[:50]}...' by {author}")
                                             else:
                                                 raise Exception("Could not create annotation instance")
@@ -477,8 +477,8 @@ def main():
                             annotation.setPropertyValue("Content", comment_text)
                             
                             cursor = found_range.getText().createTextCursorByRange(found_range)
-                            cursor.collapseToEnd()
-                            cursor.getText().insertTextContent(cursor, annotation, False)
+                            # Keep the full range selected for the comment
+                            cursor.getText().insertTextContent(cursor, annotation, True)
                             
                             print(f"✅ Added annotation comment to replacement by {author_name}")
                             print(f"   Comment: {comment_text[:100]}...")
@@ -494,8 +494,8 @@ def main():
                                 annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
                                 
                                 cursor = found_range.getText().createTextCursorByRange(found_range)
-                                cursor.collapseToEnd()
-                                cursor.getText().insertTextContent(cursor, annotation, False)
+                                # Keep the full range selected for the comment
+                                cursor.getText().insertTextContent(cursor, annotation, True)
                                 
                                 print(f"✅ Added PostIt comment to replacement by {author_name}")
                                 
@@ -510,7 +510,8 @@ def main():
                                         annotation.Content = comment_text
                                         annotation.Date = time.strftime("%Y-%m-%dT%H:%M:%S")
                                         
-                                        found_range.getText().insertTextContent(found_range.getEnd(), annotation, False)
+                                        # Insert to cover the entire found range
+                                        found_range.getText().insertTextContent(found_range, annotation, True)
                                         print(f"✅ Added basic annotation to replacement by {author_name}")
                                     else:
                                         raise Exception("Could not create annotation instance")
