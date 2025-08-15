@@ -16,9 +16,10 @@ Flags:
               (socket: 127.0.0.1:2002, urp)
 
 CSV columns (header optional, but recommended):
-  Find,Replace,MatchCase,WholeWord,Wildcards
+  Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule,Comment
   - Booleans: TRUE/FALSE, Yes/No, 1/0
   - Wildcards uses ICU regex (standard regex).
+  - Comment: Optional comment to add to the tracked change
 """
 import argparse
 import csv
@@ -145,6 +146,7 @@ def main():
             match_case = bool_from_str(row.get("MatchCase"))
             whole_word = bool_from_str(row.get("WholeWord"))
             wildcards  = bool_from_str(row.get("Wildcards"))
+            comment_text = (row.get("Comment") or "").strip()
 
             rd = doc.createReplaceDescriptor()
             rd.SearchString = find
@@ -157,6 +159,38 @@ def main():
             except Exception:
                 pass
 
+            # Perform the replacement and add comment if provided
+            if comment_text:
+                # Find all matches first to add comments
+                search_desc = doc.createSearchDescriptor()
+                search_desc.SearchString = find
+                search_desc.SearchCaseSensitive = match_case
+                search_desc.SearchWords = whole_word
+                try:
+                    search_desc.setPropertyValue("RegularExpressions", bool(wildcards))
+                except Exception:
+                    pass
+                
+                # Find all instances and add comments
+                found = doc.findAll(search_desc)
+                if found:
+                    for i in range(found.getCount()):
+                        try:
+                            range_obj = found.getByIndex(i)
+                            # Add comment to this range
+                            comment_range = doc.insertDocumentFromURL("", (), range_obj)
+                            # Try to add annotation (comment)
+                            try:
+                                annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                annotation.setPropertyValue("Content", comment_text)
+                                annotation.setPropertyValue("Author", "Secfix AI")
+                                range_obj.insertTextContent(range_obj.getStart(), annotation, False)
+                            except Exception as e:
+                                print(f"Note: Could not add comment '{comment_text[:50]}...': {e}")
+                        except Exception as e:
+                            print(f"Warning: Could not process comment for match {i}: {e}")
+            
+            # Perform the actual replacement
             doc.replaceAll(rd)
     finally:
         # Save as DOCX (Word 2007+ XML)

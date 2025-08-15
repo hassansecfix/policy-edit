@@ -37,7 +37,7 @@ def convert_json_to_csv(json_path, csv_path):
     
     # Add header
     csv_rows.append([
-        'Find', 'Replace', 'MatchCase', 'WholeWord', 'Wildcards', 'Description', 'Rule'
+        'Find', 'Replace', 'MatchCase', 'WholeWord', 'Wildcards', 'Description', 'Rule', 'Comment'
     ])
     
     # Convert each operation
@@ -69,11 +69,14 @@ def convert_json_to_csv(json_path, csv_path):
             whole_word = 'TRUE'  # Usually want whole word matching for placeholders
             wildcards = 'FALSE'
             
-            # Create description from comment
+            # Create description from comment (shortened for Description field)
             # Remove \\n\\n and replace with spaces for CSV
             description = comment.replace('\\n\\n', ' ').replace('\\n', ' ').strip()
             if len(description) > 100:
                 description = description[:97] + '...'
+            
+            # Full comment for the Comment field (preserve original formatting)
+            full_comment = comment.replace('\\n\\n', '\n\n').replace('\\n', '\n').strip()
             
             # Generate rule ID based on operation index
             rule_id = f"RULE_{i+1:02d}"
@@ -86,7 +89,8 @@ def convert_json_to_csv(json_path, csv_path):
                 whole_word,
                 wildcards,
                 description,
-                rule_id
+                rule_id,
+                full_comment
             ])
             
         except KeyError as e:
