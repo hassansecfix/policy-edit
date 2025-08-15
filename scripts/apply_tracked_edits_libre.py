@@ -218,12 +218,22 @@ def main():
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
 
+    # Set document properties for tracked changes
+    try:
+        doc_info = doc.getDocumentInfo()
+        doc_info.setPropertyValue("Author", "Secfix AI")
+        doc_info.setPropertyValue("ModifiedBy", "Secfix AI")
+    except Exception as e:
+        print(f"Warning: Could not set document author: {e}")
+
     # Ensure Track Changes on
     try:
         # For Writer documents this should be available:
         doc.RecordChanges = True
-    except Exception:
-        pass
+        # Set the revision author for this session
+        doc.setPropertyValue("RedlineAuthor", "Secfix AI")
+    except Exception as e:
+        print(f"Warning: Could not enable track changes: {e}")
 
     # Apply replacements (main body). Extend for headers/footers if needed (see TODO).
     try:
@@ -237,6 +247,12 @@ def main():
             wildcards  = bool_from_str(row.get("Wildcards"))
             comment_text = (row.get("Comment") or "").strip()
             author_name = (row.get("Author") or "AI Assistant").strip()
+
+            # Update the document author for this specific change
+            try:
+                doc.setPropertyValue("RedlineAuthor", author_name)
+            except Exception:
+                pass
 
             rd = doc.createReplaceDescriptor()
             rd.SearchString = find
@@ -254,34 +270,40 @@ def main():
             
             # Add comment if provided and replacements were made
             if comment_text and count_replaced > 0:
-                # Find the replaced text (now showing as tracked changes) 
+                # Try to find the most recent tracked change and attach comment to it
                 try:
-                    # Create a search for the replacement text to find where we made changes
-                    search_desc = doc.createSearchDescriptor()
-                    search_desc.SearchString = repl if repl else find  # Search for replacement text
-                    search_desc.SearchCaseSensitive = match_case
-                    search_desc.SearchWords = whole_word
-                    
-                    # Find first occurrence to add comment
-                    found_range = doc.findFirst(search_desc)
-                    if found_range:
+                    # Access the redlines (tracked changes) collection
+                    redlines = doc.getPropertyValue("Redlines")
+                    if redlines and redlines.getCount() > 0:
+                        # Get the last redline (most recent change)
+                        last_redline = redlines.getByIndex(redlines.getCount() - 1)
                         try:
-                            # Create and insert annotation
+                            # Try to set the description/comment for this redline
+                            last_redline.setPropertyValue("Description", comment_text)
+                            print(f"Added description to tracked change by {author_name}: {comment_text[:100]}...")
+                        except Exception as e:
+                            print(f"Could not set redline description: {e}")
+                            
+                        # Also try to add an annotation at the redline location
+                        try:
+                            redline_range = last_redline.getAnchor()
                             annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                            annotation.setPropertyValue("Content", comment_text)
+                            annotation.setPropertyValue("Content", f"[{author_name}] {comment_text}")
                             annotation.setPropertyValue("Author", author_name)
                             annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
                             
-                            # Insert the annotation at the found range
-                            found_range.insertTextContent(found_range.getStart(), annotation, False)
-                            print(f"Added comment by {author_name}: {comment_text[:100]}...")
+                            # Insert the annotation at the redline location
+                            redline_range.insertTextContent(redline_range.getStart(), annotation, False)
+                            print(f"Added annotation by {author_name}")
                         except Exception as e:
-                            print(f"Note: Could not add comment '{comment_text[:50]}...': {e}")
+                            print(f"Could not add annotation: {e}")
+                    else:
+                        print("No tracked changes found to attach comment to")
                 except Exception as e:
                     print(f"Warning: Could not process comment: {e}")
             
             if count_replaced > 0:
-                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}'")
+                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
     finally:
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)
