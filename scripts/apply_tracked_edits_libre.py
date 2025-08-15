@@ -67,7 +67,7 @@ def rows_from_json(path):
         comment = op.get('comment', '')
         author = op.get('comment_author', 'AI Assistant')
         
-        # Skip comment-only operations here - handle them in main loop
+        # Handle comment-only operations in main loop, not here
         if action == 'comment':
             continue
             
@@ -318,27 +318,36 @@ def main():
                         if found_range:
                             # Add a simple, clean LibreOffice comment
                             try:
-                                # Create text cursor at the found range
-                                cursor = found_range.getText().createTextCursorByRange(found_range)
-                                
-                                # Create comment (annotation)
+                                # Create comment (annotation) - simpler approach
                                 annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
                                 
-                                # Set comment properties
+                                # Set comment properties with proper formatting
                                 comment_content = comment.replace('\\\\n', '\n').replace('\\n', '\n')
                                 annotation.setPropertyValue("Content", comment_content)
                                 annotation.setPropertyValue("Author", author)
-                                annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                                current_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+                                annotation.setPropertyValue("Date", current_time)
                                 
-                                # Insert the comment at the cursor position
-                                cursor.getText().insertTextContent(cursor, annotation, False)
+                                # Insert the comment at the found text location
+                                found_range.getText().insertTextContent(found_range, annotation, False)
                                 
                                 print(f"✅ Added comment to '{target_text[:50]}...' by {author}")
+                                print(f"   Comment: '{comment[:100]}...'")
                                 
                             except Exception as e:
                                 print(f"❌ Could not add comment: {e}")
                                 print(f"   Target text: '{target_text}'")
                                 print(f"   Comment: '{comment[:100]}...'")
+                                # Try alternative method
+                                try:
+                                    cursor = found_range.getText().createTextCursorByRange(found_range)
+                                    cursor.collapseToEnd()
+                                    cursor.setString(f" [💬 {author}: {comment[:50]}{'...' if len(comment) > 50 else ''}]")
+                                    cursor.CharColor = 0x0066CC  # Blue
+                                    cursor.CharHeight = 9
+                                    print(f"✅ Added inline comment as fallback")
+                                except Exception as e2:
+                                    print(f"❌ Fallback method also failed: {e2}")
                         else:
                             print(f"⚠️ Could not find text '{target_text}' for comment operation")
                     except Exception as e:
@@ -401,89 +410,38 @@ def main():
             
             # Add comment if provided and replacements were made
             if comment_text and count_replaced > 0:
-                # Try multiple approaches to add the comment
                 try:
-                    # Method 1: Try to find and modify the most recent tracked change
-                    redlines = doc.getPropertyValue("Redlines")
-                    if redlines and redlines.getCount() > 0:
-                        # Get the last redline (most recent change)
-                        last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                        
-                        # Try to set comment on the redline itself
-                        try:
-                            last_redline.setPropertyValue("Comment", comment_text)
-                            print(f"✅ Added comment to tracked change: {comment_text[:80]}...")
-                        except Exception as e:
-                            print(f"Could not set redline comment: {e}")
-                            
-                        # Try to set description
-                        try:
-                            last_redline.setPropertyValue("Description", comment_text)
-                            print(f"✅ Added description to tracked change")
-                        except Exception as e:
-                            print(f"Could not set redline description: {e}")
-                        
-                        # Method 2: Add visible annotation at the change location
-                        try:
-                            redline_range = last_redline.getAnchor()
-                            
-                            # Create annotation with formatted comment
-                            annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                            formatted_comment = f"💡 {author_name}: {comment_text}"
-                            annotation.setPropertyValue("Content", formatted_comment)
-                            annotation.setPropertyValue("Author", author_name)
-                            annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
-                            
-                            # Insert at the end of the changed range for visibility
-                            redline_range.insertTextContent(redline_range.getEnd(), annotation, False)
-                            print(f"✅ Added visible annotation by {author_name}")
-                        except Exception as e:
-                            print(f"Could not add annotation: {e}")
-                            
-                        # Method 3: Try to add comment to redline properties
-                        try:
-                            redline_props = last_redline.getPropertySetInfo()
-                            available_props = [prop.Name for prop in redline_props.getProperties()]
-                            print(f"Available redline properties: {', '.join(available_props[:5])}...")
-                            
-                            # Try various comment property names
-                            for prop_name in ['RedlineComment', 'RedlineText', 'Comment']:
-                                try:
-                                    if redline_props.hasPropertyByName(prop_name):
-                                        last_redline.setPropertyValue(prop_name, comment_text)
-                                        print(f"✅ Set {prop_name}: {comment_text[:50]}...")
-                                        break
-                                except Exception:
-                                    continue
-                        except Exception as e:
-                            print(f"Could not analyze redline properties: {e}")
+                    # Simpler approach: Find the replaced text and add annotation
+                    search_desc = doc.createSearchDescriptor()
+                    search_desc.SearchString = repl if repl else find
+                    search_desc.SearchCaseSensitive = match_case
+                    search_desc.SearchWords = whole_word
                     
-                    # Method 4: Add comment as separate annotation near the change
-                    try:
-                        # Find the replaced text to add comment nearby
-                        search_desc = doc.createSearchDescriptor()
-                        search_desc.SearchString = repl if repl else find
-                        search_desc.SearchCaseSensitive = match_case
-                        search_desc.SearchWords = whole_word
+                    found_range = doc.findFirst(search_desc)
+                    if found_range:
+                        # Add LibreOffice annotation
+                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                        annotation.setPropertyValue("Content", comment_text)
+                        annotation.setPropertyValue("Author", author_name)
+                        annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
                         
-                        found_range = doc.findFirst(search_desc)
-                        if found_range:
-                            # Add a comment annotation after the changed text
-                            try:
-                                cursor = found_range.getText().createTextCursorByRange(found_range.getEnd())
-                                cursor.setString(f" 💬")
-                                cursor.CharColor = 0x808080  # Gray
-                                cursor.CharHeight = 8
-                                print(f"✅ Added comment indicator")
-                            except Exception as e:
-                                print(f"Could not add comment indicator: {e}")
-                        else:
-                            print(f"Could not find replacement text for comment annotation")
-                    except Exception as e:
-                        print(f"Could not add comment annotation: {e}")
+                        # Insert at the found location
+                        found_range.getText().insertTextContent(found_range, annotation, False)
+                        print(f"✅ Added comment to replacement by {author_name}")
+                        print(f"   Comment: {comment_text[:100]}...")
+                    else:
+                        # Fallback: try to attach to tracked change
+                        try:
+                            redlines = doc.getPropertyValue("Redlines")
+                            if redlines and redlines.getCount() > 0:
+                                last_redline = redlines.getByIndex(redlines.getCount() - 1)
+                                last_redline.setPropertyValue("Comment", comment_text)
+                                print(f"✅ Added comment to tracked change: {comment_text[:80]}...")
+                        except Exception as e:
+                            print(f"Could not add comment to tracked change: {e}")
                         
                 except Exception as e:
-                    print(f"Warning: Could not process comment: {e}")
+                    print(f"Warning: Could not add comment: {e}")
             
             if count_replaced > 0:
                 print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
