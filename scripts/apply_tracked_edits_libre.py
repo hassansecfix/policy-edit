@@ -44,6 +44,26 @@ def bool_from_str(s, default=False):
     s = str(s).strip().lower()
     return s in ("1","true","yes","y")
 
+def create_libreoffice_datetime():
+    """Create a LibreOffice DateTime object for annotations"""
+    try:
+        from com.sun.star.util import DateTime
+        import datetime
+        now = datetime.datetime.now()
+        dt = DateTime()
+        dt.Year = now.year
+        dt.Month = now.month
+        dt.Day = now.day
+        dt.Hours = now.hour
+        dt.Minutes = now.minute
+        dt.Seconds = now.second
+        dt.NanoSeconds = now.microsecond * 1000
+        return dt
+    except Exception:
+        # Fallback to Unix timestamp
+        import time
+        return time.time()
+
 def rows_from_file(path):
     """Load edits from either CSV or JSON format"""
     file_ext = Path(path).suffix.lower()
@@ -330,6 +350,13 @@ def main():
                                     annotation.setPropertyValue("Author", author)
                                     annotation.setPropertyValue("Content", comment_content)
                                     
+                                    # Set proper timestamp
+                                    dt = create_libreoffice_datetime()
+                                    try:
+                                        annotation.setPropertyValue("Date", dt)
+                                    except Exception:
+                                        annotation.setPropertyValue("DateTimeValue", dt)
+                                    
                                     # Insert annotation to cover the entire found range
                                     cursor = found_range.getText().createTextCursorByRange(found_range)
                                     # Don't collapse - keep the full range selected for the comment
@@ -343,8 +370,15 @@ def main():
                                     # Method 2: Try creating postit annotation (Word-compatible)
                                     try:
                                         annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
-                                        annotation.setPropertyValue("Author", author)
-                                        annotation.setPropertyValue("Content", comment_content)
+                                annotation.setPropertyValue("Author", author)
+                                annotation.setPropertyValue("Content", comment_content)
+                                        
+                                        # Set proper timestamp
+                                        dt = create_libreoffice_datetime()
+                                        try:
+                                            annotation.setPropertyValue("Date", dt)
+                                        except Exception:
+                                            annotation.setPropertyValue("DateTimeValue", dt)
 
                                         
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
@@ -363,6 +397,13 @@ def main():
                                             if annotation:
                                                 annotation.Author = author
                                                 annotation.Content = comment_content
+                                                
+                                                # Set proper timestamp
+                                                dt = create_libreoffice_datetime()
+                                                try:
+                                                    annotation.Date = dt
+                                                except Exception:
+                                                    annotation.DateTimeValue = dt
 
                                                 
                                                 # Insert to cover the entire found range
@@ -476,6 +517,13 @@ def main():
                             annotation.setPropertyValue("Author", author_name)
                             annotation.setPropertyValue("Content", comment_text)
                             
+                            # Set proper timestamp
+                            dt = create_libreoffice_datetime()
+                            try:
+                                annotation.setPropertyValue("Date", dt)
+                            except Exception:
+                                annotation.setPropertyValue("DateTimeValue", dt)
+                            
                             cursor = found_range.getText().createTextCursorByRange(found_range)
                             # Keep the full range selected for the comment
                             cursor.getText().insertTextContent(cursor, annotation, True)
@@ -492,6 +540,13 @@ def main():
                                 annotation.setPropertyValue("Author", author_name)
                                 annotation.setPropertyValue("Content", comment_text)
                                 
+                                # Set proper timestamp
+                                dt = create_libreoffice_datetime()
+                                try:
+                                    annotation.setPropertyValue("Date", dt)
+                                except Exception:
+                                    annotation.setPropertyValue("DateTimeValue", dt)
+                                
                                 cursor = found_range.getText().createTextCursorByRange(found_range)
                                 # Keep the full range selected for the comment
                                 cursor.getText().insertTextContent(cursor, annotation, True)
@@ -507,6 +562,13 @@ def main():
                                     if annotation:
                                         annotation.Author = author_name
                                         annotation.Content = comment_text
+                                        
+                                        # Set proper timestamp
+                                        dt = create_libreoffice_datetime()
+                                        try:
+                                            annotation.Date = dt
+                                        except Exception:
+                                            annotation.DateTimeValue = dt
                                         
                                         # Insert to cover the entire found range
                                         found_range.getText().insertTextContent(found_range, annotation, True)
