@@ -28,6 +28,7 @@ import json
 import os
 import sys
 import time
+import datetime
 import subprocess
 from pathlib import Path
 
@@ -43,6 +44,28 @@ def bool_from_str(s, default=False):
     if s is None: return default
     s = str(s).strip().lower()
     return s in ("1","true","yes","y")
+
+def create_libreoffice_datetime():
+    """Create a proper LibreOffice DateTime object for current time"""
+    try:
+        from com.sun.star.util import DateTime
+        now = datetime.datetime.now()
+        
+        # Create LibreOffice DateTime object
+        dt = DateTime()
+        dt.Year = now.year
+        dt.Month = now.month
+        dt.Day = now.day
+        dt.Hours = now.hour
+        dt.Minutes = now.minute
+        dt.Seconds = now.second
+        dt.NanoSeconds = now.microsecond * 1000
+        
+        return dt
+    except Exception as e:
+        # Fallback to string format if DateTime fails
+        print(f"DateTime creation failed: {e}, using string fallback")
+        return time.strftime("%Y-%m-%d %H:%M:%S")
 
 def rows_from_file(path):
     """Load edits from either CSV or JSON format"""
@@ -330,6 +353,9 @@ def main():
                                     annotation.setPropertyValue("Author", author)
                                     annotation.setPropertyValue("Content", comment_content)
                                     
+                                    # Set current date/time properly for LibreOffice
+                                    annotation.setPropertyValue("Date", create_libreoffice_datetime())
+                                    
                                     # Insert annotation to cover the entire found range
                                     cursor = found_range.getText().createTextCursorByRange(found_range)
                                     # Don't collapse - keep the full range selected for the comment
@@ -343,9 +369,11 @@ def main():
                                     # Method 2: Try creating postit annotation (Word-compatible)
                                     try:
                                         annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
-                                        annotation.setPropertyValue("Author", author)
-                                        annotation.setPropertyValue("Content", comment_content)
-                                        annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                                annotation.setPropertyValue("Author", author)
+                                annotation.setPropertyValue("Content", comment_content)
+                                        
+                                        # Set current date/time properly for LibreOffice
+                                        annotation.setPropertyValue("Date", create_libreoffice_datetime())
                                         
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
                                         # Keep the full range selected for the comment
@@ -363,7 +391,9 @@ def main():
                                             if annotation:
                                                 annotation.Author = author
                                                 annotation.Content = comment_content
-                                                annotation.Date = time.strftime("%Y-%m-%dT%H:%M:%S")
+                                                
+                                                # Set current date/time properly for LibreOffice
+                                                annotation.Date = create_libreoffice_datetime()
                                                 
                                                 # Insert to cover the entire found range
                                                 found_range.getText().insertTextContent(found_range, annotation, True)
@@ -476,6 +506,9 @@ def main():
                             annotation.setPropertyValue("Author", author_name)
                             annotation.setPropertyValue("Content", comment_text)
                             
+                            # Set current date/time properly for LibreOffice
+                            annotation.setPropertyValue("Date", create_libreoffice_datetime())
+                            
                             cursor = found_range.getText().createTextCursorByRange(found_range)
                             # Keep the full range selected for the comment
                             cursor.getText().insertTextContent(cursor, annotation, True)
@@ -491,7 +524,9 @@ def main():
                                 annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
                                 annotation.setPropertyValue("Author", author_name)
                                 annotation.setPropertyValue("Content", comment_text)
-                                annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                                
+                                # Set current date/time properly for LibreOffice
+                                annotation.setPropertyValue("Date", create_libreoffice_datetime())
                                 
                                 cursor = found_range.getText().createTextCursorByRange(found_range)
                                 # Keep the full range selected for the comment
@@ -508,7 +543,9 @@ def main():
                                     if annotation:
                                         annotation.Author = author_name
                                         annotation.Content = comment_text
-                                        annotation.Date = time.strftime("%Y-%m-%dT%H:%M:%S")
+                                        
+                                        # Set current date/time properly for LibreOffice
+                                        annotation.Date = create_libreoffice_datetime()
                                         
                                         # Insert to cover the entire found range
                                         found_range.getText().insertTextContent(found_range, annotation, True)
