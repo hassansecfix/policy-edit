@@ -316,31 +316,31 @@ def main():
                         
                         found_range = doc.findFirst(search_desc)
                         if found_range:
-                            # Add comment annotation to this text
+                            # Add a simple, clean LibreOffice comment
                             try:
+                                # Create text cursor at the found range
+                                cursor = found_range.getText().createTextCursorByRange(found_range)
+                                
+                                # Create comment (annotation)
                                 annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                                formatted_comment = f"{author}: {comment.replace('\\\\n', '\\n')}"
-                                annotation.setPropertyValue("Content", formatted_comment)
+                                
+                                # Set comment properties
+                                comment_content = comment.replace('\\\\n', '\n').replace('\\n', '\n')
+                                annotation.setPropertyValue("Content", comment_content)
                                 annotation.setPropertyValue("Author", author)
                                 annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
                                 
-                                # Insert annotation at the found text
-                                found_range.insertTextContent(found_range.getStart(), annotation, False)
-                                print(f"✅ Added comment-only annotation to '{target_text[:50]}...' by {author}")
-                            except Exception as e:
-                                print(f"Could not add comment annotation: {e}")
+                                # Insert the comment at the cursor position
+                                cursor.getText().insertTextContent(cursor, annotation, False)
                                 
-                                # Fallback: try to add a simple comment marker
-                                try:
-                                    cursor = found_range.getText().createTextCursorByRange(found_range.getEnd())
-                                    cursor.setString(f" 💬")
-                                    cursor.CharColor = 0x0066CC  # Blue
-                                    cursor.CharHeight = 8
-                                    print(f"✅ Added comment marker to '{target_text[:50]}...'")
-                                except Exception as e2:
-                                    print(f"Could not add comment marker: {e2}")
+                                print(f"✅ Added comment to '{target_text[:50]}...' by {author}")
+                                
+                            except Exception as e:
+                                print(f"❌ Could not add comment: {e}")
+                                print(f"   Target text: '{target_text}'")
+                                print(f"   Comment: '{comment[:100]}...'")
                         else:
-                            print(f"⚠️ Could not find text '{target_text[:50]}...' for comment-only operation")
+                            print(f"⚠️ Could not find text '{target_text}' for comment operation")
                     except Exception as e:
                         print(f"❌ Failed to process comment-only operation: {e}")
         
