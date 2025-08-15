@@ -340,9 +340,8 @@ def main():
                         found_range = doc.findFirst(search_desc)
                         if found_range:
                             try:
-                                # Clean up comment content and add reply
+                                # Clean up comment content
                                 comment_content = comment.replace('\\\\n', '\n').replace('\\n', '\n')
-                                comment_content += "\n\n--- Reply ---\nSystem: Added test suggestion reply"
                                 
                                 # Method 1: Try creating annotation field (most compatible)
                                 try:
@@ -362,6 +361,29 @@ def main():
                                     cursor = found_range.getText().createTextCursorByRange(found_range)
                                     # Don't collapse - keep the full range selected for the comment
                                     cursor.getText().insertTextContent(cursor, annotation, True)
+                                    
+                                    # Add a proper reply to this annotation
+                                    try:
+                                        # Create a new annotation as a reply
+                                        reply_annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
+                                        reply_annotation.setPropertyValue("Author", "System")
+                                        reply_annotation.setPropertyValue("Content", "Added test suggestion reply")
+                                        reply_annotation.setPropertyValue("ParentName", annotation.getPropertyValue("Name"))
+                                        
+                                        # Set timestamp for reply
+                                        try:
+                                            reply_annotation.setPropertyValue("Date", dt)
+                                        except Exception:
+                                            reply_annotation.setPropertyValue("DateTimeValue", dt)
+                                        
+                                        # Insert reply annotation at the same location
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                        cursor.collapseToEnd()
+                                        cursor.getText().insertTextContent(cursor, reply_annotation, False)
+                                        
+                                        print(f"✅ Added reply to annotation")
+                                    except Exception as reply_e:
+                                        print(f"Could not add proper reply: {reply_e}")
                                     
                                     print(f"✅ Added annotation comment to '{target_text[:50]}...' by {author}")
                                     
@@ -386,6 +408,29 @@ def main():
                                         # Keep the full range selected for the comment
                                         cursor.getText().insertTextContent(cursor, annotation, True)
                                         
+                                        # Add a proper reply to this PostIt annotation
+                                        try:
+                                            # Create a new annotation as a reply
+                                            reply_annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
+                                            reply_annotation.setPropertyValue("Author", "System")
+                                            reply_annotation.setPropertyValue("Content", "Added test suggestion reply")
+                                            reply_annotation.setPropertyValue("ParentName", annotation.getPropertyValue("Name"))
+                                            
+                                            # Set timestamp for reply
+                                            try:
+                                                reply_annotation.setPropertyValue("Date", dt)
+                                            except Exception:
+                                                reply_annotation.setPropertyValue("DateTimeValue", dt)
+                                            
+                                            # Insert reply annotation at the same location
+                                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                                            cursor.collapseToEnd()
+                                            cursor.getText().insertTextContent(cursor, reply_annotation, False)
+                                            
+                                            print(f"✅ Added reply to PostIt comment")
+                                        except Exception as reply_e:
+                                            print(f"Could not add proper reply to PostIt comment: {reply_e}")
+                                        
                                         print(f"✅ Added PostIt comment to '{target_text[:50]}...' by {author}")
                                         
                                     except Exception as e2:
@@ -409,6 +454,32 @@ def main():
                                                 
                                                 # Insert to cover the entire found range
                                                 found_range.getText().insertTextContent(found_range, annotation, True)
+                                                
+                                                # Add a proper reply to this basic annotation
+                                                try:
+                                                    # Create a new annotation as a reply
+                                                    reply_annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                                    if reply_annotation:
+                                                        reply_annotation.Author = "System"
+                                                        reply_annotation.Content = "Added test suggestion reply"
+                                                        reply_annotation.ParentName = getattr(annotation, 'Name', '')
+                                                        
+                                                        # Set timestamp for reply
+                                                        try:
+                                                            reply_annotation.Date = dt
+                                                        except Exception:
+                                                            reply_annotation.DateTimeValue = dt
+                                                        
+                                                        # Insert reply annotation at the same location
+                                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                                        cursor.collapseToEnd()
+                                                        cursor.getText().insertTextContent(cursor, reply_annotation, False)
+                                                        
+                                                        print(f"✅ Added reply to basic annotation comment")
+                                                    else:
+                                                        print(f"Could not create reply annotation for comment")
+                                                except Exception as reply_e:
+                                                    print(f"Could not add proper reply to basic comment annotation: {reply_e}")
                                                 
                                                 print(f"✅ Added basic annotation to '{target_text[:50]}...' by {author}")
                                             else:
@@ -505,9 +576,6 @@ def main():
             # Add comment if provided and replacements were made
             if comment_text and count_replaced > 0:
                 try:
-                    # Add reply to comment text
-                    comment_with_reply = comment_text + "\n\n--- Reply ---\nSystem: Added test suggestion reply"
-                    
                     # Find the replaced text and add annotation using multiple methods
                     search_desc = doc.createSearchDescriptor()
                     search_desc.SearchString = repl if repl else find
@@ -520,7 +588,7 @@ def main():
                         try:
                             annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
                             annotation.setPropertyValue("Author", author_name)
-                            annotation.setPropertyValue("Content", comment_with_reply)
+                            annotation.setPropertyValue("Content", comment_text)
                             
                             # Set proper timestamp
                             dt = create_libreoffice_datetime()
@@ -533,6 +601,29 @@ def main():
                             # Keep the full range selected for the comment
                             cursor.getText().insertTextContent(cursor, annotation, True)
                             
+                            # Add a proper reply to this annotation
+                            try:
+                                # Create a new annotation as a reply
+                                reply_annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
+                                reply_annotation.setPropertyValue("Author", "System")
+                                reply_annotation.setPropertyValue("Content", "Added test suggestion reply")
+                                reply_annotation.setPropertyValue("ParentName", annotation.getPropertyValue("Name"))
+                                
+                                # Set timestamp for reply
+                                try:
+                                    reply_annotation.setPropertyValue("Date", dt)
+                                except Exception:
+                                    reply_annotation.setPropertyValue("DateTimeValue", dt)
+                                
+                                # Insert reply annotation at the same location
+                                cursor = found_range.getText().createTextCursorByRange(found_range)
+                                cursor.collapseToEnd()
+                                cursor.getText().insertTextContent(cursor, reply_annotation, False)
+                                
+                                print(f"✅ Added reply to replacement annotation")
+                            except Exception as reply_e:
+                                print(f"Could not add proper reply to replacement: {reply_e}")
+                            
                             print(f"✅ Added annotation comment to replacement by {author_name}")
                             print(f"   Comment: {comment_text[:100]}...")
                             
@@ -543,7 +634,7 @@ def main():
                             try:
                                 annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
                                 annotation.setPropertyValue("Author", author_name)
-                                annotation.setPropertyValue("Content", comment_with_reply)
+                                annotation.setPropertyValue("Content", comment_text)
                                 
                                 # Set proper timestamp
                                 dt = create_libreoffice_datetime()
@@ -556,6 +647,29 @@ def main():
                                 # Keep the full range selected for the comment
                                 cursor.getText().insertTextContent(cursor, annotation, True)
                                 
+                                # Add a proper reply to this PostIt annotation
+                                try:
+                                    # Create a new annotation as a reply
+                                    reply_annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
+                                    reply_annotation.setPropertyValue("Author", "System")
+                                    reply_annotation.setPropertyValue("Content", "Added test suggestion reply")
+                                    reply_annotation.setPropertyValue("ParentName", annotation.getPropertyValue("Name"))
+                                    
+                                    # Set timestamp for reply
+                                    try:
+                                        reply_annotation.setPropertyValue("Date", dt)
+                                    except Exception:
+                                        reply_annotation.setPropertyValue("DateTimeValue", dt)
+                                    
+                                    # Insert reply annotation at the same location
+                                    cursor = found_range.getText().createTextCursorByRange(found_range)
+                                    cursor.collapseToEnd()
+                                    cursor.getText().insertTextContent(cursor, reply_annotation, False)
+                                    
+                                    print(f"✅ Added reply to PostIt annotation")
+                                except Exception as reply_e:
+                                    print(f"Could not add proper reply to PostIt: {reply_e}")
+                                
                                 print(f"✅ Added PostIt comment to replacement by {author_name}")
                                 
                             except Exception as e2:
@@ -566,7 +680,7 @@ def main():
                                     annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
                                     if annotation:
                                         annotation.Author = author_name
-                                        annotation.Content = comment_with_reply
+                                        annotation.Content = comment_text
                                         
                                         # Set proper timestamp
                                         dt = create_libreoffice_datetime()
@@ -577,6 +691,32 @@ def main():
                                         
                                         # Insert to cover the entire found range
                                         found_range.getText().insertTextContent(found_range, annotation, True)
+                                        
+                                        # Add a proper reply to this basic annotation
+                                        try:
+                                            # Create a new annotation as a reply
+                                            reply_annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                            if reply_annotation:
+                                                reply_annotation.Author = "System"
+                                                reply_annotation.Content = "Added test suggestion reply"
+                                                reply_annotation.ParentName = getattr(annotation, 'Name', '')
+                                                
+                                                # Set timestamp for reply
+                                                try:
+                                                    reply_annotation.Date = dt
+                                                except Exception:
+                                                    reply_annotation.DateTimeValue = dt
+                                                
+                                                # Insert reply annotation at the same location
+                                                cursor = found_range.getText().createTextCursorByRange(found_range)
+                                                cursor.collapseToEnd()
+                                                cursor.getText().insertTextContent(cursor, reply_annotation, False)
+                                                
+                                                print(f"✅ Added reply to basic annotation")
+                                            else:
+                                                print(f"Could not create reply annotation")
+                                        except Exception as reply_e:
+                                            print(f"Could not add proper reply to basic annotation: {reply_e}")
                                         
                                         print(f"✅ Added basic annotation to replacement by {author_name}")
                                     else:
@@ -590,7 +730,7 @@ def main():
                                         redlines = doc.getPropertyValue("Redlines")
                                         if redlines and redlines.getCount() > 0:
                                             last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                                            last_redline.setPropertyValue("Comment", f"{author_name}: {comment_with_reply}")
+                                            last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
                                             print(f"✅ Added comment to tracked change: {comment_text[:80]}...")
                                         else:
                                             print(f"❌ No tracked changes available for comment")
@@ -602,7 +742,7 @@ def main():
                             redlines = doc.getPropertyValue("Redlines")
                             if redlines and redlines.getCount() > 0:
                                 last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                                last_redline.setPropertyValue("Comment", f"{author_name}: {comment_with_reply}")
+                                last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
                                 print(f"✅ Added comment to recent tracked change: {comment_text[:80]}...")
                             else:
                                 print(f"❌ Could not find replacement text and no tracked changes available")
