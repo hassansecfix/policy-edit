@@ -160,7 +160,37 @@ def ensure_listener():
         subprocess.run(["pkill", "-f", "soffice"], capture_output=True, timeout=5)
         time.sleep(1)
         
-        # Start LibreOffice headless listener
+        # Create a temporary user profile with correct author info
+        profile_dir = "/tmp/lo_profile_secfix"
+        try:
+            import shutil
+            if os.path.exists(profile_dir):
+                shutil.rmtree(profile_dir)
+            os.makedirs(profile_dir, exist_ok=True)
+            
+            # Create a registrymodifications.xcu file to set user info
+            registry_content = '''<?xml version="1.0" encoding="UTF-8"?>
+<oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <item oor:path="/org.openoffice.UserProfile/Data">
+    <prop oor:name="givenname" oor:op="fuse">
+      <value>Secfix</value>
+    </prop>
+    <prop oor:name="sn" oor:op="fuse">
+      <value>AI</value>
+    </prop>
+  </item>
+</oor:items>'''
+            with open(f"{profile_dir}/registrymodifications.xcu", "w") as f:
+                f.write(registry_content)
+            print("✅ Created LibreOffice profile with Secfix AI author")
+        except Exception as e:
+            print(f"Could not create profile: {e}")
+        
+        # Set environment variables for LibreOffice user info
+        os.environ['LO_USER_GIVENNAME'] = 'Secfix'
+        os.environ['LO_USER_SURNAME'] = 'AI'
+        
+        # Start LibreOffice headless listener with custom profile
         process = subprocess.Popen([
             "soffice",
             "--headless",
@@ -168,8 +198,9 @@ def ensure_listener():
             "--nodefault",
             "--norestore",
             "--invisible",
+            f"-env:UserInstallation=file://{profile_dir}",
             '--accept=socket,host=127.0.0.1,port=2002;urp;StarOffice.ServiceManager'
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=os.environ)
         
         # Wait longer and test connection
         print("Starting LibreOffice listener...")
@@ -263,12 +294,38 @@ def main():
     except Exception as e:
         print(f"Warning: Could not set document author: {e}")
 
-    # Ensure Track Changes on
+    # Ensure Track Changes on and set author
     try:
         # For Writer documents this should be available:
         doc.RecordChanges = True
-        # Set the revision author for this session
-        doc.setPropertyValue("RedlineAuthor", "Secfix AI")
+        
+        # Try multiple ways to set the redline author
+        try:
+            doc.setPropertyValue("RedlineAuthor", "Secfix AI")
+        except Exception:
+            pass
+            
+        try:
+            doc.setPropertyValue("rsid", "Secfix AI")
+        except Exception:
+            pass
+            
+        # Try to set user data which affects tracked changes
+        try:
+            from com.sun.star.util import XChangesNotifier
+            config_provider = smgr.createInstance("com.sun.star.configuration.ConfigurationProvider")
+            config_access = config_provider.createInstanceWithArguments(
+                "com.sun.star.configuration.ConfigurationUpdateAccess",
+                (mkprop("nodepath", "/org.openoffice.UserProfile/Data"),)
+            )
+            if config_access:
+                config_access.setPropertyValue("givenname", "Secfix")
+                config_access.setPropertyValue("sn", "AI")
+                config_access.commitChanges()
+                print("✅ Set user profile for tracked changes")
+        except Exception as e:
+            print(f"Could not set user profile: {e}")
+            
     except Exception as e:
         print(f"Warning: Could not enable track changes: {e}")
 
@@ -288,8 +345,30 @@ def main():
             # Update the document author for this specific change
             try:
                 doc.setPropertyValue("RedlineAuthor", author_name)
-            except Exception:
-                pass
+                
+                # Also try to set it on the document info
+                doc_info = doc.getDocumentInfo()
+                doc_info.setPropertyValue("Author", author_name)
+                doc_info.setPropertyValue("ModifiedBy", author_name)
+                
+                # Try to update user profile temporarily
+                config_provider = smgr.createInstance("com.sun.star.configuration.ConfigurationProvider")
+                config_access = config_provider.createInstanceWithArguments(
+                    "com.sun.star.configuration.ConfigurationUpdateAccess",
+                    (mkprop("nodepath", "/org.openoffice.UserProfile/Data"),)
+                )
+                if config_access:
+                    # Split author name if it contains spaces
+                    name_parts = author_name.split(' ', 1)
+                    given_name = name_parts[0] if name_parts else author_name
+                    surname = name_parts[1] if len(name_parts) > 1 else ""
+                    
+                    config_access.setPropertyValue("givenname", given_name)
+                    config_access.setPropertyValue("sn", surname)
+                    config_access.commitChanges()
+                    
+            except Exception as e:
+                print(f"Could not set author for change: {e}")
 
             # Keep replacement text clean - use exact replacement value
             rd = doc.createReplaceDescriptor()
