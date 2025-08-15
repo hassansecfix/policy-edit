@@ -316,38 +316,47 @@ def main():
                         
                         found_range = doc.findFirst(search_desc)
                         if found_range:
-                            # Add a simple, clean LibreOffice comment
+                            # Add Google Docs compatible comment using Word-style annotations
                             try:
-                                # Create comment (annotation) - simpler approach
-                                annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                # Create cursor at the found range
+                                cursor = found_range.getText().createTextCursorByRange(found_range)
                                 
-                                # Set comment properties with proper formatting
+                                # Format comment content
                                 comment_content = comment.replace('\\\\n', '\n').replace('\\n', '\n')
-                                annotation.setPropertyValue("Content", comment_content)
-                                annotation.setPropertyValue("Author", author)
-                                current_time = time.strftime("%Y-%m-%dT%H:%M:%S")
-                                annotation.setPropertyValue("Date", current_time)
                                 
-                                # Insert the comment at the found text location
-                                found_range.getText().insertTextContent(found_range, annotation, False)
-                                
-                                print(f"✅ Added comment to '{target_text[:50]}...' by {author}")
-                                print(f"   Comment: '{comment[:100]}...'")
-                                
-                            except Exception as e:
-                                print(f"❌ Could not add comment: {e}")
-                                print(f"   Target text: '{target_text}'")
-                                print(f"   Comment: '{comment[:100]}...'")
-                                # Try alternative method
+                                # Try Word-compatible annotation first
                                 try:
-                                    cursor = found_range.getText().createTextCursorByRange(found_range)
+                                    # Create a Word-style annotation that Google Docs recognizes
+                                    annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                    annotation.setPropertyValue("Author", author)
+                                    annotation.setPropertyValue("Content", comment_content)
+                                    annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                                    
+                                    # Insert as embedded field
+                                    cursor.getText().insertTextContent(cursor, annotation, False)
+                                    print(f"✅ Added Word-compatible comment to '{target_text[:50]}...' by {author}")
+                                    
+                                except Exception as e1:
+                                    # Fallback: Add visible inline comment that works everywhere
                                     cursor.collapseToEnd()
-                                    cursor.setString(f" [💬 {author}: {comment[:50]}{'...' if len(comment) > 50 else ''}]")
+                                    comment_marker = f" [💬 {author}: {comment_content}]"
+                                    cursor.setString(comment_marker)
+                                    
+                                    # Style the comment to make it stand out
                                     cursor.CharColor = 0x0066CC  # Blue
                                     cursor.CharHeight = 9
-                                    print(f"✅ Added inline comment as fallback")
-                                except Exception as e2:
-                                    print(f"❌ Fallback method also failed: {e2}")
+                                    cursor.CharPosture = 1  # Italic
+                                    cursor.CharBackColor = 0xF0F8FF  # Light blue background
+                                    
+                                    print(f"✅ Added inline comment to '{target_text[:50]}...' by {author}")
+                                
+                            except Exception as e:
+                                print(f"❌ Could not add any type of comment: {e}")
+                                print(f"   Target text: '{target_text}'")
+                                print(f"   Comment: '{comment[:100]}...'")
+                                
+                                # Last resort: just print info
+                                print(f"📝 Comment for '{target_text}': {comment}")
                         else:
                             print(f"⚠️ Could not find text '{target_text}' for comment operation")
                     except Exception as e:
@@ -419,16 +428,36 @@ def main():
                     
                     found_range = doc.findFirst(search_desc)
                     if found_range:
-                        # Add LibreOffice annotation
-                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                        annotation.setPropertyValue("Content", comment_text)
-                        annotation.setPropertyValue("Author", author_name)
-                        annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
-                        
-                        # Insert at the found location
-                        found_range.getText().insertTextContent(found_range, annotation, False)
-                        print(f"✅ Added comment to replacement by {author_name}")
-                        print(f"   Comment: {comment_text[:100]}...")
+                        # Add Google Docs compatible comment
+                        try:
+                            # Create Word-style annotation for Google Docs compatibility
+                            annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                            annotation.setPropertyValue("Author", author_name)
+                            annotation.setPropertyValue("Content", comment_text)
+                            annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                            
+                            # Insert at the found location
+                            found_range.getText().insertTextContent(found_range, annotation, False)
+                            print(f"✅ Added Word-compatible comment to replacement by {author_name}")
+                            print(f"   Comment: {comment_text[:100]}...")
+                            
+                        except Exception as e1:
+                            # Fallback: Add visible inline comment
+                            try:
+                                cursor = found_range.getText().createTextCursorByRange(found_range)
+                                cursor.collapseToEnd()
+                                comment_marker = f" [💬 {author_name}: {comment_text}]"
+                                cursor.setString(comment_marker)
+                                
+                                # Style the comment
+                                cursor.CharColor = 0x0066CC  # Blue
+                                cursor.CharHeight = 9
+                                cursor.CharPosture = 1  # Italic
+                                cursor.CharBackColor = 0xF0F8FF  # Light blue background
+                                
+                                print(f"✅ Added inline comment to replacement by {author_name}")
+                            except Exception as e2:
+                                print(f"Could not add inline comment: {e2}")
                     else:
                         # Fallback: try to attach to tracked change
                         try:
