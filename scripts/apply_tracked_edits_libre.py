@@ -337,18 +337,8 @@ def main():
                                     print(f"✅ Added Word-compatible comment to '{target_text[:50]}...' by {author}")
                                     
                                 except Exception as e1:
-                                    # Fallback: Add visible inline comment that works everywhere
-                                    cursor.collapseToEnd()
-                                    comment_marker = f" [💬 {author}: {comment_content}]"
-                                    cursor.setString(comment_marker)
-                                    
-                                    # Style the comment to make it stand out
-                                    cursor.CharColor = 0x0066CC  # Blue
-                                    cursor.CharHeight = 9
-                                    cursor.CharPosture = 1  # Italic
-                                    cursor.CharBackColor = 0xF0F8FF  # Light blue background
-                                    
-                                    print(f"✅ Added inline comment to '{target_text[:50]}...' by {author}")
+                                    print(f"❌ Could not add Word annotation: {e1}")
+                                    # Don't add fallback visual elements - just log
                                 
                             except Exception as e:
                                 print(f"❌ Could not add any type of comment: {e}")
@@ -442,22 +432,8 @@ def main():
                             print(f"   Comment: {comment_text[:100]}...")
                             
                         except Exception as e1:
-                            # Fallback: Add visible inline comment
-                            try:
-                                cursor = found_range.getText().createTextCursorByRange(found_range)
-                                cursor.collapseToEnd()
-                                comment_marker = f" [💬 {author_name}: {comment_text}]"
-                                cursor.setString(comment_marker)
-                                
-                                # Style the comment
-                                cursor.CharColor = 0x0066CC  # Blue
-                                cursor.CharHeight = 9
-                                cursor.CharPosture = 1  # Italic
-                                cursor.CharBackColor = 0xF0F8FF  # Light blue background
-                                
-                                print(f"✅ Added inline comment to replacement by {author_name}")
-                            except Exception as e2:
-                                print(f"Could not add inline comment: {e2}")
+                            print(f"Could not add Word annotation: {e1}")
+                            # Don't add visual fallbacks
                     else:
                         # Fallback: try to attach to tracked change
                         try:
