@@ -8,7 +8,7 @@ on:
         required: true
         default: 'docs/input.docx'
       edits_csv:
-        description: 'Path to edits CSV'
+        description: 'Path to edits CSV or JSON'
         required: true
         default: 'edits/edits_sample.csv'
       output_docx:
@@ -76,9 +76,9 @@ jobs:
       - name: Verify input files
         run: |
           echo "Input file exists: $(test -f '${{ github.event.inputs.input_docx }}' && echo 'YES' || echo 'NO')"
-          echo "CSV file exists: $(test -f '${{ github.event.inputs.edits_csv }}' && echo 'YES' || echo 'NO')"
+          echo "CSV/JSON file exists: $(test -f '${{ github.event.inputs.edits_csv }}' && echo 'YES' || echo 'NO')"
           ls -la '${{ github.event.inputs.input_docx }}' || echo "Input DOCX not found"
-          ls -la '${{ github.event.inputs.edits_csv }}' || echo "CSV not found"
+          ls -la '${{ github.event.inputs.edits_csv }}' || echo "CSV/JSON not found"
 
       - name: Run redline job
         env:

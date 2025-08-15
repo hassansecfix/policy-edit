@@ -24,6 +24,7 @@ CSV columns (header optional, but recommended):
 """
 import argparse
 import csv
+import json
 import os
 import sys
 import time
@@ -33,7 +34,7 @@ from pathlib import Path
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
     p.add_argument("--in", dest="in_path", required=True, help="Input .docx")
-    p.add_argument("--csv", dest="csv_path", required=True, help="CSV with columns: Find,Replace,MatchCase,WholeWord,Wildcards")
+    p.add_argument("--csv", dest="csv_path", required=True, help="CSV with columns: Find,Replace,MatchCase,WholeWord,Wildcards OR JSON with operations format")
     p.add_argument("--out", dest="out_path", required=True, help="Output .docx (will be overwritten)")
     p.add_argument("--launch", action="store_true", help="Launch a headless LibreOffice UNO listener if not already running")
     return p.parse_args()
@@ -42,6 +43,47 @@ def bool_from_str(s, default=False):
     if s is None: return default
     s = str(s).strip().lower()
     return s in ("1","true","yes","y")
+
+def rows_from_file(path):
+    """Load edits from either CSV or JSON format"""
+    file_ext = Path(path).suffix.lower()
+    
+    if file_ext == '.json':
+        return rows_from_json(path)
+    else:
+        return rows_from_csv(path)
+
+def rows_from_json(path):
+    """Load edits from JSON operations format"""
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    operations = data.get('instructions', {}).get('operations', [])
+    
+    for op in operations:
+        action = op.get('action', 'replace')
+        target_text = op.get('target_text', '')
+        replacement = op.get('replacement', '')
+        comment = op.get('comment', '')
+        author = op.get('comment_author', 'AI Assistant')
+        
+        # Skip comment-only operations (action == 'comment')
+        if action == 'comment':
+            continue
+            
+        # Handle delete operations (empty replacement)
+        if action == 'delete':
+            replacement = ''
+        
+        yield {
+            "Find": target_text,
+            "Replace": replacement,
+            "MatchCase": "",  # Default to False
+            "WholeWord": "",  # Default to False  
+            "Wildcards": "",  # Default to False
+            "Comment": comment,
+            "Author": author,
+        }
 
 def rows_from_csv(path):
     with open(path, newline="", encoding="utf-8-sig") as f:
@@ -58,6 +100,8 @@ def rows_from_csv(path):
                     "MatchCase": row[2] if len(row) > 2 else "",
                     "WholeWord": row[3] if len(row) > 3 else "",
                     "Wildcards": row[4] if len(row) > 4 else "",
+                    "Comment": row[5] if len(row) > 5 else "",
+                    "Author": row[6] if len(row) > 6 else "AI Assistant",
                 }
         else:
             for rec in reader:
@@ -67,6 +111,8 @@ def rows_from_csv(path):
                     "MatchCase": rec.get("MatchCase") or rec.get("matchcase") or rec.get("MATCHCASE") or "",
                     "WholeWord": rec.get("WholeWord") or rec.get("wholeword") or rec.get("WHOLEWORD") or "",
                     "Wildcards": rec.get("Wildcards") or rec.get("wildcards") or rec.get("WILDCARDS") or "",
+                    "Comment": rec.get("Comment") or rec.get("comment") or rec.get("COMMENT") or "",
+                    "Author": rec.get("Author") or rec.get("author") or rec.get("AUTHOR") or "AI Assistant",
                 }
 
 def ensure_listener():
@@ -181,7 +227,7 @@ def main():
 
     # Apply replacements (main body). Extend for headers/footers if needed (see TODO).
     try:
-        for row in rows_from_csv(csv_path):
+        for row in rows_from_file(csv_path):
             find = (row.get("Find") or "").strip()
             repl = (row.get("Replace") or "")
             if not find:
@@ -203,38 +249,39 @@ def main():
             except Exception:
                 pass
 
-            # Perform the replacement and add comment if provided
-            if comment_text:
-                # Find all matches first to add comments
-                search_desc = doc.createSearchDescriptor()
-                search_desc.SearchString = find
-                search_desc.SearchCaseSensitive = match_case
-                search_desc.SearchWords = whole_word
-                try:
-                    search_desc.setPropertyValue("RegularExpressions", bool(wildcards))
-                except Exception:
-                    pass
-                
-                # Find all instances and add comments
-                found = doc.findAll(search_desc)
-                if found:
-                    for i in range(found.getCount()):
-                        try:
-                            range_obj = found.getByIndex(i)
-                            # Add comment to this range
-                            # Try to add annotation (comment)
-                            try:
-                                annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                                annotation.setPropertyValue("Content", comment_text)
-                                annotation.setPropertyValue("Author", author_name)
-                                range_obj.insertTextContent(range_obj.getStart(), annotation, False)
-                            except Exception as e:
-                                print(f"Note: Could not add comment '{comment_text[:50]}...': {e}")
-                        except Exception as e:
-                            print(f"Warning: Could not process comment for match {i}: {e}")
+            # Perform the replacement first
+            count_replaced = doc.replaceAll(rd)
             
-            # Perform the actual replacement
-            doc.replaceAll(rd)
+            # Add comment if provided and replacements were made
+            if comment_text and count_replaced > 0:
+                # Find the replaced text (now showing as tracked changes) 
+                try:
+                    # Create a search for the replacement text to find where we made changes
+                    search_desc = doc.createSearchDescriptor()
+                    search_desc.SearchString = repl if repl else find  # Search for replacement text
+                    search_desc.SearchCaseSensitive = match_case
+                    search_desc.SearchWords = whole_word
+                    
+                    # Find first occurrence to add comment
+                    found_range = doc.findFirst(search_desc)
+                    if found_range:
+                        try:
+                            # Create and insert annotation
+                            annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                            annotation.setPropertyValue("Content", comment_text)
+                            annotation.setPropertyValue("Author", author_name)
+                            annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                            
+                            # Insert the annotation at the found range
+                            found_range.insertTextContent(found_range.getStart(), annotation, False)
+                            print(f"Added comment by {author_name}: {comment_text[:100]}...")
+                        except Exception as e:
+                            print(f"Note: Could not add comment '{comment_text[:50]}...': {e}")
+                except Exception as e:
+                    print(f"Warning: Could not process comment: {e}")
+            
+            if count_replaced > 0:
+                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}'")
     finally:
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)
