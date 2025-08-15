@@ -254,18 +254,10 @@ def main():
             except Exception:
                 pass
 
-            # Enhance replacement text with comment if provided
-            enhanced_repl = repl
-            if comment_text:
-                # Add comment as a subtle inline note
-                comment_summary = comment_text.replace('\n', ' ').strip()
-                if len(comment_summary) > 100:
-                    comment_summary = comment_summary[:97] + "..."
-                enhanced_repl = f"{repl} [AI: {comment_summary}]"
-
+            # Keep replacement text clean - use exact replacement value
             rd = doc.createReplaceDescriptor()
             rd.SearchString = find
-            rd.ReplaceString = enhanced_repl
+            rd.ReplaceString = repl
             rd.SearchCaseSensitive = match_case
             rd.SearchWords = whole_word
             # Use ICU regex if requested
@@ -336,27 +328,35 @@ def main():
                         except Exception as e:
                             print(f"Could not analyze redline properties: {e}")
                     
-                    # Method 4: As fallback, add a visible text comment near the change
+                    # Method 4: Add comment as separate annotation near the change
                     try:
                         # Find the replaced text to add comment nearby
                         search_desc = doc.createSearchDescriptor()
-                        search_desc.SearchString = enhanced_repl if enhanced_repl else find
+                        search_desc.SearchString = repl if repl else find
                         search_desc.SearchCaseSensitive = match_case
-                        search_desc.SearchWords = False  # Don't use whole word since we added comment
+                        search_desc.SearchWords = whole_word
                         
                         found_range = doc.findFirst(search_desc)
                         if found_range:
-                            print(f"✅ Comment included in replacement text")
+                            # Add a comment annotation after the changed text
+                            try:
+                                cursor = found_range.getText().createTextCursorByRange(found_range.getEnd())
+                                cursor.setString(f" 💬")
+                                cursor.CharColor = 0x808080  # Gray
+                                cursor.CharHeight = 8
+                                print(f"✅ Added comment indicator")
+                            except Exception as e:
+                                print(f"Could not add comment indicator: {e}")
                         else:
-                            print(f"Could not find enhanced replacement text for additional comment")
+                            print(f"Could not find replacement text for comment annotation")
                     except Exception as e:
-                        print(f"Could not verify comment integration: {e}")
+                        print(f"Could not add comment annotation: {e}")
                         
                 except Exception as e:
                     print(f"Warning: Could not process comment: {e}")
             
             if count_replaced > 0:
-                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{enhanced_repl}' by {author_name}")
+                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
     finally:
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)
