@@ -316,37 +316,23 @@ def main():
                         
                         found_range = doc.findFirst(search_desc)
                         if found_range:
-                            # Add Google Docs compatible comment using Word-style annotations
                             try:
-                                # Create cursor at the found range
-                                cursor = found_range.getText().createTextCursorByRange(found_range)
-                                
-                                # Format comment content
+                                # Clean up comment content
                                 comment_content = comment.replace('\\\\n', '\n').replace('\\n', '\n')
                                 
-                                # Try Word-compatible annotation first
-                                try:
-                                    # Create a Word-style annotation that Google Docs recognizes
-                                    annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                                    annotation.setPropertyValue("Author", author)
-                                    annotation.setPropertyValue("Content", comment_content)
-                                    annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
-                                    
-                                    # Insert as embedded field
-                                    cursor.getText().insertTextContent(cursor, annotation, False)
-                                    print(f"✅ Added Word-compatible comment to '{target_text[:50]}...' by {author}")
-                                    
-                                except Exception as e1:
-                                    print(f"❌ Could not add Word annotation: {e1}")
-                                    # Don't add fallback visual elements - just log
+                                # Create a simple DOCX comment/annotation
+                                annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                annotation.setPropertyValue("Author", author)
+                                annotation.setPropertyValue("Content", comment_content)
+                                annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                                
+                                # Insert the comment at the found text location
+                                found_range.getText().insertTextContent(found_range, annotation, False)
+                                
+                                print(f"✅ Added comment to '{target_text[:50]}...' by {author}")
                                 
                             except Exception as e:
-                                print(f"❌ Could not add any type of comment: {e}")
-                                print(f"   Target text: '{target_text}'")
-                                print(f"   Comment: '{comment[:100]}...'")
-                                
-                                # Last resort: just print info
-                                print(f"📝 Comment for '{target_text}': {comment}")
+                                print(f"❌ Could not add comment: {e}")
                         else:
                             print(f"⚠️ Could not find text '{target_text}' for comment operation")
                     except Exception as e:
