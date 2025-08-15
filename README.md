@@ -10,11 +10,26 @@ Apply find/replace edits to DOCX files with **automated tracked changes** that c
 - ✅ **Professional results** - works exactly like manual track changes
 - ✅ **AI-powered policy customization** - from questionnaire to tracked changes
 
-## 🚀 Three Ways to Use This System
+## 🚀 How to Use This System
 
-### ⭐ Option A: Complete AI Automation (Recommended) 🤖
+### ⭐ Complete AI Automation (Recommended) 🤖
 
 **One command** → From questionnaire to tracked changes automatically!
+
+#### Quick Start (Easiest)
+
+```bash
+# Uses your exact setup with smart defaults
+./quick_automation.sh
+
+# Or with custom files
+./run_complete_automation.sh
+
+# Or with full customization
+./run_custom_automation.sh [policy] [questionnaire] [output_name]
+```
+
+#### Manual Command
 
 ```bash
 python3 scripts/complete_automation.py \
@@ -105,6 +120,8 @@ python3 scripts/xlsx_to_csv_converter.py \
 #### 3. Apply Automated Tracking
 
 Run the same GitHub Actions workflow with your generated CSV!
+
+
 
 ## 📁 Project Structure
 
