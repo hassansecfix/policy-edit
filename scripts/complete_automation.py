@@ -50,16 +50,28 @@ def convert_xlsx_to_csv(xlsx_path, csv_path):
     cmd = f"python3 scripts/xlsx_to_csv_converter.py '{xlsx_path}' '{csv_path}'"
     return run_command(cmd, "Converting Excel to CSV")
 
-def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, output_csv, api_key):
-    """Generate edits CSV using AI."""
+def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, output_csv, api_key):
+    """Generate JSON instructions using AI, then convert to CSV."""
+    
+    # Step 1: Generate JSON with AI
+    print("🧠 Step 2a: Generating JSON instructions with Claude Sonnet 4...")
     cmd = f"""python3 scripts/ai_policy_processor.py \
         --policy '{policy_path}' \
         --questionnaire '{questionnaire_csv}' \
         --prompt '{prompt_path}' \
-        --output '{output_csv}' \
+        --policy-instructions '{policy_instructions_path}' \
+        --output '{output_json}' \
         --api-key '{api_key}'"""
     
-    return run_command(cmd, "Generating edits with Claude Sonnet 4")
+    success, output = run_command(cmd, "Generating JSON instructions")
+    if not success:
+        return False, output
+    
+    # Step 2: Convert JSON to CSV for GitHub Actions
+    print("🔄 Step 2b: Converting JSON to CSV format...")
+    cmd = f"""python3 scripts/json_to_csv_converter.py '{output_json}' '{output_csv}'"""
+    
+    return run_command(cmd, "Converting JSON to CSV")
 
 def commit_and_push_csv(edits_csv):
     """Commit and push the generated CSV file to GitHub."""
@@ -199,8 +211,10 @@ def main():
     
     # Create intermediate file paths
     questionnaire_csv = f"data/{args.output_name}_questionnaire.csv"
+    edits_json = f"edits/{args.output_name}_edits.json"
     edits_csv = f"edits/{args.output_name}_edits.csv"
-    prompt_path = "data/updated_policy_instructions_v4.0.md"
+    prompt_path = "data/prompt.md"
+    policy_instructions_path = "data/updated_policy_instructions_v4.0.md"
     
     try:
         # Step 1: Convert Excel to CSV (if needed)
@@ -215,10 +229,11 @@ def main():
             questionnaire_csv = args.questionnaire
             print(f"\n📊 STEP 1: Using existing CSV: {questionnaire_csv}")
         
-        # Step 2: Generate edits with AI
+        # Step 2: Generate edits with AI (JSON → CSV)
         print("\n🧠 STEP 2: Generating Edits with Claude Sonnet 4")
         success, output = generate_edits_with_ai(
-            args.policy, questionnaire_csv, prompt_path, edits_csv, api_key
+            args.policy, questionnaire_csv, prompt_path, policy_instructions_path, 
+            edits_json, edits_csv, api_key
         )
         if not success:
             print(f"❌ AI generation failed: {output}")
@@ -241,7 +256,8 @@ def main():
         print("=" * 50)
         print("✅ Generated Files:")
         print(f"   📊 Questionnaire CSV: {questionnaire_csv}")
-        print(f"   📝 Edits CSV: {edits_csv}")
+        print(f"   📋 JSON Instructions: {edits_json}")
+        print(f"   📝 CSV for GitHub Actions: {edits_csv}")
         
         if not args.skip_github:
             print(f"   📄 Final DOCX: build/{args.output_name}.docx (via GitHub Actions)")

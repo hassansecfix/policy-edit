@@ -22,9 +22,13 @@ import sys
 import argparse
 import csv
 import re
+import warnings
 from pathlib import Path
 import anthropic
 import json
+
+# Suppress deprecation warnings for the Claude API
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def load_file_content(file_path):
     """Load content from various file types."""
@@ -59,86 +63,122 @@ def load_file_content(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
 
-def extract_csv_from_response(response_text):
-    """Extract CSV content from Claude's response."""
-    # Look for CSV blocks in the response
-    csv_patterns = [
-        r'```csv\n(.*?)\n```',
-        r'```\n(Find,Replace,.*?)\n```',
-        r'## CSV FOR AUTOMATED PROCESSING\n\n```csv\n(.*?)\n```'
+def extract_json_from_response(response_text):
+    """Extract JSON content from Claude's response."""
+    import json
+    
+    # Look for JSON blocks in the response
+    json_patterns = [
+        r'```json\n(.*?)\n```',
+        r'```\n(\{.*?\})\n```',
+        r'(\{[\s\S]*?"instructions"[\s\S]*?\})'
     ]
     
-    for pattern in csv_patterns:
+    for pattern in json_patterns:
         match = re.search(pattern, response_text, re.DOTALL | re.IGNORECASE)
         if match:
-            csv_content = match.group(1).strip()
-            # Validate it starts with proper header
-            if csv_content.startswith('Find,Replace'):
-                return csv_content
-    
-    # Fallback: look for any content that starts with "Find,Replace"
-    lines = response_text.split('\n')
-    csv_start = -1
-    for i, line in enumerate(lines):
-        if line.strip().startswith('Find,Replace'):
-            csv_start = i
-            break
-    
-    if csv_start >= 0:
-        # Extract from header until we hit non-CSV content
-        csv_lines = [lines[csv_start]]
-        for i in range(csv_start + 1, len(lines)):
-            line = lines[i].strip()
-            if not line:
+            json_content = match.group(1).strip()
+            try:
+                # Validate it's proper JSON
+                parsed = json.loads(json_content)
+                if 'metadata' in parsed and 'instructions' in parsed:
+                    return json_content
+            except json.JSONDecodeError:
                 continue
-            if line.startswith('```') or line.startswith('#') or line.startswith('**'):
-                break
-            # Simple CSV validation
-            if ',' in line and not line.startswith('Find,Replace'):
-                csv_lines.append(line)
-        
-        if len(csv_lines) > 1:  # Header + at least one data row
-            return '\n'.join(csv_lines)
     
-    raise ValueError("Could not extract valid CSV from Claude's response")
+    # Fallback: look for JSON structure starting with {
+    lines = response_text.split('\n')
+    json_start = -1
+    brace_count = 0
+    
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('{') and json_start == -1:
+            json_start = i
+            brace_count += stripped.count('{') - stripped.count('}')
+        elif json_start >= 0:
+            brace_count += stripped.count('{') - stripped.count('}')
+            if brace_count == 0:
+                # Found complete JSON
+                json_content = '\n'.join(lines[json_start:i+1])
+                try:
+                    parsed = json.loads(json_content)
+                    if 'metadata' in parsed and 'instructions' in parsed:
+                        return json_content
+                except json.JSONDecodeError:
+                    pass
+                json_start = -1
+                brace_count = 0
+    
+    raise ValueError("Could not extract valid JSON from Claude's response")
 
-def validate_csv_content(csv_content):
-    """Validate the generated CSV has the correct format."""
-    lines = csv_content.strip().split('\n')
+def validate_json_content(json_content):
+    """Validate the generated JSON has the correct format."""
+    import json
     
-    if len(lines) < 2:
-        raise ValueError("CSV must have header + at least one data row")
+    try:
+        parsed = json.loads(json_content)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON format: {e}")
     
-    # Check header
-    header = lines[0].strip()
-    expected_header = "Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule"
-    if header != expected_header:
-        raise ValueError(f"Invalid CSV header. Expected: {expected_header}, Got: {header}")
+    # Check required structure
+    if 'metadata' not in parsed:
+        raise ValueError("JSON must have 'metadata' section")
     
-    # Validate each data row
-    for i, line in enumerate(lines[1:], 2):
-        if not line.strip():
-            continue
+    if 'instructions' not in parsed:
+        raise ValueError("JSON must have 'instructions' section")
+    
+    metadata = parsed['metadata']
+    required_metadata = ['generated_timestamp', 'company_name', 'format_version', 'total_operations', 'generator']
+    for field in required_metadata:
+        if field not in metadata:
+            raise ValueError(f"Missing required metadata field: {field}")
+    
+    # Check instructions structure
+    instructions = parsed['instructions']
+    if 'operations' not in instructions:
+        raise ValueError("Instructions must have 'operations' array")
+    
+    operations = instructions['operations']
+    if not isinstance(operations, list) or len(operations) == 0:
+        raise ValueError("Operations must be a non-empty array")
+    
+    # Validate each operation
+    for i, operation in enumerate(operations):
+        # Check required fields
+        required_fields = ['target_text', 'action', 'comment', 'comment_author']
+        for field in required_fields:
+            if field not in operation:
+                raise ValueError(f"Operation {i+1} missing required field: {field}")
         
-        # Basic CSV validation
-        try:
-            reader = csv.reader([line])
-            row = next(reader)
-            if len(row) < 7:
-                raise ValueError(f"Row {i} has {len(row)} columns, expected 7")
-        except Exception as e:
-            raise ValueError(f"Invalid CSV format on line {i}: {e}")
+        # Check action is valid
+        if operation['action'] not in ['replace', 'delete', 'comment']:
+            raise ValueError(f"Operation {i+1} has invalid action: {operation['action']}")
+        
+        # Replacement field is optional for 'comment' actions, required for others
+        if operation['action'] in ['replace', 'delete']:
+            if 'replacement' not in operation:
+                raise ValueError(f"Operation {i+1} with action '{operation['action']}' missing required field: replacement")
+        
+        # Ensure replacement field exists (set to empty string if missing)
+        if 'replacement' not in operation:
+            operation['replacement'] = ''
     
     return True
 
-def call_claude_api(prompt_content, questionnaire_content, policy_content, api_key):
-    """Call Claude Sonnet 4 API to generate edits CSV."""
+def call_claude_api(prompt_content, questionnaire_content, policy_instructions_content, policy_content, api_key):
+    """Call Claude Sonnet 4 API to generate JSON instructions."""
     
     client = anthropic.Anthropic(api_key=api_key)
     
-    # Construct the full prompt
+    # Construct the full prompt with the new JSON workflow
     full_prompt = f"""
 {prompt_content}
+
+---
+
+## PROCESSING INSTRUCTIONS (Policy Document Specific Rules):
+{policy_instructions_content}
 
 ---
 
@@ -157,14 +197,14 @@ def call_claude_api(prompt_content, questionnaire_content, policy_content, api_k
 
 ---
 
-Please analyze the questionnaire data and generate the complete CSV file for automated policy customization according to the instructions above.
+Please analyze the questionnaire data and generate the complete JSON file for automated policy customization according to the processing instructions above.
 
-CRITICAL: Your response must include a properly formatted CSV block that can be directly used by the automation system.
+CRITICAL: Your response must include a properly formatted JSON structure that follows the exact format specified in the processing instructions.
 """
 
     try:
         message = client.messages.create(
-            model="claude-3-5-sonnet-20241022",  # Claude Sonnet 4
+            model="claude-3-5-sonnet-20241022",  # Claude Sonnet model
             max_tokens=4000,
             temperature=0.1,  # Low temperature for consistent, accurate output
             messages=[{
@@ -179,11 +219,12 @@ CRITICAL: Your response must include a properly formatted CSV block that can be 
         raise Exception(f"Claude API call failed: {e}")
 
 def main():
-    parser = argparse.ArgumentParser(description='AI Policy Processor - Generate edits CSV with Claude Sonnet 4')
+    parser = argparse.ArgumentParser(description='AI Policy Processor - Generate JSON instructions with Claude Sonnet 4')
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
     parser.add_argument('--questionnaire', required=True, help='Path to questionnaire CSV file')
-    parser.add_argument('--prompt', required=True, help='Path to AI prompt markdown file')
-    parser.add_argument('--output', required=True, help='Output path for generated CSV file')
+    parser.add_argument('--prompt', required=True, help='Path to AI prompt markdown file (prompt.md)')
+    parser.add_argument('--policy-instructions', required=True, help='Path to policy processing instructions (updated_policy_instructions_v4.0.md)')
+    parser.add_argument('--output', required=True, help='Output path for generated JSON file')
     parser.add_argument('--api-key', help='Claude API key (or set CLAUDE_API_KEY env var)')
     
     args = parser.parse_args()
@@ -196,10 +237,11 @@ def main():
         print("   Get your key from: https://console.anthropic.com/")
         sys.exit(1)
     
-    print("🤖 AI Policy Processor Starting...")
+    print("🤖 AI Policy Processor Starting (JSON Mode)...")
     print(f"📋 Policy: {args.policy}")
     print(f"📊 Questionnaire: {args.questionnaire}")
-    print(f"📝 Prompt: {args.prompt}")
+    print(f"📝 Main Prompt: {args.prompt}")
+    print(f"📜 Policy Instructions: {args.policy_instructions}")
     print(f"💾 Output: {args.output}")
     
     try:
@@ -208,48 +250,57 @@ def main():
         policy_content = load_file_content(args.policy)
         questionnaire_content = load_file_content(args.questionnaire)
         prompt_content = load_file_content(args.prompt)
+        policy_instructions_content = load_file_content(args.policy_instructions)
         
         print(f"✅ Policy loaded: {len(policy_content)} characters")
         print(f"✅ Questionnaire loaded: {questionnaire_content.count('Question')} questions detected")
-        print(f"✅ Prompt loaded: {len(prompt_content)} characters")
+        print(f"✅ Main prompt loaded: {len(prompt_content)} characters")
+        print(f"✅ Policy instructions loaded: {len(policy_instructions_content)} characters")
         
         # Call Claude API
         print("\n🧠 Calling Claude Sonnet 4 API...")
-        response = call_claude_api(prompt_content, questionnaire_content, policy_content, api_key)
+        response = call_claude_api(prompt_content, questionnaire_content, policy_instructions_content, policy_content, api_key)
         
         print("✅ AI response received")
         
-        # Extract CSV from response
-        print("\n🔍 Extracting CSV from AI response...")
-        csv_content = extract_csv_from_response(response)
+        # Extract JSON from response
+        print("\n🔍 Extracting JSON from AI response...")
+        json_content = extract_json_from_response(response)
         
-        # Validate CSV
-        print("✅ Validating CSV format...")
-        validate_csv_content(csv_content)
+        # Validate JSON
+        print("✅ Validating JSON format...")
+        validate_json_content(json_content)
         
         # Save output
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(csv_content)
+            f.write(json_content)
         
-        print(f"\n🎉 SUCCESS! Generated edits CSV:")
+        print(f"\n🎉 SUCCESS! Generated JSON instructions:")
         print(f"📁 Saved to: {output_path}")
         
-        # Show CSV stats
-        csv_lines = csv_content.strip().split('\n')
-        print(f"📊 CSV Stats: {len(csv_lines)-1} edit rules generated")
+        # Show JSON stats
+        import json
+        parsed = json.loads(json_content)
+        operations_count = len(parsed['instructions']['operations'])
+        company_name = parsed['metadata']['company_name']
         
-        # Show first few lines as preview
-        print("\n📋 CSV Preview:")
-        for i, line in enumerate(csv_lines[:4]):
-            print(f"   {line}")
-        if len(csv_lines) > 4:
-            print(f"   ... and {len(csv_lines)-4} more rows")
+        print(f"📊 JSON Stats: {operations_count} operations for {company_name}")
         
-        print(f"\n🚀 Next Step: Use this CSV with the automation system!")
-        print(f"   GitHub Actions → 'Redline DOCX' → Input your policy + this CSV")
+        # Show operation types summary
+        actions = {}
+        for op in parsed['instructions']['operations']:
+            action = op['action']
+            actions[action] = actions.get(action, 0) + 1
+        
+        print("\n📋 Operations Summary:")
+        for action, count in actions.items():
+            print(f"   {action}: {count} operations")
+        
+        print(f"\n🚀 Next Step: Use this JSON with the tracked changes system!")
+        print(f"   JSON → CSV Converter → GitHub Actions → Tracked Changes DOCX")
         
     except FileNotFoundError as e:
         print(f"❌ File Error: {e}")
