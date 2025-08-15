@@ -67,8 +67,45 @@ def rows_from_json(path):
         comment = op.get('comment', '')
         author = op.get('comment_author', 'AI Assistant')
         
-        # Skip comment-only operations (action == 'comment')
+        # Handle comment-only operations differently
         if action == 'comment':
+            # For comment-only, just add a comment without changing text
+            try:
+                # Find the target text to add comment to
+                search_desc = doc.createSearchDescriptor()
+                search_desc.SearchString = target_text
+                search_desc.SearchCaseSensitive = False
+                search_desc.SearchWords = False
+                
+                found_range = doc.findFirst(search_desc)
+                if found_range:
+                    # Add comment annotation to this text
+                    try:
+                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                        formatted_comment = f"{author}: {comment.replace('\\\\n', '\\n')}"
+                        annotation.setPropertyValue("Content", formatted_comment)
+                        annotation.setPropertyValue("Author", author)
+                        annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                        
+                        # Insert annotation at the found text
+                        found_range.insertTextContent(found_range.getStart(), annotation, False)
+                        print(f"✅ Added comment-only annotation to '{target_text[:50]}...' by {author}")
+                    except Exception as e:
+                        print(f"Could not add comment annotation: {e}")
+                        
+                        # Fallback: try to add a simple comment marker
+                        try:
+                            cursor = found_range.getText().createTextCursorByRange(found_range.getEnd())
+                            cursor.setString(f" 💬")
+                            cursor.CharColor = 0x0066CC  # Blue
+                            cursor.CharHeight = 8
+                            print(f"✅ Added comment marker to '{target_text[:50]}...'")
+                        except Exception as e2:
+                            print(f"Could not add comment marker: {e2}")
+                else:
+                    print(f"⚠️ Could not find text '{target_text[:50]}...' for comment-only operation")
+            except Exception as e:
+                print(f"❌ Failed to process comment-only operation: {e}")
             continue
             
         # Handle delete operations (empty replacement)

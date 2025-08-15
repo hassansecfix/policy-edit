@@ -60,8 +60,31 @@ def process_docx(input_path, operations, output_path):
         comment = op.get('comment', '')
         author = op.get('comment_author', 'AI Assistant')
         
-        # Skip comment-only operations
+        # Handle comment-only operations
         if action == 'comment':
+            # Find the target text and add a comment annotation
+            for paragraph in doc.paragraphs:
+                if target_text in paragraph.text:
+                    # Add comment annotation without changing text
+                    comment_text = comment.replace('\\n', '\n').replace('\\n\\n', '\n\n')
+                    
+                    # Add comment paragraph after the target text
+                    comment_para = doc.add_paragraph()
+                    comment_para.add_run(f"💬 Comment on '{target_text[:30]}...': ").font.bold = True
+                    comment_para.add_run(f"{author}: {comment_text}").font.italic = True
+                    
+                    # Style the comment paragraph
+                    comment_para.paragraph_format.left_indent = Pt(20)
+                    comment_para.paragraph_format.space_after = Pt(6)
+                    
+                    # Make text smaller and gray
+                    for run in comment_para.runs:
+                        run.font.size = Pt(9)
+                        run.font.color.rgb = RGBColor(100, 100, 100)
+                    
+                    print(f"✅ {i+1}. Added comment to '{target_text[:50]}...' by {author}")
+                    changes_made += 1
+                    break
             continue
             
         # Handle delete operations
