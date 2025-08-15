@@ -67,45 +67,8 @@ def rows_from_json(path):
         comment = op.get('comment', '')
         author = op.get('comment_author', 'AI Assistant')
         
-        # Handle comment-only operations differently
+        # Skip comment-only operations here - handle them in main loop
         if action == 'comment':
-            # For comment-only, just add a comment without changing text
-            try:
-                # Find the target text to add comment to
-                search_desc = doc.createSearchDescriptor()
-                search_desc.SearchString = target_text
-                search_desc.SearchCaseSensitive = False
-                search_desc.SearchWords = False
-                
-                found_range = doc.findFirst(search_desc)
-                if found_range:
-                    # Add comment annotation to this text
-                    try:
-                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                        formatted_comment = f"{author}: {comment.replace('\\\\n', '\\n')}"
-                        annotation.setPropertyValue("Content", formatted_comment)
-                        annotation.setPropertyValue("Author", author)
-                        annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
-                        
-                        # Insert annotation at the found text
-                        found_range.insertTextContent(found_range.getStart(), annotation, False)
-                        print(f"✅ Added comment-only annotation to '{target_text[:50]}...' by {author}")
-                    except Exception as e:
-                        print(f"Could not add comment annotation: {e}")
-                        
-                        # Fallback: try to add a simple comment marker
-                        try:
-                            cursor = found_range.getText().createTextCursorByRange(found_range.getEnd())
-                            cursor.setString(f" 💬")
-                            cursor.CharColor = 0x0066CC  # Blue
-                            cursor.CharHeight = 8
-                            print(f"✅ Added comment marker to '{target_text[:50]}...'")
-                        except Exception as e2:
-                            print(f"Could not add comment marker: {e2}")
-                else:
-                    print(f"⚠️ Could not find text '{target_text[:50]}...' for comment-only operation")
-            except Exception as e:
-                print(f"❌ Failed to process comment-only operation: {e}")
             continue
             
         # Handle delete operations (empty replacement)
@@ -329,8 +292,59 @@ def main():
     except Exception as e:
         print(f"Warning: Could not enable track changes: {e}")
 
-    # Apply replacements (main body). Extend for headers/footers if needed (see TODO).
+    # Apply replacements and comments (main body). Extend for headers/footers if needed (see TODO).
     try:
+        # First, process comment-only operations directly from JSON
+        if csv_path.endswith('.json'):
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            operations = data.get('instructions', {}).get('operations', [])
+            
+            for op in operations:
+                action = op.get('action', 'replace')
+                if action == 'comment':
+                    target_text = op.get('target_text', '')
+                    comment = op.get('comment', '')
+                    author = op.get('comment_author', 'AI Assistant')
+                    
+                    try:
+                        # Find the target text to add comment to
+                        search_desc = doc.createSearchDescriptor()
+                        search_desc.SearchString = target_text
+                        search_desc.SearchCaseSensitive = False
+                        search_desc.SearchWords = False
+                        
+                        found_range = doc.findFirst(search_desc)
+                        if found_range:
+                            # Add comment annotation to this text
+                            try:
+                                annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                formatted_comment = f"{author}: {comment.replace('\\\\n', '\\n')}"
+                                annotation.setPropertyValue("Content", formatted_comment)
+                                annotation.setPropertyValue("Author", author)
+                                annotation.setPropertyValue("Date", time.strftime("%Y-%m-%dT%H:%M:%S"))
+                                
+                                # Insert annotation at the found text
+                                found_range.insertTextContent(found_range.getStart(), annotation, False)
+                                print(f"✅ Added comment-only annotation to '{target_text[:50]}...' by {author}")
+                            except Exception as e:
+                                print(f"Could not add comment annotation: {e}")
+                                
+                                # Fallback: try to add a simple comment marker
+                                try:
+                                    cursor = found_range.getText().createTextCursorByRange(found_range.getEnd())
+                                    cursor.setString(f" 💬")
+                                    cursor.CharColor = 0x0066CC  # Blue
+                                    cursor.CharHeight = 8
+                                    print(f"✅ Added comment marker to '{target_text[:50]}...'")
+                                except Exception as e2:
+                                    print(f"Could not add comment marker: {e2}")
+                        else:
+                            print(f"⚠️ Could not find text '{target_text[:50]}...' for comment-only operation")
+                    except Exception as e:
+                        print(f"❌ Failed to process comment-only operation: {e}")
+        
+        # Now process replacement/delete operations
         for row in rows_from_file(csv_path):
             find = (row.get("Find") or "").strip()
             repl = (row.get("Replace") or "")
