@@ -40,7 +40,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through Clickup ticketing system",
-        "comment": "You indicated you use Clickup for ticket management and prefer using a ticketing system for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated that you use Clickup for ticket management and prefer using a ticketing system for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
