@@ -73,23 +73,6 @@ jobs:
             fi
           fi
 
-      - name: Start LibreOffice headless service
-        run: |
-          # Start LibreOffice in headless mode with UNO listener
-          echo "Starting LibreOffice headless service..."
-          libreoffice --headless --invisible --nocrashreport --nodefault --nolockcheck --nologo --norestore --accept="socket,host=127.0.0.1,port=2002,urp;" &
-
-          # Wait for LibreOffice to start
-          echo "Waiting for LibreOffice to initialize..."
-          sleep 5
-
-          # Check if LibreOffice is listening
-          if netstat -tln | grep -q ":2002 "; then
-            echo "✅ LibreOffice is listening on port 2002"
-          else
-            echo "⚠️ LibreOffice may not be listening yet, continuing anyway..."
-          fi
-
       - name: Run redline job
         env:
           LO_PY: ${{ steps.lo_py.outputs.path }}
@@ -104,21 +87,11 @@ jobs:
           export PYTHONPATH="$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
 
-          # Debug: Check if files exist
-          echo "Input file exists: $(test -f '${{ github.event.inputs.input_docx }}' && echo 'YES' || echo 'NO')"
-          echo "CSV file exists: $(test -f '${{ github.event.inputs.edits_csv }}' && echo 'YES' || echo 'NO')"
-
-          # Run the script (LibreOffice should already be running)
           "$LO_PY" scripts/apply_tracked_edits_libre.py \
             --in "${{ github.event.inputs.input_docx }}" \
             --csv "${{ github.event.inputs.edits_csv }}" \
-            --out "${{ github.event.inputs.output_docx }}"
-
-      - name: Stop LibreOffice service
-        if: always()
-        run: |
-          echo "Stopping LibreOffice headless service..."
-          pkill -f "libreoffice.*--headless" || echo "LibreOffice already stopped"
+            --out "${{ github.event.inputs.output_docx }}" \
+            --launch
 
       - name: Upload output
         uses: actions/upload-artifact@v4
