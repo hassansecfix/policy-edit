@@ -1,13 +1,13 @@
 Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule,Comment,Author
 <Company Name>,Secfix GmbH,FALSE,TRUE,FALSE,Replaced,RULE_01,Replaced,Secfix AI
 "<Company name, address>","Secfix GmbH, Salvatorplatz 3, 80333 München",FALSE,TRUE,FALSE,Replaced,RULE_02,Replaced,Secfix AI
-"Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",,FALSE,TRUE,FALSE,"You indicated that you do not have an office, so this section about guest network access should b...",RULE_03,"You indicated that you do not have an office, so this section about guest network access should be removed.
+"Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",,FALSE,TRUE,FALSE,"You indicated that you do not have an office, so this section about guest network access is not a...",RULE_03,"You indicated that you do not have an office, so this section about guest network access is not applicable.
 
 No office = no guest network needed; Having office = visitors need controlled network access for security.",Secfix AI
-Password management systems should be user-friendly,"Password management systems, specifically 1Password, should be user-friendly",FALSE,TRUE,FALSE,"You indicated you use 1Password for password management, so we're updating the generic reference ...",RULE_04,"You indicated you use 1Password for password management, so we're updating the generic reference to specify your chosen tool.
+Password management systems should be user-friendly,"Password management systems, specifically 1Password, should be user-friendly",FALSE,TRUE,FALSE,"You indicated you use 1Password for password management, so we've updated the policy to reference...",RULE_04,"You indicated you use 1Password for password management, so we've updated the policy to reference your specific tool.
 
 No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",Secfix AI
-All requests will be sent by email to <email>,All requests will be submitted through Clickup ticketing system,FALSE,TRUE,FALSE,You indicated you use Clickup for ticket management and prefer using a ticketing system for acces...,RULE_05,"You indicated you use Clickup for ticket management and prefer using a ticketing system for access requests.
+All requests will be sent by email to <email>,All requests will be submitted through Clickup ticketing system,FALSE,TRUE,FALSE,You indicated that you use Clickup for ticket management and prefer using a ticketing system for ...,RULE_05,"You indicated that you use Clickup for ticket management and prefer using a ticketing system for access requests.
 
 Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",Secfix AI
 quarterly basis,quarterly basis,FALSE,TRUE,FALSE,You selected Quarterly which matches the current quarterly basis. We recommend quarterly reviews ...,RULE_06,"You selected Quarterly which matches the current quarterly basis.
