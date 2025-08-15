@@ -73,19 +73,36 @@ jobs:
             fi
           fi
 
+      - name: Verify input files
+        run: |
+          echo "Input file exists: $(test -f '${{ github.event.inputs.input_docx }}' && echo 'YES' || echo 'NO')"
+          echo "CSV file exists: $(test -f '${{ github.event.inputs.edits_csv }}' && echo 'YES' || echo 'NO')"
+          ls -la '${{ github.event.inputs.input_docx }}' || echo "Input DOCX not found"
+          ls -la '${{ github.event.inputs.edits_csv }}' || echo "CSV not found"
+
       - name: Run redline job
         env:
           LO_PY: ${{ steps.lo_py.outputs.path }}
           PYTHONPATH: ${{ steps.lo_py.outputs.pythonpath }}
           UNO_PATH: /usr/lib/libreoffice/program
+          DISPLAY: :99
         run: |
           mkdir -p build
           echo "Using Python: $LO_PY"
           echo "PYTHONPATH: $PYTHONPATH"
 
-          # Set up environment and run script
+          # Set up virtual display for LibreOffice headless
+          sudo apt-get install -y xvfb
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          
+          # Kill any existing LibreOffice processes
+          sudo pkill -f soffice || true
+          sleep 2
+
+          # Set up environment and run script with more verbose output
           export PYTHONPATH="$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
+          export DISPLAY=:99
 
           "$LO_PY" scripts/apply_tracked_edits_libre.py \
             --in "${{ github.event.inputs.input_docx }}" \

@@ -73,14 +73,41 @@ def ensure_listener():
     # Start a headless LibreOffice UNO listener on port 2002 if not already running.
     # Harmless if one is already up.
     try:
-        subprocess.Popen([
+        # Kill any existing LibreOffice processes to ensure clean start
+        subprocess.run(["pkill", "-f", "soffice"], capture_output=True, timeout=5)
+        time.sleep(1)
+        
+        # Start LibreOffice headless listener
+        process = subprocess.Popen([
             "soffice",
             "--headless",
             "--nologo",
             "--nodefault",
+            "--norestore",
+            "--invisible",
             '--accept=socket,host=127.0.0.1,port=2002;urp;StarOffice.ServiceManager'
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        time.sleep(1.5)
+        
+        # Wait longer and test connection
+        print("Starting LibreOffice listener...")
+        for i in range(30):  # Try for up to 30 seconds
+            time.sleep(1)
+            try:
+                # Test if we can connect
+                import socket
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1)
+                result = sock.connect_ex(('127.0.0.1', 2002))
+                sock.close()
+                if result == 0:
+                    print(f"LibreOffice listener ready after {i+1} seconds")
+                    return
+            except:
+                pass
+            print(f"Waiting for LibreOffice... ({i+1}/30)")
+        
+        print("WARNING: LibreOffice listener may not be ready")
+        
     except FileNotFoundError:
         print("ERROR: 'soffice' not found on PATH. Install LibreOffice or add it to PATH.", file=sys.stderr)
 
@@ -105,13 +132,28 @@ def main():
         print("ERROR: UNO bridge not available. Run with LibreOffice's Python (recommended).", file=sys.stderr)
         sys.exit(1)
 
-    # Connect to running LibreOffice
+    # Connect to running LibreOffice with retries
     local_ctx = uno.getComponentContext()
     resolver = local_ctx.ServiceManager.createInstanceWithContext("com.sun.star.bridge.UnoUrlResolver", local_ctx)
-    try:
-        ctx = resolver.resolve("uno:socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext")
-    except Exception:
-        print("Could not connect to LibreOffice listener. Start it with --launch or externally.", file=sys.stderr)
+    
+    print("Connecting to LibreOffice...")
+    ctx = None
+    for attempt in range(10):  # Try 10 times
+        try:
+            ctx = resolver.resolve("uno:socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext")
+            print("Successfully connected to LibreOffice!")
+            break
+        except Exception as e:
+            if attempt < 9:
+                print(f"Connection attempt {attempt + 1} failed, retrying in 2 seconds...")
+                time.sleep(2)
+            else:
+                print(f"Could not connect to LibreOffice listener after 10 attempts. Error: {e}", file=sys.stderr)
+                print("Make sure LibreOffice is running with --launch flag or start it externally.", file=sys.stderr)
+                sys.exit(1)
+    
+    if not ctx:
+        print("Could not establish LibreOffice context.", file=sys.stderr)
         sys.exit(1)
 
     smgr = ctx.ServiceManager
@@ -180,7 +222,6 @@ def main():
                         try:
                             range_obj = found.getByIndex(i)
                             # Add comment to this range
-                            comment_range = doc.insertDocumentFromURL("", (), range_obj)
                             # Try to add annotation (comment)
                             try:
                                 annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
