@@ -437,30 +437,32 @@ def main():
                                         
                                         # Set size properly - LibreOffice uses 1/100mm units
                                         try:
-                                            # Default to 35mm width, auto height to preserve ratio
-                                            width_100mm = 35 * 100  # 35mm = 3500 units
+                                            # Default to 30mm width, smaller height for header
+                                            width_100mm = 30 * 100  # 30mm = 3000 units
+                                            height_100mm = 15 * 100  # 15mm = 1500 units
                                             graphic.setPropertyValue("Width", width_100mm)
+                                            graphic.setPropertyValue("Height", height_100mm)
                                             graphic.setPropertyValue("SizeType", 1)  # Fixed size
                                             graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
-                                            graphic.setPropertyValue("KeepRatio", True)  # Preserve aspect ratio
-                                            print(f"📏 Set logo size to 35mm width with preserved aspect ratio")
+                                            graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
+                                            print(f"📏 Set logo size to 30mm width x 15mm height")
                                         except Exception as e:
                                             print(f"⚠️  Could not set logo size: {e}")
                                             # Fallback: try different size approaches
                                             try:
-                                                graphic.setPropertyValue("Width", 3500)  # 35mm
-                                                graphic.setPropertyValue("Height", 2000)  # 20mm
-                                                print(f"📏 Fallback: Set logo to 35x20mm")
+                                                graphic.setPropertyValue("Width", 3000)  # 30mm
+                                                graphic.setPropertyValue("Height", 1500)  # 15mm
+                                                print(f"📏 Fallback: Set logo to 30x15mm")
                                             except Exception as e2:
                                                 print(f"⚠️  Fallback sizing also failed: {e2}")
                                                 # Last resort: try with Size property
                                                 try:
                                                     from com.sun.star.awt import Size
                                                     size = Size()
-                                                    size.Width = 3500  # 35mm
-                                                    size.Height = 2000  # 20mm 
+                                                    size.Width = 3000  # 30mm
+                                                    size.Height = 1500  # 15mm 
                                                     graphic.setPropertyValue("Size", size)
-                                                    print(f"📏 Last resort: Set size using Size object")
+                                                    print(f"📏 Last resort: Set size to 30x15mm using Size object")
                                                 except:
                                                     print(f"⚠️  All sizing methods failed - using default size")
                                         
