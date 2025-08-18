@@ -1,228 +1,135 @@
-# Automated Tracked Edits for DOCX
+# Policy Edit Automation (Lean Setup)
 
-Apply find/replace edits to DOCX files with **automated tracked changes** that can be accepted or rejected in LibreOffice Writer or Microsoft Word.
+Automate policy editing with AI and generate a DOCX with tracked changes you can accept/reject in Word or LibreOffice.
 
-## 🎯 What This Does
+## Overview
 
-- ✅ **Input**: DOCX file + CSV of find/replace rules
-- ✅ **Output**: DOCX with tracked changes (suggestions you can accept/reject)
-- ✅ **Zero manual work** - fully automated via GitHub Actions
-- ✅ **Professional results** - works exactly like manual track changes
-- ✅ **AI-powered policy customization** - from questionnaire to tracked changes
+Flow at a glance:
 
-## 🚀 How to Use This System
+```
+[Policy DOCX]        [Questionnaire XLSX/CSV]
+       \                 /
+        \   (if XLSX)   /
+         -> xlsx_to_csv_converter.py
+                   |
+                   v
+          ai_policy_processor.py (Claude)
+                   |
+                   v
+         edits/*.json (instructions)
+                   |
+        (local) apply_tracked_edits_libre.py
+                   |
+                   v
+     build/<output>.docx with tracked changes
 
-### ⭐ Complete AI Automation (Recommended) 🤖
+           (optional GitHub Actions path)
+                   |
+                   v
+               redline workflow
+                   |
+                   v
+     build/<output>.docx from CI artifacts
+```
 
-**One command** → From questionnaire to tracked changes automatically!
+- **Deletes and replaces** become real tracked changes.
+- **Comments on replacements** are attached to the deletion half for better Google Docs threading.
 
-#### Quick Start (Easiest)
+## Quick start
 
-```bash
-# Uses your exact setup with smart defaults
+1) Create `.env` with your Claude API key:
+
+```
+CLAUDE_API_KEY=your_key_here
+```
+
+2) Run the default automation:
+
+```
 ./quick_automation.sh
+```
 
-# Or with custom files
+This uses:
+- Policy: `data/v5 Freya POL-11 Access Control.docx`
+- Questionnaire: `data/questionnaire_responses.csv`
+- Output name: `secfix_with_authors`
+
+## Custom runs
+
+- Same defaults, but explicit script:
+```
 ./run_complete_automation.sh
-
-# Or with full customization
-./run_custom_automation.sh [policy] [questionnaire] [output_name]
 ```
 
-#### Manual Command
-
-```bash
-python3 scripts/complete_automation.py \
-  --policy data/your_policy.docx \
-  --questionnaire data/customer_responses.xlsx \
-  --output-name "customized_policy" \
-  --api-key YOUR_CLAUDE_API_KEY
+- Custom files and output name:
+```
+./run_custom_automation.sh <policy.docx> <questionnaire.{xlsx|csv}> <output_name>
 ```
 
-**What happens**:
+## What the automation does
 
-1. ✅ AI (Claude Sonnet 4) reads your policy + questionnaire
-2. ✅ AI generates perfect edits CSV automatically
-3. ✅ GitHub Actions creates tracked changes DOCX
-4. ✅ You get professional suggestions to accept/reject
+- Converts questionnaire to CSV only if you pass an `.xlsx` file
+- Calls Claude via `ai_policy_processor.py` to produce JSON instructions
+- Optionally triggers a GitHub Actions workflow to create the final DOCX
+- Prints paths to the generated files
 
-**Setup**: Get Claude API key from https://console.anthropic.com/
+## Local mode (no CI)
 
-**📖 Full Guide**: See `COMPLETE_AI_AUTOMATION.md` for detailed setup and usage.
+If you prefer to generate the tracked DOCX locally with LibreOffice UNO:
 
-### Option B: Manual AI Processing
-
-For when you want control over each step.
-
-**Step-by-step AI workflow**:
-
-```bash
-# 1. Convert questionnaire
-python3 scripts/xlsx_to_csv_converter.py data/questionnaire.xlsx data/responses.csv
-
-# 2. Generate edits with AI
-python3 scripts/ai_policy_processor.py \
-  --policy data/policy.docx \
-  --questionnaire data/responses.csv \
-  --prompt data/updated_policy_instructions_v4.0.md \
-  --output edits/policy_edits.csv \
-  --api-key YOUR_CLAUDE_API_KEY
-
-# 3. Apply via GitHub Actions (manual trigger)
+```
+/Applications/LibreOffice.app/Contents/Resources/python \
+  scripts/apply_tracked_edits_libre.py \
+  --in "data/v5 Freya POL-11 Access Control.docx" \
+  --csv "edits/secfix_with_authors_edits.json" \
+  --out "build/secfix_with_authors.docx" \
+  --launch
 ```
 
-### Option C: Basic Usage (Any Document)
+Notes:
+- `--csv` also accepts the JSON instructions format used here
+- `--launch` starts a headless LibreOffice listener if needed
+- Output is a DOCX with tracked changes and comments
 
-For any DOCX document with simple find/replace needs.
+## Scripts in this repo
 
-#### 1. Prepare Your Files
+- `scripts/complete_automation.py`: Orchestrates end-to-end flow (convert → AI → trigger CI)
+- `scripts/ai_policy_processor.py`: Calls Claude to generate policy edit instructions (JSON)
+- `scripts/xlsx_to_csv_converter.py`: Converts questionnaire XLSX → CSV when required
+- `scripts/apply_tracked_edits_libre.py`: Applies edits with tracked changes (local or in CI)
+- Runners: `quick_automation.sh`, `run_complete_automation.sh`, `run_custom_automation.sh`
 
-**Input Document**: Place your DOCX file in `docs/` directory
-
-**Edit Rules**: Create a CSV file in `edits/` directory with this format:
-
-```csv
-Find,Replace,MatchCase,WholeWord,Wildcards
-ACME,Acme,TRUE,TRUE,FALSE
-Company,Corporation,FALSE,TRUE,FALSE
-2023,2024,FALSE,FALSE,FALSE
-```
-
-#### 2. Run Automation
-
-1. **Go to GitHub Actions**: Click "Actions" tab in this repository
-2. **Find workflow**: "Redline DOCX (LibreOffice headless)"
-3. **Click "Run workflow"**
-4. **Fill in paths** and click "Run workflow"
-
-### Option B: AI-Powered Policy Processing (Advanced)
-
-For policy documents with questionnaire data - fully automated from customer responses to tracked changes.
-
-#### 1. Convert Questionnaire Data
-
-```bash
-# Convert Excel questionnaire to CSV for AI processing
-python3 scripts/xlsx_to_csv_converter.py \
-  data/your_questionnaire.xlsx \
-  data/questionnaire_responses.csv
-```
-
-#### 2. Generate Edits with AI
-
-- **Give AI these inputs**:
-  - `data/updated_policy_instructions_v4.0.md` (AI prompt)
-  - `data/questionnaire_responses.csv` (customer data)
-  - Your policy DOCX file
-- **AI outputs**: Ready-to-use CSV with all policy customizations
-- **Save result** as `edits/policy_edits.csv`
-
-#### 3. Apply Automated Tracking
-
-Run the same GitHub Actions workflow with your generated CSV!
-
-
-
-## 📁 Project Structure
+## Current project structure
 
 ```
 .
-├── README.md                           # This file
-├── RUN_AUTOMATION.md                  # Basic usage guide
-├── REAL_POLICY_WORKFLOW.md            # Advanced policy processing guide
-├── scripts/
-│   ├── apply_tracked_edits_libre.py       # Main automation script
-│   ├── find_replace_list_to_csv.py        # Text-to-CSV converter
-│   └── xlsx_to_csv_converter.py           # Excel-to-CSV converter
+├── README.md
+├── quick_automation.sh
+├── run_complete_automation.sh
+├── run_custom_automation.sh
 ├── edits/
-│   ├── edits_sample.csv                   # Example CSV format
-│   └── edits_example.txt                  # Example text format
-├── docs/
-│   ├── test_input.docx                    # Sample input file
-│   └── test_input_content.txt             # Sample content
-├── data/                                  # Real policy processing files
-│   ├── updated_policy_instructions_v4.0.md    # AI prompt for policy processing
-│   ├── v5 Freya POL-11 Access Control.docx    # Real policy document
-│   ├── secfix_questionnaire_responses_saas.xlsx # Sample questionnaire
-│   └── questionnaire_responses.csv            # Converted questionnaire data
-├── build/                                 # Output directory
-└── .github/workflows/
-    └── redline-docx.yml                   # GitHub Actions workflow
+│   └── secfix_with_authors_edits.json
+├── data/
+│   ├── prompt.md
+│   ├── questionnaire_responses.csv
+│   ├── updated_policy_instructions_v4.0.md
+│   └── v5 Freya POL-11 Access Control.docx
+├── scripts/
+│   ├── ai_policy_processor.py
+│   ├── apply_tracked_edits_libre.py
+│   ├── complete_automation.py
+│   └── xlsx_to_csv_converter.py
+└── build/
 ```
 
-## 📋 CSV Format Reference
+## Requirements
 
-### Basic Format
+- Python 3
+- LibreOffice (for local generation and review)
+- Claude API key in `.env` for AI generation
+- Optional: GitHub Actions workflow in your remote repo if you use CI path
 
-- **Find**: Text to search for
-- **Replace**: Text to replace with
-- **MatchCase**: TRUE/FALSE for case sensitivity
-- **WholeWord**: TRUE/FALSE for whole word matching
-- **Wildcards**: TRUE/FALSE for regex patterns (ICU format)
+## Tips
 
-### Extended Format (AI-Generated)
-
-```csv
-Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
-[Company Name],Acme Corp,FALSE,TRUE,FALSE,"Company name replacement",RULE_01
-[Policy Owner],IT Manager,FALSE,TRUE,FALSE,"Policy owner role",RULE_10
-```
-
-## ✨ Examples
-
-**Simple replacement**:
-
-```csv
-Find,Replace,MatchCase,WholeWord,Wildcards
-ACME,Acme,TRUE,TRUE,FALSE
-```
-
-**Regex pattern**:
-
-```csv
-Find,Replace,MatchCase,WholeWord,Wildcards
-v1\.([0-9]+),v2.\1,FALSE,FALSE,TRUE
-```
-
-**AI-generated policy customization**:
-
-```csv
-Find,Replace,MatchCase,WholeWord,Wildcards,Description,Rule
-[Company Name],Secfix GmbH,FALSE,TRUE,FALSE,"Company name replacement",RULE_01
-[Company Address],"Salvatorplatz 3, 80333 München",FALSE,TRUE,FALSE,"Company address replacement",RULE_02
-[Version Control System],GitLab,FALSE,TRUE,FALSE,"Version control tool",RULE_05
-[Password Manager],1Password,FALSE,TRUE,FALSE,"Password management tool",RULE_06
-```
-
-## 🎉 Results
-
-### What You Get
-
-1. **Download the result** from GitHub Actions artifacts
-2. **Open in LibreOffice Writer**:
-   - Go to Edit → Track Changes → Manage
-   - Review each suggested change
-   - Accept ✅ or reject ❌ as needed
-3. **Professional tracked changes** that work exactly like manual editing
-
-### Expected Results
-
-- ✅ **Professional tracked changes** in policy documents
-- ✅ **Accept/reject interface** for each customization
-- ✅ **Automated application** of customer-specific data
-- ✅ **Audit trail** of what was changed and why
-- ✅ **Time savings** - minutes instead of hours
-
-## 📖 Detailed Guides
-
-- **Basic Usage**: See `RUN_AUTOMATION.md` for step-by-step instructions
-- **Policy Processing**: See `REAL_POLICY_WORKFLOW.md` for AI-powered workflow
-- **Technical Details**: Check the scripts and workflow files
-
-## 🔧 Requirements
-
-- GitHub repository with Actions enabled
-- LibreOffice Writer (for viewing results)
-- Python 3 + pandas + openpyxl (for Excel conversion)
-
-This system transforms manual document customization into an automated, auditable process that saves hours of work while improving accuracy! 🎉
+- For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
+- You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
