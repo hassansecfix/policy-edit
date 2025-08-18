@@ -6,7 +6,7 @@ set -e  # Exit on any error
 
 # Configuration - modify these as needed
 POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-QUESTIONNAIRE_FILE="data/questionnaire_responses.csv"
+QUESTIONNAIRE_FILE="data/secfix_questionnaire_responses_consulting.csv"
 OUTPUT_NAME="policy_tracked_changes_with_comments"
 
 echo "🚀 Complete AI Automation Starting..."
