@@ -178,6 +178,9 @@ def main():
     parser.add_argument('--api-key', help='Claude API key (or set CLAUDE_API_KEY env var)')
     parser.add_argument('--github-token', help='GitHub token for auto-triggering (optional)')
     parser.add_argument('--skip-github', action='store_true', help='Skip GitHub Actions step')
+    parser.add_argument('--logo', help='Optional path to company logo image (png/jpg) to insert in header')
+    parser.add_argument('--logo-width-mm', type=int, help='Optional logo width in millimeters')
+    parser.add_argument('--logo-height-mm', type=int, help='Optional logo height in millimeters')
     
     args = parser.parse_args()
     
@@ -229,6 +232,24 @@ def main():
         if not success:
             print(f"❌ AI generation failed: {output}")
             sys.exit(1)
+
+        # If logo was provided, inject minimal metadata so the applier can use it
+        if args.logo or args.logo_width_mm or args.logo_height_mm:
+            try:
+                with open(edits_json, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                data.setdefault('metadata', {})
+                if args.logo:
+                    data['metadata']['logo_path'] = args.logo
+                if args.logo_width_mm is not None:
+                    data['metadata']['logo_width_mm'] = args.logo_width_mm
+                if args.logo_height_mm is not None:
+                    data['metadata']['logo_height_mm'] = args.logo_height_mm
+                with open(edits_json, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                print("🖼️  Injected logo metadata into edits JSON")
+            except Exception as e:
+                print(f"⚠️  Could not inject logo metadata: {e}")
         
         # Step 3: Trigger GitHub Actions
         if not args.skip_github:

@@ -53,12 +53,30 @@ fi
 echo "🤖 Starting AI-powered policy automation..."
 echo ""
 
+# Optional logo args from env
+LOGO_ARGS=""
+if [ -n "${LOGO_PATH}" ]; then
+  LOGO_ARGS+=" --logo \"${LOGO_PATH}\""
+fi
+if [ -n "${LOGO_WIDTH_MM}" ]; then
+  LOGO_ARGS+=" --logo-width-mm ${LOGO_WIDTH_MM}"
+fi
+if [ -n "${LOGO_HEIGHT_MM}" ]; then
+  LOGO_ARGS+=" --logo-height-mm ${LOGO_HEIGHT_MM}"
+fi
+
+# Optional GitHub token
+GITHUB_ARG=""
+if [ -n "${GITHUB_TOKEN}" ]; then
+  GITHUB_ARG=" --github-token \"${GITHUB_TOKEN}\""
+fi
+
 # Run the complete automation
-python3 scripts/complete_automation.py \
-    --policy "$POLICY_FILE" \
-    --questionnaire "$QUESTIONNAIRE_FILE" \
-    --output-name "$OUTPUT_NAME" \
-    --api-key "$CLAUDE_API_KEY"
+eval "python3 scripts/complete_automation.py \
+    --policy \"$POLICY_FILE\" \
+    --questionnaire \"$QUESTIONNAIRE_FILE\" \
+    --output-name \"$OUTPUT_NAME\" \
+    --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}"
 
 # Check if successful
 if [ $? -eq 0 ]; then

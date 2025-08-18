@@ -37,6 +37,9 @@ def parse_args():
     p.add_argument("--csv", dest="csv_path", required=True, help="CSV with columns: Find,Replace,MatchCase,WholeWord,Wildcards OR JSON with operations format")
     p.add_argument("--out", dest="out_path", required=True, help="Output .docx (will be overwritten)")
     p.add_argument("--launch", action="store_true", help="Launch a headless LibreOffice UNO listener if not already running")
+    p.add_argument("--logo", dest="logo_path", help="Optional path to company logo image (png/jpg) to insert in header")
+    p.add_argument("--logo-width-mm", dest="logo_width_mm", type=int, help="Optional logo width in millimeters")
+    p.add_argument("--logo-height-mm", dest="logo_height_mm", type=int, help="Optional logo height in millimeters")
     return p.parse_args()
 
 def bool_from_str(s, default=False):
@@ -293,6 +296,108 @@ def main():
             pass
         return ""
 
+    def mm_to_100th_mm(mm):
+        try:
+            return int(mm) * 100
+        except Exception:
+            return None
+
+    def insert_logo_into_header(document, logo_fs_path, width_mm=None, height_mm=None):
+        try:
+            if not logo_fs_path:
+                return False, "No logo path provided"
+            # Resolve path
+            candidate = logo_fs_path
+            if not os.path.isabs(candidate):
+                candidate = os.path.abspath(candidate)
+            if not os.path.exists(candidate):
+                return False, f"Logo not found: {candidate}"
+
+            file_url = to_url(candidate)
+
+            # Access page styles
+            style_families = document.getStyleFamilies()
+            page_styles = style_families.getByName("PageStyles")
+            page_style = None
+            for name in ("Default Page Style", "Default Style", "Standard"):
+                try:
+                    page_style = page_styles.getByName(name)
+                    break
+                except Exception:
+                    continue
+            if page_style is None:
+                # Fallback to first available page style
+                try:
+                    en = page_styles.createEnumeration()
+                    if en.hasMoreElements():
+                        page_style = en.nextElement()
+                except Exception:
+                    pass
+            if page_style is None:
+                return False, "Could not access page style for header insertion"
+
+            # Enable header if off
+            try:
+                if not page_style.getPropertyValue("HeaderIsOn"):
+                    page_style.setPropertyValue("HeaderIsOn", True)
+            except Exception:
+                # Some builds expose HeaderIsOn as boolean property only on set
+                try:
+                    page_style.setPropertyValue("HeaderIsOn", True)
+                except Exception:
+                    pass
+
+            # Get header text object
+            try:
+                header_text = page_style.getPropertyValue("HeaderText")
+            except Exception:
+                return False, "HeaderText not available on page style"
+
+            # Create graphic object
+            graphic = document.createInstance("com.sun.star.text.GraphicObject")
+            try:
+                graphic.setPropertyValue("GraphicURL", file_url)
+            except Exception:
+                # Older API may allow direct attribute
+                try:
+                    graphic.GraphicURL = file_url
+                except Exception:
+                    return False, "Could not set GraphicURL on graphic object"
+
+            # Size handling
+            set_size = False
+            if width_mm:
+                w = mm_to_100th_mm(width_mm)
+                if w:
+                    try:
+                        graphic.setPropertyValue("Width", w)
+                        set_size = True
+                    except Exception:
+                        pass
+            if height_mm:
+                h = mm_to_100th_mm(height_mm)
+                if h:
+                    try:
+                        graphic.setPropertyValue("Height", h)
+                        set_size = True
+                    except Exception:
+                        pass
+            if set_size:
+                try:
+                    graphic.setPropertyValue("KeepRatio", True)
+                except Exception:
+                    pass
+
+            # Insert at header start
+            try:
+                header_text.insertTextContent(header_text.getStart(), graphic, False)
+            except Exception as e:
+                return False, f"Failed to insert logo in header: {e}"
+
+            return True, f"Inserted logo from {candidate}"
+        except Exception as e:
+            return False, f"Logo insertion error: {e}"
+
     # Load hidden
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
@@ -340,13 +445,43 @@ def main():
     except Exception as e:
         print(f"Warning: Could not enable track changes: {e}")
 
-    # Apply replacements and comments (main body). Extend for headers/footers if needed (see TODO).
+    # Apply replacements, comments, and optional header logo.
     try:
+        # Read optional logo parameters from args first
+        cli_logo_path = args.logo_path
+        cli_logo_w = args.logo_width_mm
+        cli_logo_h = args.logo_height_mm
+
         # First, process comment-only operations directly from JSON
         if csv_path.endswith('.json'):
             with open(csv_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             operations = data.get('instructions', {}).get('operations', [])
+
+            # If provided via JSON metadata, prefer it unless CLI overrides are present
+            try:
+                meta = data.get('metadata', {})
+                json_logo_path = (meta.get('logo_path') or meta.get('logo') or '').strip() or None
+                json_logo_w = meta.get('logo_width_mm')
+                json_logo_h = meta.get('logo_height_mm')
+                if cli_logo_path:
+                    logo_path_to_use = cli_logo_path
+                else:
+                    logo_path_to_use = json_logo_path
+                logo_w_to_use = cli_logo_w if cli_logo_w is not None else json_logo_w
+                logo_h_to_use = cli_logo_h if cli_logo_h is not None else json_logo_h
+            except Exception:
+                logo_path_to_use = cli_logo_path
+                logo_w_to_use = cli_logo_w
+                logo_h_to_use = cli_logo_h
+
+            # Insert logo if configured
+            if logo_path_to_use:
+                ok, msg = insert_logo_into_header(doc, logo_path_to_use, logo_w_to_use, logo_h_to_use)
+                if ok:
+                    print(f"🖼️  {msg}")
+                else:
+                    print(f"⚠️  {msg}")
             
             comment_operations = [op for op in operations if op.get('action') == 'comment']
             print(f"📝 Found {len(comment_operations)} comment-only operations to process")

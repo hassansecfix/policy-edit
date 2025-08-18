@@ -16,7 +16,7 @@ Flow at a glance:
           ai_policy_processor.py (Claude)
                    |
                    v
-         edits/*.json (instructions)
+         edits/*.json (instructions + optional metadata: logo_path, logo_width_mm, logo_height_mm)
                    |
         (local) apply_tracked_edits_libre.py
                    |
@@ -73,6 +73,7 @@ This uses:
 
 - Converts questionnaire to CSV only if you pass an `.xlsx` file
 - Calls Claude via `ai_policy_processor.py` to produce JSON instructions
+- If provided, injects logo metadata (path/size) into the JSON
 - Optionally triggers a GitHub Actions workflow to create the final DOCX
 - Prints paths to the generated files
 
@@ -86,6 +87,9 @@ If you prefer to generate the tracked DOCX locally with LibreOffice UNO:
   --in "data/v5 Freya POL-11 Access Control.docx" \
   --csv "edits/secfix_with_authors_edits.json" \
   --out "build/secfix_with_authors.docx" \
+  --logo "data/company_logo.png" \
+  --logo-width-mm 35 \
+  --logo-height-mm 0 \
   --launch
 ```
 
@@ -93,7 +97,8 @@ Notes:
 
 - `--csv` also accepts the JSON instructions format used here
 - `--launch` starts a headless LibreOffice listener if needed
-- Output is a DOCX with tracked changes and comments
+- To add a header logo, either pass CLI flags to the end‑to‑end script (or set .env):
+  - LOGO_PATH, LOGO_WIDTH_MM, LOGO_HEIGHT_MM
 
 ## Scripts in this repo
 
