@@ -31,13 +31,6 @@ import time
 import subprocess
 from pathlib import Path
 
-# Constants
-DEFAULT_LOGO_WIDTH_MM = 35
-DEFAULT_LOGO_HEIGHT_MM = 10
-DEFAULT_QUESTIONNAIRE_PATH = "data/questionnaire_responses.csv"
-LIBREOFFICE_PORT = 2002
-USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
     p.add_argument("--in", dest="in_path", required=True, help="Input .docx")
@@ -304,179 +297,11 @@ def main():
             pass
         return ""
 
-def mm_to_100th_mm(mm):
-    """Convert millimeters to LibreOffice 1/100mm units."""
-    try:
-        return int(mm) * 100
-    except Exception:
-        return None
-
-def download_logo_from_url(url, timeout=30):
-    """Download logo from URL and return temp file path."""
-    import requests
-    import tempfile
-    
-    headers = {'User-Agent': USER_AGENT}
-    response = requests.get(url, headers=headers, stream=True, timeout=timeout)
-    
-    if response.status_code == 200:
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-        for chunk in response.iter_content(chunk_size=8192):
-            temp_file.write(chunk)
-        temp_file.close()
-        return temp_file.name
-    else:
-        raise Exception(f"HTTP {response.status_code}")
-
-def set_logo_size(graphic, width_mm=35, height_mm=10):
-    """Set logo size with multiple fallback methods."""
-    width_100mm = width_mm * 100
-    height_100mm = height_mm * 100
-    
-    # Method 1: Primary approach
-    try:
-        graphic.setPropertyValue("Width", width_100mm)
-        graphic.setPropertyValue("Height", height_100mm)
-        graphic.setPropertyValue("SizeType", 1)  # Fixed size
-        graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
-        graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio
-        print(f"📏 Set logo size to {width_mm}mm x {height_mm}mm")
-        return True
-    except Exception as e:
-        print(f"⚠️  Primary sizing failed: {e}")
-    
-    # Method 2: Fallback approach
-    try:
-        graphic.setPropertyValue("Width", width_100mm)
-        graphic.setPropertyValue("Height", height_100mm)
-        print(f"📏 Fallback: Set logo to {width_mm}x{height_mm}mm")
-        return True
-    except Exception as e:
-        print(f"⚠️  Fallback sizing failed: {e}")
-    
-    # Method 3: Size object approach
-    try:
-        from com.sun.star.awt import Size
-        size = Size()
-        size.Width = width_100mm
-        size.Height = height_100mm
-        graphic.setPropertyValue("Size", size)
-        print(f"📏 Size object: Set to {width_mm}x{height_mm}mm")
-        return True
-    except Exception as e:
-        print(f"⚠️  Size object failed: {e}")
-    
-    print(f"❌ All sizing methods failed - using default size")
-    return False
-
-def find_logo_url_in_questionnaire(questionnaire_path=DEFAULT_QUESTIONNAIRE_PATH):
-    """Extract logo URL from questionnaire CSV."""
-    try:
-        if os.path.exists(questionnaire_path):
-            with open(questionnaire_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                import re
-                urls = re.findall(r'https://[^\s,;]+', content)
-                for url in urls:
-                    if 'image' in url or any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']):
-                        return url
-    except Exception as e:
-        print(f"⚠️  Error reading questionnaire: {e}")
-    return None
-
-def add_comment_to_text(doc, target_text, comment, author):
-    """Add comment annotation to target text with multiple fallback methods."""
-    search_desc = doc.createSearchDescriptor()
-    search_desc.SearchString = target_text
-    search_desc.SearchCaseSensitive = False
-    search_desc.SearchWords = False
-    
-    found_range = doc.findFirst(search_desc)
-    added_count = 0
-    
-    while found_range:
+    def mm_to_100th_mm(mm):
         try:
-            comment_content = comment.replace('\\\n', '\n').replace('\\n', '\n')
-            
-            # Method 1: Try creating annotation field (most compatible)
-            try:
-                annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
-                annotation.setPropertyValue("Author", author)
-                annotation.setPropertyValue("Content", comment_content)
-                
-                dt = create_libreoffice_datetime()
-                try:
-                    annotation.setPropertyValue("Date", dt)
-                except Exception:
-                    annotation.setPropertyValue("DateTimeValue", dt)
-                
-                cursor = found_range.getText().createTextCursorByRange(found_range)
-                cursor.getText().insertTextContent(cursor, annotation, True)
-                added_count += 1
-            
-            except Exception as e1:
-                # Method 2: Try PostIt field
-                try:
-                    annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
-                    annotation.setPropertyValue("Author", author)
-                    annotation.setPropertyValue("Content", comment_content)
-                    
-                    dt = create_libreoffice_datetime()
-                    try:
-                        annotation.setPropertyValue("Date", dt)
-                    except Exception:
-                        annotation.setPropertyValue("DateTimeValue", dt)
-                    
-                    cursor = found_range.getText().createTextCursorByRange(found_range)
-                    cursor.getText().insertTextContent(cursor, annotation, True)
-                    added_count += 1
-                
-                except Exception as e2:
-                    # Method 3: Basic annotation
-                    try:
-                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                        if annotation:
-                            annotation.Author = author
-                            annotation.Content = comment_content
-                            
-                            dt = create_libreoffice_datetime()
-                            try:
-                                annotation.Date = dt
-                            except Exception:
-                                annotation.DateTimeValue = dt
-                            
-                            found_range.getText().insertTextContent(found_range, annotation, True)
-                            added_count += 1
-                        else:
-                            raise Exception("Could not create annotation instance")
-                    
-                    except Exception as e3:
-                        # Method 4: Fallback to tracked change comment
-                        try:
-                            cursor = found_range.getText().createTextCursorByRange(found_range)
-                            cursor.collapseToStart()
-                            
-                            cursor.getText().insertString(cursor, " ", False)
-                            cursor.goRight(1, True)
-                            cursor.getText().insertString(cursor, "", True)
-                            
-                            redlines = doc.getPropertyValue("Redlines")
-                            if redlines and redlines.getCount() > 0:
-                                last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                                last_redline.setPropertyValue("Comment", f"{author}: {comment_content}")
-                                added_count += 1
-                            else:
-                                print(f"❌ No tracked changes available for comment")
-                        
-                        except Exception as e4:
-                            print(f"❌ All comment methods failed. Last error: {e4}")
-        
-        except Exception as e:
-            print(f"❌ Could not add comment: {e}")
-        
-        found_range = doc.findNext(found_range, search_desc)
-    
-    return added_count
+            return int(mm) * 100
+        except Exception:
+            return None
 
 
 
@@ -554,65 +379,115 @@ def add_comment_to_text(doc, target_text, comment, author):
                     print(f"🔍 Looking for logo placeholder: '{target_text}'")
                     
                     # Get logo from questionnaire URL
-                    questionnaire_logo = find_logo_url_in_questionnaire()
-                    if questionnaire_logo:
-                        print(f"🔗 Found logo URL: {questionnaire_logo}")
+                    questionnaire_logo = None
+                    try:
+                        questionnaire_path = 'data/questionnaire_responses.csv'
+                        if os.path.exists(questionnaire_path):
+                            with open(questionnaire_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                import re
+                                urls = re.findall(r'https://[^\s,;]+', content)
+                                for url in urls:
+                                    if 'image' in url or any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']):
+                                        questionnaire_logo = url
+                                        print(f"🔗 Found logo URL: {url}")
+                                        break
+                    except Exception as e:
+                        print(f"⚠️  Error reading questionnaire: {e}")
                     
                     # Download and replace logo
                     if questionnaire_logo:
                         try:
+                            import requests
+                            import tempfile
                             print(f"📥 Downloading logo...")
-                            temp_logo_path = download_logo_from_url(questionnaire_logo)
                             
-                            # DIRECT REPLACEMENT WITHOUT TRACKING
-                            search_desc = doc.createSearchDescriptor()
-                            search_desc.SearchString = target_text
-                            search_desc.SearchCaseSensitive = False
-                            search_desc.SearchWords = False
+                            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+                            response = requests.get(questionnaire_logo, headers=headers, stream=True, timeout=30)
                             
-                            found_range = doc.findFirst(search_desc)
-                            replaced_count = 0
-                            while found_range:
-                                try:
-                                    # Clear the text first
-                                    found_range.setString("")
-                                    
-                                    # Create and insert graphic
-                                    graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                    logo_file_url = to_url(temp_logo_path)
-                                    graphic.setPropertyValue("GraphicURL", logo_file_url)
-                                    
-                                    # Set anchor type to ensure proper positioning
+                            if response.status_code == 200:
+                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    temp_file.write(chunk)
+                                temp_file.close()
+                                
+                                # DIRECT REPLACEMENT WITHOUT TRACKING
+                                search_desc = doc.createSearchDescriptor()
+                                search_desc.SearchString = target_text
+                                search_desc.SearchCaseSensitive = False
+                                search_desc.SearchWords = False
+                                
+                                found_range = doc.findFirst(search_desc)
+                                replaced_count = 0
+                                while found_range:
                                     try:
-                                        from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
-                                        graphic.setPropertyValue("AnchorType", AS_CHARACTER)
-                                    except:
-                                        pass
+                                        # Clear the text first
+                                        found_range.setString("")
+                                        
+                                        # Create and insert graphic
+                                        graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                        logo_file_url = to_url(temp_file.name)
+                                        graphic.setPropertyValue("GraphicURL", logo_file_url)
+                                        
+                                        # Set anchor type to ensure proper positioning
+                                        try:
+                                            from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                            graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                        except:
+                                            pass
+                                        
+                                        # Set size properly - LibreOffice uses 1/100mm units
+                                        try:
+                                            # Default to 35mm width, even smaller height for header
+                                            width_100mm = 35 * 100  # 35mm = 3500 units
+                                            height_100mm = 10 * 100  # 10mm = 1000 units
+                                            graphic.setPropertyValue("Width", width_100mm)
+                                            graphic.setPropertyValue("Height", height_100mm)
+                                            graphic.setPropertyValue("SizeType", 1)  # Fixed size
+                                            graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
+                                            graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
+                                            print(f"📏 Set logo size to 25mm width x 10mm height")
+                                        except Exception as e:
+                                            print(f"⚠️  Could not set logo size: {e}")
+                                            # Fallback: try different size approaches
+                                            try:
+                                                graphic.setPropertyValue("Width", 3500)  # 35mm
+                                                graphic.setPropertyValue("Height", 1000)  # 10mm
+                                                print(f"📏 Fallback: Set logo to 35x10mm")
+                                            except Exception as e2:
+                                                print(f"⚠️  Fallback sizing also failed: {e2}")
+                                                # Last resort: try with Size property
+                                                try:
+                                                    from com.sun.star.awt import Size
+                                                    size = Size()
+                                                    size.Width = 3500  # 35mm
+                                                    size.Height = 1000  # 10mm 
+                                                    graphic.setPropertyValue("Size", size)
+                                                    print(f"📏 Last resort: Set size to 35x10mm using Size object")
+                                                except:
+                                                    print(f"⚠️  All sizing methods failed - using default size")
+                                        
+                                        # Insert the graphic
+                                        found_range.getText().insertTextContent(found_range, graphic, False)
+                                        replaced_count += 1
+                                        print(f"✅ Logo inserted successfully!")
+                                        
+                                    except Exception as e:
+                                        print(f"❌ Failed to insert logo: {e}")
                                     
-                                    # Set logo size using helper function
-                                    set_logo_size(graphic, width_mm=DEFAULT_LOGO_WIDTH_MM, height_mm=DEFAULT_LOGO_HEIGHT_MM)
-                                    
-                                    # Insert the graphic
-                                    found_range.getText().insertTextContent(found_range, graphic, False)
-                                    replaced_count += 1
-                                    print(f"✅ Logo inserted successfully!")
-                                    
-                                except Exception as e:
-                                    print(f"❌ Failed to insert logo: {e}")
+                                    found_range = doc.findNext(found_range, search_desc)
                                 
-                                found_range = doc.findNext(found_range, search_desc)
+                                # Clean up
+                                try:
+                                    os.unlink(temp_file.name)
+                                except:
+                                    pass
+                                    
+                                if replaced_count > 0:
+                                    print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s)")
+                                else:
+                                    print(f"❌ Could not find '{target_text}' in document")
                             
-                            # Clean up
-                            try:
-                                os.unlink(temp_logo_path)
-                            except:
-                                pass
-                                
-                            if replaced_count > 0:
-                                print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s)")
-                            else:
-                                print(f"❌ Could not find '{target_text}' in document")
-                        
                         except Exception as e:
                             print(f"❌ Failed to download/insert logo: {e}")
             
@@ -653,7 +528,116 @@ def add_comment_to_text(doc, target_text, comment, author):
                 author = op.get('comment_author', 'AI Assistant')
                 
                 try:
-                    added_count = add_comment_to_text(doc, target_text, comment, author)
+                    # Find the target text to add comment to
+                    search_desc = doc.createSearchDescriptor()
+                    search_desc.SearchString = target_text
+                    search_desc.SearchCaseSensitive = False
+                    search_desc.SearchWords = False
+                    
+                    found_range = doc.findFirst(search_desc)
+                    added_count = 0
+                    while found_range:
+                        try:
+                            # Clean up comment content
+                            comment_content = comment.replace('\\\n', '\n').replace('\\n', '\n')
+                            
+                            # Method 1: Try creating annotation field (most compatible)
+                            try:
+                                # Create annotation text field
+                                annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
+                                annotation.setPropertyValue("Author", author)
+                                annotation.setPropertyValue("Content", comment_content)
+                                
+                                # Set proper timestamp
+                                dt = create_libreoffice_datetime()
+                                try:
+                                    annotation.setPropertyValue("Date", dt)
+                                except Exception:
+                                    annotation.setPropertyValue("DateTimeValue", dt)
+                                
+                                # Insert annotation to cover the entire found range
+                                cursor = found_range.getText().createTextCursorByRange(found_range)
+                                # Don't collapse - keep the full range selected for the comment
+                                cursor.getText().insertTextContent(cursor, annotation, True)
+                                added_count += 1
+                            
+                            except Exception as e1:
+                                print(f"Annotation method failed: {e1}")
+                                
+                                # Method 2: Try creating postit annotation (Word-compatible)
+                                try:
+                                    annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
+                                    annotation.setPropertyValue("Author", author)
+                                    annotation.setPropertyValue("Content", comment_content)
+                                    
+                                    # Set proper timestamp
+                                    dt = create_libreoffice_datetime()
+                                    try:
+                                        annotation.setPropertyValue("Date", dt)
+                                    except Exception:
+                                        annotation.setPropertyValue("DateTimeValue", dt)
+                                    
+                                    cursor = found_range.getText().createTextCursorByRange(found_range)
+                                    # Keep the full range selected for the comment
+                                    cursor.getText().insertTextContent(cursor, annotation, True)
+                                    added_count += 1
+                                
+                                except Exception as e2:
+                                    print(f"PostIt method failed: {e2}")
+                                    
+                                    # Method 3: Simple annotation approach
+                                    try:
+                                        # Create a simple annotation
+                                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                        if annotation:
+                                            annotation.Author = author
+                                            annotation.Content = comment_content
+                                            
+                                            # Set proper timestamp
+                                            dt = create_libreoffice_datetime()
+                                            try:
+                                                annotation.Date = dt
+                                            except Exception:
+                                                annotation.DateTimeValue = dt
+                                            
+                                            # Insert to cover the entire found range
+                                            found_range.getText().insertTextContent(found_range, annotation, True)
+                                            added_count += 1
+                                        else:
+                                            raise Exception("Could not create annotation instance")
+                                            
+                                    except Exception as e3:
+                                        print(f"Basic annotation failed: {e3}")
+                                        
+                                        # Method 4: Fallback - insert as tracked change with comment
+                                        try:
+                                            # Make a minimal edit to create a tracked change we can comment on
+                                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                                            cursor.collapseToStart()
+                                            
+                                            # Insert a space and immediately delete it to create a tracked change
+                                            cursor.getText().insertString(cursor, " ", False)
+                                            cursor.goRight(1, True)  # Select the space
+                                            cursor.getText().insertString(cursor, "", True)  # Delete (replace with nothing)
+                                            
+                                            # Try to add comment to the last redline
+                                            redlines = doc.getPropertyValue("Redlines")
+                                            if redlines and redlines.getCount() > 0:
+                                                last_redline = redlines.getByIndex(redlines.getCount() - 1)
+                                                last_redline.setPropertyValue("Comment", f"{author}: {comment_content}")
+                                                added_count += 1
+                                            else:
+                                                print(f"❌ No tracked changes available for comment")
+                                                
+                                        except Exception as e4:
+                                            print(f"❌ All comment methods failed. Last error: {e4}")
+                            
+                        except Exception as e:
+                            print(f"❌ Could not add comment: {e}")
+                        
+                        # Move to next occurrence
+                        found_range = doc.findNext(found_range, search_desc)
+                    
                     if added_count > 0:
                         print(f"✅ Added {added_count} comment(s) to occurrences of '{target_text[:50]}...' by {author}")
                     else:
