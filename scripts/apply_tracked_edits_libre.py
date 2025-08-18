@@ -428,12 +428,41 @@ def main():
                                         logo_file_url = to_url(temp_file.name)
                                         graphic.setPropertyValue("GraphicURL", logo_file_url)
                                         
-                                        # Set size
+                                        # Set anchor type to ensure proper positioning
                                         try:
-                                            graphic.setPropertyValue("Width", 35 * 100)  # 35mm in 1/100mm
-                                            graphic.setPropertyValue("KeepRatio", True)
+                                            from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                            graphic.setPropertyValue("AnchorType", AS_CHARACTER)
                                         except:
                                             pass
+                                        
+                                        # Set size properly - LibreOffice uses 1/100mm units
+                                        try:
+                                            # Default to 35mm width, auto height to preserve ratio
+                                            width_100mm = 35 * 100  # 35mm = 3500 units
+                                            graphic.setPropertyValue("Width", width_100mm)
+                                            graphic.setPropertyValue("SizeType", 1)  # Fixed size
+                                            graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
+                                            graphic.setPropertyValue("KeepRatio", True)  # Preserve aspect ratio
+                                            print(f"📏 Set logo size to 35mm width with preserved aspect ratio")
+                                        except Exception as e:
+                                            print(f"⚠️  Could not set logo size: {e}")
+                                            # Fallback: try different size approaches
+                                            try:
+                                                graphic.setPropertyValue("Width", 3500)  # 35mm
+                                                graphic.setPropertyValue("Height", 2000)  # 20mm
+                                                print(f"📏 Fallback: Set logo to 35x20mm")
+                                            except Exception as e2:
+                                                print(f"⚠️  Fallback sizing also failed: {e2}")
+                                                # Last resort: try with Size property
+                                                try:
+                                                    from com.sun.star.awt import Size
+                                                    size = Size()
+                                                    size.Width = 3500  # 35mm
+                                                    size.Height = 2000  # 20mm 
+                                                    graphic.setPropertyValue("Size", size)
+                                                    print(f"📏 Last resort: Set size using Size object")
+                                                except:
+                                                    print(f"⚠️  All sizing methods failed - using default size")
                                         
                                         # Insert the graphic
                                         found_range.getText().insertTextContent(found_range, graphic, False)
