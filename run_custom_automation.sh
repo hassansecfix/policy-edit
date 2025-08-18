@@ -6,7 +6,7 @@ set -e  # Exit on any error
 
 # Default configuration (modify these as needed)
 DEFAULT_POLICY="data/v5 Freya POL-11 Access Control.docx"
-DEFAULT_QUESTIONNAIRE="data/questionnaire_responses.csv"
+DEFAULT_QUESTIONNAIRE="data/secfix_questionnaire_responses_consulting.csv"
 DEFAULT_OUTPUT="policy_tracked_changes_with_comments_$(date +%Y%m%d_%H%M%S)"
 
 # Parse command line arguments

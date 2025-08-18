@@ -381,7 +381,7 @@ def main():
                     # Get logo from questionnaire URL
                     questionnaire_logo = None
                     try:
-                        questionnaire_path = 'data/questionnaire_responses.csv'
+                        questionnaire_path = 'data/secfix_questionnaire_responses_consulting.csv'
                         if os.path.exists(questionnaire_path):
                             with open(questionnaire_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
