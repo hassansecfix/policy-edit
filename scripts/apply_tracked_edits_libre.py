@@ -265,6 +265,34 @@ def main():
     def to_url(path):
         return Path(path).absolute().as_uri()
 
+    def get_redline_type(redline):
+        """Best-effort detection of a redline's type ("insert" or "delete").
+        Returns a lowercase string or empty string if unknown.
+        """
+        # Common property names observed across LO builds
+        candidate_keys = (
+            "RedlineType", "Type", "RedLineType", "RedlineKind",
+        )
+        for key in candidate_keys:
+            try:
+                value = redline.getPropertyValue(key)
+                if isinstance(value, str) and value:
+                    return value.strip().lower()
+            except Exception:
+                pass
+        # Boolean flags in some builds
+        try:
+            if redline.getPropertyValue("IsDeletion"):
+                return "delete"
+        except Exception:
+            pass
+        try:
+            if redline.getPropertyValue("IsInsertion"):
+                return "insert"
+        except Exception:
+            pass
+        return ""
+
     # Load hidden
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
@@ -515,7 +543,7 @@ def main():
             # Add comment if provided and replacements were made
             if comment_text and count_replaced > 0:
                 try:
-                    # First, try to attach the comment to each NEW redline created by this replaceAll
+                    # First, try to attach the comment ONLY to NEW DELETION redlines created by this replaceAll
                     added_to_redlines = 0
                     try:
                         redlines = doc.getPropertyValue("Redlines")
@@ -524,8 +552,10 @@ def main():
                             for i in range(prev_redlines_count, total_after):
                                 try:
                                     rl = redlines.getByIndex(i)
-                                    rl.setPropertyValue("Comment", f"{author_name}: {comment_text}")
-                                    added_to_redlines += 1
+                                    rl_type = get_redline_type(rl)
+                                    if rl_type == "delete":
+                                        rl.setPropertyValue("Comment", f"{author_name}: {comment_text}")
+                                        added_to_redlines += 1
                                 except Exception as e_rl:
                                     print(f"Could not set comment on redline {i}: {e_rl}")
                     except Exception as e_red:
