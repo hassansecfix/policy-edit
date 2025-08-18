@@ -382,7 +382,7 @@ def main():
                     questionnaire_logo = None
                     try:
                         # Use the questionnaire parameter if provided, otherwise fallback to default
-                        questionnaire_path = args.questionnaire_csv or 'data/secfix_questionnaire_responses_consulting.csv'
+                        questionnaire_path = args.questionnaire_csv or 'data/questionnaire_responses.csv'
                         if os.path.exists(questionnaire_path):
                             with open(questionnaire_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
