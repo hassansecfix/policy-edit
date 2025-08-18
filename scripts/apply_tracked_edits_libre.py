@@ -40,6 +40,7 @@ def parse_args():
     p.add_argument("--logo", dest="logo_path", help="Optional path to company logo image (png/jpg) to insert in header")
     p.add_argument("--logo-width-mm", dest="logo_width_mm", type=int, help="Optional logo width in millimeters")
     p.add_argument("--logo-height-mm", dest="logo_height_mm", type=int, help="Optional logo height in millimeters")
+    p.add_argument("--questionnaire", dest="questionnaire_csv", help="Optional path to questionnaire CSV for logo URL extraction")
     return p.parse_args()
 
 def bool_from_str(s, default=False):
@@ -393,9 +394,62 @@ def main():
                     comment = op.get('comment', '')
                     author = op.get('comment_author', 'AI Assistant')
                     
-                    if not logo_path_to_use:
-                        print(f"⚠️  Logo operation for '{target_text}' but no logo provided")
-                        continue
+                    # Determine logo path to use (URL, metadata, or fallback)
+                    final_logo_path = None
+                    
+                    # Check if we have a logo from questionnaire (could be URL or file)
+                    questionnaire_logo = None
+                    if csv_path.endswith('.json'):
+                        try:
+                            # Look for logo in questionnaire data
+                            questionnaire_path = args.questionnaire_csv if args.questionnaire_csv else csv_path.replace('_edits.json', '_questionnaire.csv')
+                            if not os.path.exists(questionnaire_path):
+                                questionnaire_path = 'data/questionnaire_responses.csv'
+                            with open(questionnaire_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                if 'https://' in content and 'logo' in content.lower():
+                                    import re
+                                    urls = re.findall(r'https://[^\s,;]+', content)
+                                    for url in urls:
+                                        if any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif', 'image']):
+                                            questionnaire_logo = url
+                                            break
+                        except:
+                            pass
+                    
+                    # Priority: CLI arg > questionnaire URL/file > metadata > fallback
+                    if logo_path_to_use:
+                        final_logo_path = logo_path_to_use
+                    elif questionnaire_logo:
+                        if questionnaire_logo.startswith('http'):
+                            # Download URL to temp file
+                            try:
+                                import requests
+                                import tempfile
+                                response = requests.get(questionnaire_logo, stream=True, timeout=10)
+                                if response.status_code == 200:
+                                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                    for chunk in response.iter_content(chunk_size=8192):
+                                        temp_file.write(chunk)
+                                    temp_file.close()
+                                    final_logo_path = temp_file.name
+                                    print(f"🌐 Downloaded logo from URL: {questionnaire_logo}")
+                                else:
+                                    print(f"⚠️  Could not download logo from URL: {questionnaire_logo}")
+                            except Exception as e:
+                                print(f"⚠️  Failed to download logo: {e}")
+                        else:
+                            final_logo_path = questionnaire_logo
+                    
+                    # Fallback to local file if nothing else worked
+                    if not final_logo_path:
+                        local_fallback = "data/company_logo.png"
+                        if os.path.exists(local_fallback):
+                            final_logo_path = local_fallback
+                            print(f"📁 Using fallback logo: {local_fallback}")
+                        else:
+                            print(f"⚠️  Logo operation for '{target_text}' but no logo available")
+                            continue
                     
                     try:
                         # Search for the target text throughout the document (including headers)
@@ -410,7 +464,7 @@ def main():
                             try:
                                 # Create graphic object for this occurrence
                                 graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                logo_file_url = to_url(logo_path_to_use if os.path.isabs(logo_path_to_use) else os.path.abspath(logo_path_to_use))
+                                logo_file_url = to_url(final_logo_path if os.path.isabs(final_logo_path) else os.path.abspath(final_logo_path))
                                 
                                 try:
                                     graphic.setPropertyValue("GraphicURL", logo_file_url)

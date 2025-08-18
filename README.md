@@ -164,8 +164,10 @@ When you run automation, Claude will:
 
 - Detect the `[ADD COMPANY LOGO]` placeholder in your policy header
 - Generate a `"replace_with_logo"` operation for the placeholder
-- System automatically uses local logo file (`data/company_logo.png`) if available
-- The applier will replace the placeholder with your logo image + add comments
+- System automatically:
+  1. First tries to use logo URL from questionnaire (downloads it)
+  2. Falls back to local logo file (`data/company_logo.png`) if URL fails
+  3. Replaces the placeholder with your logo image + adds comments
 
 ## Tips
 
