@@ -85,7 +85,30 @@ This uses:
 
 ## Local mode (no CI)
 
-If you prefer to generate the tracked DOCX locally with LibreOffice UNO:
+### Simple Local Automation (Recommended)
+
+For a simple, reliable local workflow without LibreOffice UNO complexity:
+
+```bash
+# Quick run with defaults
+./run_simple_automation.sh
+
+# Custom files
+./run_simple_automation.sh "path/to/policy.docx" "path/to/questionnaire.csv" "output_name"
+
+# Direct Python script
+python3 scripts/simple_local_automation.py \
+  --policy "data/v5 Freya POL-11 Access Control.docx" \
+  --questionnaire "data/questionnaire_responses.csv" \
+  --output-name "my_policy" \
+  --logo "data/company_logo.png"
+```
+
+**Requirements**: `pip install python-docx requests anthropic`
+
+### Advanced Local Mode (LibreOffice UNO)
+
+If you need tracked changes and prefer LibreOffice UNO:
 
 ```
 /Applications/LibreOffice.app/Contents/Resources/python \
@@ -111,11 +134,12 @@ Notes:
 
 ## Scripts in this repo
 
+- `scripts/simple_local_automation.py`: **NEW** Simple local automation using python-docx (recommended)
 - `scripts/complete_automation.py`: Orchestrates end-to-end flow (convert → AI → trigger CI)
 - `scripts/ai_policy_processor.py`: Calls Claude to generate policy edit instructions (JSON)
 - `scripts/xlsx_to_csv_converter.py`: Converts questionnaire XLSX → CSV when required
 - `scripts/apply_tracked_edits_libre.py`: Applies edits with tracked changes (local or in CI)
-- Runners: `quick_automation.sh`, `run_complete_automation.sh`, `run_custom_automation.sh`
+- Runners: `run_simple_automation.sh` (new), `quick_automation.sh`, `run_complete_automation.sh`, `run_custom_automation.sh`
 
 ## Current project structure
 
