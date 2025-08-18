@@ -37,31 +37,34 @@ Flow at a glance:
 
 ## Quick start
 
-1) Create `.env` with your Claude API key:
+1. Create `.env` with your Claude API key:
 
 ```
 CLAUDE_API_KEY=your_key_here
 ```
 
-2) Run the default automation:
+2. Run the default automation:
 
 ```
 ./quick_automation.sh
 ```
 
 This uses:
+
 - Policy: `data/v5 Freya POL-11 Access Control.docx`
 - Questionnaire: `data/questionnaire_responses.csv`
-- Output name: `secfix_with_authors`
+- Output name: `policy_tracked_changes_with_comments`
 
 ## Custom runs
 
 - Same defaults, but explicit script:
+
 ```
 ./run_complete_automation.sh
 ```
 
 - Custom files and output name:
+
 ```
 ./run_custom_automation.sh <policy.docx> <questionnaire.{xlsx|csv}> <output_name>
 ```
@@ -87,6 +90,7 @@ If you prefer to generate the tracked DOCX locally with LibreOffice UNO:
 ```
 
 Notes:
+
 - `--csv` also accepts the JSON instructions format used here
 - `--launch` starts a headless LibreOffice listener if needed
 - Output is a DOCX with tracked changes and comments

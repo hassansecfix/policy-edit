@@ -31,7 +31,7 @@ echo ""
 source .env && python3 scripts/complete_automation.py \
   --policy "data/v5 Freya POL-11 Access Control.docx" \
   --questionnaire "data/questionnaire_responses.csv" \
-  --output-name "secfix_with_authors" \
+  --output-name "policy_tracked_changes_with_comments" \
   --api-key $CLAUDE_API_KEY
 
 echo ""
