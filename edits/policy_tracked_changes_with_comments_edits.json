@@ -4,7 +4,8 @@
     "company_name": "Secfix GmbH",
     "format_version": "operations",
     "total_operations": 11,
-    "generator": "PolicyWorkflow v2.0"
+    "generator": "PolicyWorkflow v2.0",
+    "logo_path": "data/company_logo.png"
   },
   "instructions": {
     "operations": [
@@ -40,7 +41,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through Clickup ticketing system",
-        "comment": "You indicated that you use Clickup for ticket management and prefer using a ticketing system for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated you use Clickup for ticket management and prefer using a ticketing system for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
