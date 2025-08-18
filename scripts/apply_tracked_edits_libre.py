@@ -317,10 +317,11 @@ def main():
     except Exception as e:
         print(f"Warning: Could not set document author: {e}")
 
-    # Ensure Track Changes on and set author
+    # Initially set tracking to False - we'll enable it after logo operations
+    # This gets overridden later in the script
     try:
         # For Writer documents this should be available:
-        doc.RecordChanges = True
+        doc.RecordChanges = False  # Start with tracking OFF
         
         # Try multiple ways to set the redline author
         try:
@@ -490,58 +491,82 @@ def main():
                         except Exception as e:
                             print(f"❌ Failed to download/insert logo: {e}")
             
-            # NOW enable tracking for other operations
-            print(f"🔄 Enabling tracking for other operations...")
+        # ALWAYS enable tracking for other operations (whether we had logo operations or not)
+        print(f"🔄 Enabling tracking for text replacements and other changes...")
+        doc.RecordChanges = True
+        print(f"✅ Tracking enabled - all subsequent changes will be tracked")
 
-            # If provided via JSON metadata, prefer it unless CLI overrides are present
-            try:
-                meta = data.get('metadata', {})
-                json_logo_path = (meta.get('logo_path') or meta.get('logo') or '').strip() or None
-                json_logo_w = meta.get('logo_width_mm')
-                json_logo_h = meta.get('logo_height_mm')
-                if cli_logo_path:
-                    logo_path_to_use = cli_logo_path
-                else:
-                    logo_path_to_use = json_logo_path
-                logo_w_to_use = cli_logo_w if cli_logo_w is not None else json_logo_w
-                logo_h_to_use = cli_logo_h if cli_logo_h is not None else json_logo_h
-            except Exception:
+        # If provided via JSON metadata, prefer it unless CLI overrides are present
+        try:
+            meta = data.get('metadata', {})
+            json_logo_path = (meta.get('logo_path') or meta.get('logo') or '').strip() or None
+            json_logo_w = meta.get('logo_width_mm')
+            json_logo_h = meta.get('logo_height_mm')
+            if cli_logo_path:
                 logo_path_to_use = cli_logo_path
-                logo_w_to_use = cli_logo_w
-                logo_h_to_use = cli_logo_h
+            else:
+                logo_path_to_use = json_logo_path
+            logo_w_to_use = cli_logo_w if cli_logo_w is not None else json_logo_w
+            logo_h_to_use = cli_logo_h if cli_logo_h is not None else json_logo_h
+        except Exception:
+            logo_path_to_use = cli_logo_path
+            logo_w_to_use = cli_logo_w
+            logo_h_to_use = cli_logo_h
 
-            comment_operations = [op for op in operations if op.get('action') == 'comment']
-            print(f"📝 Found {len(comment_operations)} comment-only operations to process")
+        comment_operations = [op for op in operations if op.get('action') == 'comment']
+        print(f"📝 Found {len(comment_operations)} comment-only operations to process")
             
-            for op in operations:
-                action = op.get('action', 'replace')
-                if action == 'replace_with_logo':
-                    # Skip - already handled above before tracking was enabled
-                    continue
+        for op in operations:
+            action = op.get('action', 'replace')
+            if action == 'replace_with_logo':
+                # Skip - already handled above before tracking was enabled
+                continue
                 
-                elif action == 'comment':
-                    target_text = op.get('target_text', '')
-                    comment = op.get('comment', '')
-                    author = op.get('comment_author', 'AI Assistant')
+            elif action == 'comment':
+                target_text = op.get('target_text', '')
+                comment = op.get('comment', '')
+                author = op.get('comment_author', 'AI Assistant')
+                
+                try:
+                    # Find the target text to add comment to
+                    search_desc = doc.createSearchDescriptor()
+                    search_desc.SearchString = target_text
+                    search_desc.SearchCaseSensitive = False
+                    search_desc.SearchWords = False
                     
-                    try:
-                        # Find the target text to add comment to
-                        search_desc = doc.createSearchDescriptor()
-                        search_desc.SearchString = target_text
-                        search_desc.SearchCaseSensitive = False
-                        search_desc.SearchWords = False
-                        
-                        found_range = doc.findFirst(search_desc)
-                        added_count = 0
-                        while found_range:
+                    found_range = doc.findFirst(search_desc)
+                    added_count = 0
+                    while found_range:
+                        try:
+                            # Clean up comment content
+                            comment_content = comment.replace('\\\n', '\n').replace('\\n', '\n')
+                            
+                            # Method 1: Try creating annotation field (most compatible)
                             try:
-                                # Clean up comment content
-                                comment_content = comment.replace('\\\n', '\n').replace('\\n', '\n')
+                                # Create annotation text field
+                                annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
+                                annotation.setPropertyValue("Author", author)
+                                annotation.setPropertyValue("Content", comment_content)
                                 
-                                # Method 1: Try creating annotation field (most compatible)
+                                # Set proper timestamp
+                                dt = create_libreoffice_datetime()
                                 try:
-                                    # Create annotation text field
-                                    annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
+                                    annotation.setPropertyValue("Date", dt)
+                                except Exception:
+                                    annotation.setPropertyValue("DateTimeValue", dt)
+                                
+                                # Insert annotation to cover the entire found range
+                                cursor = found_range.getText().createTextCursorByRange(found_range)
+                                # Don't collapse - keep the full range selected for the comment
+                                cursor.getText().insertTextContent(cursor, annotation, True)
+                                added_count += 1
+                            
+                            except Exception as e1:
+                                print(f"Annotation method failed: {e1}")
+                                
+                                # Method 2: Try creating postit annotation (Word-compatible)
+                                try:
+                                    annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
                                     annotation.setPropertyValue("Author", author)
                                     annotation.setPropertyValue("Content", comment_content)
                                     
@@ -552,95 +577,75 @@ def main():
                                     except Exception:
                                         annotation.setPropertyValue("DateTimeValue", dt)
                                     
-                                    # Insert annotation to cover the entire found range
                                     cursor = found_range.getText().createTextCursorByRange(found_range)
-                                    # Don't collapse - keep the full range selected for the comment
+                                    # Keep the full range selected for the comment
                                     cursor.getText().insertTextContent(cursor, annotation, True)
                                     added_count += 1
                                 
-                                except Exception as e1:
-                                    print(f"Annotation method failed: {e1}")
+                                except Exception as e2:
+                                    print(f"PostIt method failed: {e2}")
                                     
-                                    # Method 2: Try creating postit annotation (Word-compatible)
+                                    # Method 3: Simple annotation approach
                                     try:
-                                        annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
-                                        annotation.setPropertyValue("Author", author)
-                                        annotation.setPropertyValue("Content", comment_content)
+                                        # Create a simple annotation
+                                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                        if annotation:
+                                            annotation.Author = author
+                                            annotation.Content = comment_content
+                                            
+                                            # Set proper timestamp
+                                            dt = create_libreoffice_datetime()
+                                            try:
+                                                annotation.Date = dt
+                                            except Exception:
+                                                annotation.DateTimeValue = dt
+                                            
+                                            # Insert to cover the entire found range
+                                            found_range.getText().insertTextContent(found_range, annotation, True)
+                                            added_count += 1
+                                        else:
+                                            raise Exception("Could not create annotation instance")
+                                            
+                                    except Exception as e3:
+                                        print(f"Basic annotation failed: {e3}")
                                         
-                                        # Set proper timestamp
-                                        dt = create_libreoffice_datetime()
+                                        # Method 4: Fallback - insert as tracked change with comment
                                         try:
-                                            annotation.setPropertyValue("Date", dt)
-                                        except Exception:
-                                            annotation.setPropertyValue("DateTimeValue", dt)
-                                        
-                                        cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        # Keep the full range selected for the comment
-                                        cursor.getText().insertTextContent(cursor, annotation, True)
-                                        added_count += 1
-                                    
-                                    except Exception as e2:
-                                        print(f"PostIt method failed: {e2}")
-                                        
-                                        # Method 3: Simple annotation approach
-                                        try:
-                                            # Create a simple annotation
-                                            annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                                            if annotation:
-                                                annotation.Author = author
-                                                annotation.Content = comment_content
-                                                
-                                                # Set proper timestamp
-                                                dt = create_libreoffice_datetime()
-                                                try:
-                                                    annotation.Date = dt
-                                                except Exception:
-                                                    annotation.DateTimeValue = dt
-                                                
-                                                # Insert to cover the entire found range
-                                                found_range.getText().insertTextContent(found_range, annotation, True)
+                                            # Make a minimal edit to create a tracked change we can comment on
+                                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                                            cursor.collapseToStart()
+                                            
+                                            # Insert a space and immediately delete it to create a tracked change
+                                            cursor.getText().insertString(cursor, " ", False)
+                                            cursor.goRight(1, True)  # Select the space
+                                            cursor.getText().insertString(cursor, "", True)  # Delete (replace with nothing)
+                                            
+                                            # Try to add comment to the last redline
+                                            redlines = doc.getPropertyValue("Redlines")
+                                            if redlines and redlines.getCount() > 0:
+                                                last_redline = redlines.getByIndex(redlines.getCount() - 1)
+                                                last_redline.setPropertyValue("Comment", f"{author}: {comment_content}")
                                                 added_count += 1
                                             else:
-                                                raise Exception("Could not create annotation instance")
+                                                print(f"❌ No tracked changes available for comment")
                                                 
-                                        except Exception as e3:
-                                            print(f"Basic annotation failed: {e3}")
-                                            
-                                            # Method 4: Fallback - insert as tracked change with comment
-                                            try:
-                                                # Make a minimal edit to create a tracked change we can comment on
-                                                cursor = found_range.getText().createTextCursorByRange(found_range)
-                                                cursor.collapseToStart()
-                                                
-                                                # Insert a space and immediately delete it to create a tracked change
-                                                cursor.getText().insertString(cursor, " ", False)
-                                                cursor.goRight(1, True)  # Select the space
-                                                cursor.getText().insertString(cursor, "", True)  # Delete (replace with nothing)
-                                                
-                                                # Try to add comment to the last redline
-                                                redlines = doc.getPropertyValue("Redlines")
-                                                if redlines and redlines.getCount() > 0:
-                                                    last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                                                    last_redline.setPropertyValue("Comment", f"{author}: {comment_content}")
-                                                    added_count += 1
-                                                else:
-                                                    print(f"❌ No tracked changes available for comment")
-                                                    
-                                            except Exception as e4:
-                                                print(f"❌ All comment methods failed. Last error: {e4}")
-                                
-                            except Exception as e:
-                                print(f"❌ Could not add comment: {e}")
+                                        except Exception as e4:
+                                            print(f"❌ All comment methods failed. Last error: {e4}")
                             
-                            # Move to next occurrence
-                            found_range = doc.findNext(found_range, search_desc)
+                        except Exception as e:
+                            print(f"❌ Could not add comment: {e}")
                         
-                        if added_count > 0:
-                            print(f"✅ Added {added_count} comment(s) to occurrences of '{target_text[:50]}...' by {author}")
-                        else:
-                            print(f"⚠️ Could not find text '{target_text}' for comment operation")
-                    except Exception as e:
-                        print(f"❌ Failed to process comment-only operation: {e}")
+                        # Move to next occurrence
+                        found_range = doc.findNext(found_range, search_desc)
+                    
+                    if added_count > 0:
+                        print(f"✅ Added {added_count} comment(s) to occurrences of '{target_text[:50]}...' by {author}")
+                    else:
+                        print(f"⚠️ Could not find text '{target_text}' for comment operation")
+                except Exception as e:
+                    print(f"❌ Failed to process comment-only operation: {e}")
+            else:
+                print(f"❌ Unknown action: {action}")
         
         # Now process replacement/delete operations
         for row in rows_from_file(csv_path):
