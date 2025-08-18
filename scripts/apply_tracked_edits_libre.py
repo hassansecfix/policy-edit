@@ -399,23 +399,23 @@ def main():
                     
                     # Check if we have a logo from questionnaire (could be URL or file)
                     questionnaire_logo = None
-                    if csv_path.endswith('.json'):
-                        try:
-                            # Look for logo in questionnaire data
-                            questionnaire_path = args.questionnaire_csv if args.questionnaire_csv else csv_path.replace('_edits.json', '_questionnaire.csv')
-                            if not os.path.exists(questionnaire_path):
-                                questionnaire_path = 'data/questionnaire_responses.csv'
+                    try:
+                        # Look for logo in questionnaire data
+                        questionnaire_path = 'data/questionnaire_responses.csv'
+                        if os.path.exists(questionnaire_path):
                             with open(questionnaire_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
-                                if 'https://' in content and 'logo' in content.lower():
-                                    import re
-                                    urls = re.findall(r'https://[^\s,;]+', content)
-                                    for url in urls:
-                                        if any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif', 'image']):
-                                            questionnaire_logo = url
-                                            break
-                        except:
-                            pass
+                                print(f"🔍 Searching for logo URL in questionnaire...")
+                                # Look for the specific logo URL pattern
+                                import re
+                                urls = re.findall(r'https://[^\s,;]+', content)
+                                for url in urls:
+                                    if 'image' in url or any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']):
+                                        questionnaire_logo = url
+                                        print(f"🔗 Found logo URL: {url}")
+                                        break
+                    except Exception as e:
+                        print(f"⚠️  Error reading questionnaire: {e}")
                     
                     # Priority: CLI arg > questionnaire URL/file > metadata > fallback
                     if logo_path_to_use:
@@ -426,18 +426,34 @@ def main():
                             try:
                                 import requests
                                 import tempfile
-                                response = requests.get(questionnaire_logo, stream=True, timeout=10)
+                                print(f"📥 Downloading logo from: {questionnaire_logo}")
+                                
+                                headers = {
+                                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                                }
+                                response = requests.get(questionnaire_logo, headers=headers, stream=True, timeout=30)
+                                
                                 if response.status_code == 200:
-                                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                    # Determine file extension from URL or content type
+                                    content_type = response.headers.get('content-type', '')
+                                    if 'png' in content_type:
+                                        suffix = '.png'
+                                    elif 'jpeg' in content_type or 'jpg' in content_type:
+                                        suffix = '.jpg'
+                                    else:
+                                        suffix = '.png'  # Default
+                                    
+                                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
                                     for chunk in response.iter_content(chunk_size=8192):
                                         temp_file.write(chunk)
                                     temp_file.close()
                                     final_logo_path = temp_file.name
-                                    print(f"🌐 Downloaded logo from URL: {questionnaire_logo}")
+                                    print(f"✅ Downloaded logo successfully to: {final_logo_path}")
                                 else:
-                                    print(f"⚠️  Could not download logo from URL: {questionnaire_logo}")
+                                    print(f"❌ HTTP {response.status_code} - Could not download logo from URL: {questionnaire_logo}")
                             except Exception as e:
-                                print(f"⚠️  Failed to download logo: {e}")
+                                print(f"❌ Failed to download logo: {e}")
+                                print(f"   URL was: {questionnaire_logo}")
                         else:
                             final_logo_path = questionnaire_logo
                     
@@ -520,9 +536,18 @@ def main():
                             found_range = doc.findNext(found_range, search_desc)
                         
                         if replaced_count > 0:
-                            print(f"🖼️  Replaced {replaced_count} occurrence(s) of '{target_text}' with logo by {author}")
+                            print(f"🖼️  Successfully replaced {replaced_count} occurrence(s) of '{target_text}' with logo by {author}")
                         else:
-                            print(f"⚠️  Could not find text '{target_text}' for logo replacement")
+                            print(f"❌ Could not find text '{target_text}' for logo replacement")
+                            print(f"   Make sure the document contains exactly: {target_text}")
+                            
+                        # Clean up temp file if we downloaded one
+                        if questionnaire_logo and questionnaire_logo.startswith('http') and final_logo_path and final_logo_path.startswith('/tmp'):
+                            try:
+                                os.unlink(final_logo_path)
+                                print(f"🧹 Cleaned up temporary logo file")
+                            except:
+                                pass
                             
                     except Exception as e:
                         print(f"❌ Failed to process logo replacement operation: {e}")
