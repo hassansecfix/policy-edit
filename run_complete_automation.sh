@@ -4,11 +4,8 @@
 
 set -e  # Exit on any error
 
-# Configuration - modify these in .env file as needed
-# Default fallbacks if not set in .env
-DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-DEFAULT_QUESTIONNAIRE_FILE="data/secfix_questionnaire_responses_consulting.csv"
-DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments"
+# Load shared configuration (single source of truth)
+source "$(dirname "$0")/config.sh"
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then
@@ -38,9 +35,7 @@ OUTPUT_NAME="${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}"
 
 echo "🚀 Complete AI Automation Starting..."
 echo "=" * 50
-echo "📋 Policy: $POLICY_FILE"
-echo "📊 Questionnaire: $QUESTIONNAIRE_FILE"
-echo "📝 Output name: $OUTPUT_NAME"
+show_config
 echo "🤖 AI: Claude Sonnet 4"
 echo "⚙️  Processing: GitHub Actions"
 echo "=" * 50
@@ -59,23 +54,9 @@ fi
 echo "🤖 Starting AI-powered policy automation..."
 echo ""
 
-# Optional logo args from env
-LOGO_ARGS=""
-if [ -n "${LOGO_PATH}" ]; then
-  LOGO_ARGS+=" --logo \"${LOGO_PATH}\""
-fi
-if [ -n "${LOGO_WIDTH_MM}" ]; then
-  LOGO_ARGS+=" --logo-width-mm ${LOGO_WIDTH_MM}"
-fi
-if [ -n "${LOGO_HEIGHT_MM}" ]; then
-  LOGO_ARGS+=" --logo-height-mm ${LOGO_HEIGHT_MM}"
-fi
-
-# Optional GitHub token
-GITHUB_ARG=""
-if [ -n "${GITHUB_TOKEN}" ]; then
-  GITHUB_ARG=" --github-token \"${GITHUB_TOKEN}\""
-fi
+# Build optional arguments from environment
+build_logo_args
+build_github_arg
 
 # Run the complete automation
 eval "python3 scripts/complete_automation.py \

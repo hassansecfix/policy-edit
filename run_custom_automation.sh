@@ -4,10 +4,11 @@
 
 set -e  # Exit on any error
 
-# Default configuration fallbacks (modify these in .env file as needed)
-DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-DEFAULT_QUESTIONNAIRE_FILE="data/secfix_questionnaire_responses_consulting.csv"
-DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments_$(date +%Y%m%d_%H%M%S)"
+# Load shared configuration (single source of truth)
+source "$(dirname "$0")/config.sh"
+
+# Custom default for this script (adds timestamp)
+DEFAULT_OUTPUT_NAME_WITH_TIMESTAMP="${DEFAULT_OUTPUT_NAME}_$(date +%Y%m%d_%H%M%S)"
 
 # Help function
 show_help() {
@@ -64,13 +65,11 @@ fi
 # Configuration priority: 1) Command line args, 2) Environment variables, 3) Defaults
 POLICY_FILE="${1:-${POLICY_FILE:-$DEFAULT_POLICY_FILE}}"
 QUESTIONNAIRE_FILE="${2:-${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}}"
-OUTPUT_NAME="${3:-${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}}"
+OUTPUT_NAME="${3:-${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME_WITH_TIMESTAMP}}"
 
 echo "🚀 Complete AI Automation (Customizable)"
 echo "=" * 50
-echo "📋 Policy: $POLICY_FILE"
-echo "📊 Questionnaire: $QUESTIONNAIRE_FILE" 
-echo "📝 Output: $OUTPUT_NAME"
+show_config
 echo "=" * 50
 
 # Validation - check files exist
@@ -93,23 +92,9 @@ fi
 echo "🤖 Running AI automation..."
 echo ""
 
-# Optional logo args from env
-LOGO_ARGS=""
-if [ -n "${LOGO_PATH}" ]; then
-  LOGO_ARGS+=" --logo \"${LOGO_PATH}\""
-fi
-if [ -n "${LOGO_WIDTH_MM}" ]; then
-  LOGO_ARGS+=" --logo-width-mm ${LOGO_WIDTH_MM}"
-fi
-if [ -n "${LOGO_HEIGHT_MM}" ]; then
-  LOGO_ARGS+=" --logo-height-mm ${LOGO_HEIGHT_MM}"
-fi
-
-# Optional GitHub token
-GITHUB_ARG=""
-if [ -n "${GITHUB_TOKEN}" ]; then
-  GITHUB_ARG=" --github-token \"${GITHUB_TOKEN}\""
-fi
+# Build optional arguments from environment
+build_logo_args
+build_github_arg
 
 # Execute the automation (passing questionnaire to both automation and libre scripts)
 eval "python3 scripts/complete_automation.py \

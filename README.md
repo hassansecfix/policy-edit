@@ -47,7 +47,7 @@ CLAUDE_API_KEY=your_key_here
 
 # Optional: Customize file paths (single source of truth)
 # POLICY_FILE=data/v5 Freya POL-11 Access Control.docx
-# QUESTIONNAIRE_FILE=data/secfix_questionnaire_responses_consulting.csv
+# QUESTIONNAIRE_FILE=data/questionnaire_responses.csv
 # OUTPUT_NAME=policy_tracked_changes_with_comments
 ```
 
@@ -60,7 +60,7 @@ CLAUDE_API_KEY=your_key_here
 This uses:
 
 - Policy: `data/v5 Freya POL-11 Access Control.docx`
-- Questionnaire: `data/secfix_questionnaire_responses_consulting.csv`
+- Questionnaire: `data/questionnaire_responses.csv`
 - Output name: `policy_tracked_changes_with_comments`
 
 ## Configuration (Single Source of Truth)
@@ -132,6 +132,7 @@ LOGO_HEIGHT_MM=0
 ```
 .
 ├── README.md
+├── config.sh                      # Shared configuration defaults (DRY)
 ├── env.example                    # Configuration template
 ├── quick_automation.sh            # Fastest setup
 ├── run_complete_automation.sh     # Production automation
@@ -142,7 +143,6 @@ LOGO_HEIGHT_MM=0
 │   ├── company_logo.png
 │   ├── prompt.md
 │   ├── questionnaire_responses.csv
-│   ├── secfix_questionnaire_responses_consulting.csv
 │   ├── updated_policy_instructions_v4.0.md
 │   └── v5 Freya POL-11 Access Control.docx
 ├── scripts/

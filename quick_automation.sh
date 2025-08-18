@@ -30,28 +30,24 @@ echo ""
 
 source .env
 
-# Optional logo args from env
-LOGO_ARGS=""
-if [ -n "${LOGO_PATH}" ]; then
-  LOGO_ARGS+=" --logo \"${LOGO_PATH}\""
-fi
-if [ -n "${LOGO_WIDTH_MM}" ]; then
-  LOGO_ARGS+=" --logo-width-mm ${LOGO_WIDTH_MM}"
-fi
-if [ -n "${LOGO_HEIGHT_MM}" ]; then
-  LOGO_ARGS+=" --logo-height-mm ${LOGO_HEIGHT_MM}"
-fi
+# Load shared configuration (single source of truth)
+source "$(dirname "$0")/config.sh"
 
-# Optional GitHub token
-GITHUB_ARG=""
-if [ -n "${GITHUB_TOKEN}" ]; then
-  GITHUB_ARG=" --github-token \"${GITHUB_TOKEN}\""
-fi
+# Configuration (single source of truth) - use env vars with fallbacks
+POLICY_FILE="${POLICY_FILE:-$DEFAULT_POLICY_FILE}"
+QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
+OUTPUT_NAME="${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}"
+
+show_config
+
+# Build optional arguments from environment
+build_logo_args
+build_github_arg
 
 eval "python3 scripts/complete_automation.py \
-  --policy \"data/v5 Freya POL-11 Access Control.docx\" \
-  --questionnaire \"data/secfix_questionnaire_responses_consulting.csv\" \
-  --output-name \"policy_tracked_changes_with_comments\" \
+  --policy \"$POLICY_FILE\" \
+  --questionnaire \"$QUESTIONNAIRE_FILE\" \
+  --output-name \"$OUTPUT_NAME\" \
   --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}"
 
 echo ""
