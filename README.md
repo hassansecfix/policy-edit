@@ -40,36 +40,72 @@ Flow at a glance:
 
 ## Quick start
 
-1. Create `.env` with your Claude API key:
+1. Create `.env` with your Claude API key and optional configuration:
 
-```
+```bash
 CLAUDE_API_KEY=your_key_here
+
+# Optional: Customize file paths (single source of truth)
+# POLICY_FILE=data/v5 Freya POL-11 Access Control.docx
+# QUESTIONNAIRE_FILE=data/secfix_questionnaire_responses_consulting.csv
+# OUTPUT_NAME=policy_tracked_changes_with_comments
 ```
 
 2. Run the default automation:
 
-```
+```bash
 ./quick_automation.sh
 ```
 
 This uses:
 
 - Policy: `data/v5 Freya POL-11 Access Control.docx`
-- Questionnaire: `data/questionnaire_responses.csv`
+- Questionnaire: `data/secfix_questionnaire_responses_consulting.csv`
 - Output name: `policy_tracked_changes_with_comments`
 
-## Custom runs
+## Configuration (Single Source of Truth)
 
-- Same defaults, but explicit script:
+The system uses a priority-based configuration system:
 
+1. **Command line arguments** (highest priority)
+2. **Environment variables** in `.env` file
+3. **Built-in defaults** (lowest priority)
+
+### Environment Configuration
+
+Set these in your `.env` file to customize defaults:
+
+```bash
+# File paths
+POLICY_FILE=data/your_policy.docx
+QUESTIONNAIRE_FILE=data/your_responses.csv
+OUTPUT_NAME=custom_output_name
+
+# Logo settings
+LOGO_PATH=data/company_logo.png
+LOGO_WIDTH_MM=35
+LOGO_HEIGHT_MM=0
 ```
+
+### Custom runs
+
+- Use environment configuration:
+
+```bash
 ./run_complete_automation.sh
 ```
 
-- Custom files and output name:
+- Override with command line arguments:
 
-```
+```bash
 ./run_custom_automation.sh <policy.docx> <questionnaire.{xlsx|csv}> <output_name>
+```
+
+- Mix approaches (CLI args override env vars):
+
+```bash
+# Set QUESTIONNAIRE_FILE in .env, but override policy via CLI
+./run_custom_automation.sh data/different_policy.docx
 ```
 
 ## What the automation does
@@ -96,14 +132,17 @@ This uses:
 ```
 .
 ├── README.md
-├── quick_automation.sh
-├── run_complete_automation.sh
-├── run_custom_automation.sh
+├── env.example                    # Configuration template
+├── quick_automation.sh            # Fastest setup
+├── run_complete_automation.sh     # Production automation
+├── run_custom_automation.sh       # Flexible configuration
 ├── edits/
-│   └── secfix_with_authors_edits.json
+│   └── policy_tracked_changes_with_comments_edits.json
 ├── data/
+│   ├── company_logo.png
 │   ├── prompt.md
 │   ├── questionnaire_responses.csv
+│   ├── secfix_questionnaire_responses_consulting.csv
 │   ├── updated_policy_instructions_v4.0.md
 │   └── v5 Freya POL-11 Access Control.docx
 ├── scripts/
@@ -123,28 +162,37 @@ This uses:
 
 ## Logo Setup
 
-To add your company logo:
+Configure logo insertion using the single source of truth (`.env` file):
 
 1. **Place logo file** in the project (e.g., `data/company_logo.png`)
-2. **Set environment variables** in `.env`:
-   ```
+2. **Add logo configuration to `.env`**:
+   ```bash
+   # Logo settings (single source of truth)
    LOGO_PATH=data/company_logo.png
    LOGO_WIDTH_MM=35
    LOGO_HEIGHT_MM=0  # 0 = preserve aspect ratio
    ```
 3. **Ensure your policy document** contains the `[ADD COMPANY LOGO]` placeholder in the header
 
-When you run automation, Claude will:
+### Logo Priority System
+
+When you run automation, the system uses this priority order:
+
+1. **Questionnaire URL**: Automatically extracts and downloads logo from questionnaire CSV
+2. **Environment variable**: Uses `LOGO_PATH` from `.env` if questionnaire has no logo URL
+3. **Default fallback**: Uses `data/company_logo.png` if neither above is available
+
+Claude will:
 
 - Detect the `[ADD COMPANY LOGO]` placeholder in your policy header
 - Generate a `"replace_with_logo"` operation for the placeholder
-- System automatically:
-  1. First tries to use logo URL from questionnaire (downloads it)
-  2. Falls back to local logo file (`data/company_logo.png`) if URL fails
-  3. Replaces the placeholder with your logo image + adds comments
+- Apply the logo using the priority system above
+- Add tracking comments for the logo replacement
 
 ## Tips
 
-- For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
-- You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
-- Logo detection is automatic - the system detects `[ADD COMPANY LOGO]` and uses your local logo file
+- **Configuration**: Use `.env` file as your single source of truth for all settings
+- **Flexibility**: Command line arguments can override any environment variable when needed
+- **Comments**: For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
+- **Iteration**: You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
+- **Logo detection**: Automatic - the system detects `[ADD COMPANY LOGO]` and uses the configured logo source

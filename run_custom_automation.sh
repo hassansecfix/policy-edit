@@ -4,28 +4,28 @@
 
 set -e  # Exit on any error
 
-# Default configuration (modify these as needed)
-DEFAULT_POLICY="data/v5 Freya POL-11 Access Control.docx"
-DEFAULT_QUESTIONNAIRE="data/secfix_questionnaire_responses_consulting.csv"
-DEFAULT_OUTPUT="policy_tracked_changes_with_comments_$(date +%Y%m%d_%H%M%S)"
-
-# Parse command line arguments
-POLICY_FILE="${1:-$DEFAULT_POLICY}"
-QUESTIONNAIRE_FILE="${2:-$DEFAULT_QUESTIONNAIRE}"
-OUTPUT_NAME="${3:-$DEFAULT_OUTPUT}"
+# Default configuration fallbacks (modify these in .env file as needed)
+DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
+DEFAULT_QUESTIONNAIRE_FILE="data/secfix_questionnaire_responses_consulting.csv"
+DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments_$(date +%Y%m%d_%H%M%S)"
 
 # Help function
 show_help() {
     echo "Usage: $0 [policy_file] [questionnaire_file] [output_name]"
     echo ""
+    echo "Configuration (single source of truth):"
+    echo "  1. Set in .env file: POLICY_FILE, QUESTIONNAIRE_FILE, OUTPUT_NAME"
+    echo "  2. Or pass as command line arguments (overrides .env)"
+    echo "  3. Or use defaults if neither is set"
+    echo ""
     echo "Arguments:"
-    echo "  policy_file        Path to policy DOCX (default: $DEFAULT_POLICY)"
-    echo "  questionnaire_file Path to questionnaire CSV (default: $DEFAULT_QUESTIONNAIRE)"
-    echo "  output_name        Output name prefix (default: $DEFAULT_OUTPUT)"
+    echo "  policy_file        Path to policy DOCX (overrides POLICY_FILE in .env)"
+    echo "  questionnaire_file Path to questionnaire CSV (overrides QUESTIONNAIRE_FILE in .env)"
+    echo "  output_name        Output name prefix (overrides OUTPUT_NAME in .env)"
     echo ""
     echo "Examples:"
-    echo "  $0"
-    echo "  $0 data/my_policy.docx"
+    echo "  $0                                          # Use .env or defaults"
+    echo "  $0 data/my_policy.docx                     # Override policy only"
     echo "  $0 data/my_policy.docx data/my_responses.csv"
     echo "  $0 data/my_policy.docx data/my_responses.csv \"custom_policy_v2\""
     echo ""
@@ -41,14 +41,7 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     exit 0
 fi
 
-echo "🚀 Complete AI Automation (Customizable)"
-echo "=" * 50
-echo "📋 Policy: $POLICY_FILE"
-echo "📊 Questionnaire: $QUESTIONNAIRE_FILE" 
-echo "📝 Output: $OUTPUT_NAME"
-echo "=" * 50
-
-# Validation
+# Validation - check .env file exists
 if [ ! -f ".env" ]; then
     echo "❌ Error: .env file not found!"
     echo ""
@@ -59,6 +52,28 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
+# Load environment variables and set configuration (single source of truth)
+echo "🔑 Loading environment..."
+source .env
+
+if [ -z "$CLAUDE_API_KEY" ]; then
+    echo "❌ Error: CLAUDE_API_KEY not found in .env!"
+    exit 1
+fi
+
+# Configuration priority: 1) Command line args, 2) Environment variables, 3) Defaults
+POLICY_FILE="${1:-${POLICY_FILE:-$DEFAULT_POLICY_FILE}}"
+QUESTIONNAIRE_FILE="${2:-${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}}"
+OUTPUT_NAME="${3:-${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}}"
+
+echo "🚀 Complete AI Automation (Customizable)"
+echo "=" * 50
+echo "📋 Policy: $POLICY_FILE"
+echo "📊 Questionnaire: $QUESTIONNAIRE_FILE" 
+echo "📝 Output: $OUTPUT_NAME"
+echo "=" * 50
+
+# Validation - check files exist
 if [ ! -f "$POLICY_FILE" ]; then
     echo "❌ Error: Policy file not found: $POLICY_FILE"
     echo ""
@@ -72,15 +87,6 @@ if [ ! -f "$QUESTIONNAIRE_FILE" ]; then
     echo ""
     echo "💡 Available CSV files:"
     find data/ -name "*.csv" 2>/dev/null || echo "   No CSV files found in data/"
-    exit 1
-fi
-
-# Load environment and run
-echo "🔑 Loading environment..."
-source .env
-
-if [ -z "$CLAUDE_API_KEY" ]; then
-    echo "❌ Error: CLAUDE_API_KEY not found in .env!"
     exit 1
 fi
 
@@ -105,7 +111,7 @@ if [ -n "${GITHUB_TOKEN}" ]; then
   GITHUB_ARG=" --github-token \"${GITHUB_TOKEN}\""
 fi
 
-# Execute the automation
+# Execute the automation (passing questionnaire to both automation and libre scripts)
 eval "python3 scripts/complete_automation.py \
     --policy \"$POLICY_FILE\" \
     --questionnaire \"$QUESTIONNAIRE_FILE\" \

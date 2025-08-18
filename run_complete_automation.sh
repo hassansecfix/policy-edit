@@ -4,19 +4,11 @@
 
 set -e  # Exit on any error
 
-# Configuration - modify these as needed
-POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-QUESTIONNAIRE_FILE="data/secfix_questionnaire_responses_consulting.csv"
-OUTPUT_NAME="policy_tracked_changes_with_comments"
-
-echo "🚀 Complete AI Automation Starting..."
-echo "=" * 50
-echo "📋 Policy: $POLICY_FILE"
-echo "📊 Questionnaire: $QUESTIONNAIRE_FILE"
-echo "📝 Output name: $OUTPUT_NAME"
-echo "🤖 AI: Claude Sonnet 4"
-echo "⚙️  Processing: GitHub Actions"
-echo "=" * 50
+# Configuration - modify these in .env file as needed
+# Default fallbacks if not set in .env
+DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
+DEFAULT_QUESTIONNAIRE_FILE="data/secfix_questionnaire_responses_consulting.csv"
+DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments"
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then
@@ -28,6 +20,31 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
+# Source environment variables and set configuration (single source of truth)
+echo "🔑 Loading environment variables..."
+source .env
+
+if [ -z "$CLAUDE_API_KEY" ]; then
+    echo "❌ Error: CLAUDE_API_KEY not set in .env file!"
+    echo "💡 Add this line to your .env file:"
+    echo "   CLAUDE_API_KEY=your_api_key_here"
+    exit 1
+fi
+
+# Use environment variables with fallback to defaults (single source of truth)
+POLICY_FILE="${POLICY_FILE:-$DEFAULT_POLICY_FILE}"
+QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
+OUTPUT_NAME="${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}"
+
+echo "🚀 Complete AI Automation Starting..."
+echo "=" * 50
+echo "📋 Policy: $POLICY_FILE"
+echo "📊 Questionnaire: $QUESTIONNAIRE_FILE"
+echo "📝 Output name: $OUTPUT_NAME"
+echo "🤖 AI: Claude Sonnet 4"
+echo "⚙️  Processing: GitHub Actions"
+echo "=" * 50
+
 # Check if input files exist
 if [ ! -f "$POLICY_FILE" ]; then
     echo "❌ Error: Policy file not found: $POLICY_FILE"
@@ -36,17 +53,6 @@ fi
 
 if [ ! -f "$QUESTIONNAIRE_FILE" ]; then
     echo "❌ Error: Questionnaire file not found: $QUESTIONNAIRE_FILE"
-    exit 1
-fi
-
-# Source environment variables and run the automation
-echo "🔑 Loading environment variables..."
-source .env
-
-if [ -z "$CLAUDE_API_KEY" ]; then
-    echo "❌ Error: CLAUDE_API_KEY not set in .env file!"
-    echo "💡 Add this line to your .env file:"
-    echo "   CLAUDE_API_KEY=your_api_key_here"
     exit 1
 fi
 
