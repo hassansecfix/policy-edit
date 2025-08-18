@@ -389,10 +389,13 @@ def main():
             for op in operations:
                 action = op.get('action', 'replace')
                 if action == 'replace_with_logo':
-                    # Handle logo replacement operations
+                    # Handle logo replacement operations - DIRECT REPLACEMENT, NO TRACKING!
                     target_text = op.get('target_text', '')
-                    comment = op.get('comment', '')
-                    author = op.get('comment_author', 'AI Assistant')
+                    
+                    # TEMPORARILY DISABLE TRACKING FOR LOGO REPLACEMENT
+                    original_track_changes = doc.RecordChanges
+                    doc.RecordChanges = False
+                    print(f"🔄 Temporarily disabled tracking for logo replacement")
                     
                     # Determine logo path to use (URL, metadata, or fallback)
                     final_logo_path = None
@@ -508,26 +511,10 @@ def main():
                                     except Exception:
                                         pass
                                 
-                                # Replace the text with the graphic
+                                # SIMPLE REPLACEMENT: Just replace the text with the graphic - NO TRACKING, NO COMMENTS!
                                 found_range.getText().insertTextContent(found_range, graphic, True)
                                 replaced_count += 1
-                                
-                                # Add comment annotation
-                                if comment:
-                                    try:
-                                        annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
-                                        annotation.setPropertyValue("Author", author)
-                                        annotation.setPropertyValue("Content", comment)
-                                        dt = create_libreoffice_datetime()
-                                        try:
-                                            annotation.setPropertyValue("Date", dt)
-                                        except Exception:
-                                            annotation.setPropertyValue("DateTimeValue", dt)
-                                        # Insert annotation near the logo
-                                        cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        cursor.getText().insertTextContent(cursor.getEnd(), annotation, False)
-                                    except Exception:
-                                        pass
+                                print(f"✅ Direct logo replacement completed - no tracking, no comments!")
                                 
                             except Exception as e:
                                 print(f"Failed to replace logo occurrence: {e}")
@@ -551,6 +538,10 @@ def main():
                             
                     except Exception as e:
                         print(f"❌ Failed to process logo replacement operation: {e}")
+                    finally:
+                        # RESTORE TRACKING SETTING
+                        doc.RecordChanges = original_track_changes
+                        print(f"🔄 Restored tracking setting to: {original_track_changes}")
                 
                 elif action == 'comment':
                     target_text = op.get('target_text', '')
