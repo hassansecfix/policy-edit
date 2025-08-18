@@ -500,47 +500,53 @@ def main():
             except Exception:
                 pass
 
-            # Perform the replacement first
+            # Capture redlines count before replacement
+            prev_redlines_count = 0
+            try:
+                prev_redlines = doc.getPropertyValue("Redlines")
+                if prev_redlines:
+                    prev_redlines_count = prev_redlines.getCount()
+            except Exception:
+                prev_redlines_count = 0
+
+            # Perform the replacement
             count_replaced = doc.replaceAll(rd)
             
             # Add comment if provided and replacements were made
             if comment_text and count_replaced > 0:
                 try:
-                    # Find the replaced text and add annotation to ALL occurrences using multiple methods
-                    search_desc = doc.createSearchDescriptor()
-                    search_desc.SearchString = repl if repl else find
-                    search_desc.SearchCaseSensitive = match_case
-                    search_desc.SearchWords = whole_word
-                    
-                    found_range = doc.findFirst(search_desc)
-                    added_count = 0
-                    while found_range:
-                        try:
-                            # Method 1: Try creating annotation field (most compatible)
+                    # First, try to attach the comment to each NEW redline created by this replaceAll
+                    added_to_redlines = 0
+                    try:
+                        redlines = doc.getPropertyValue("Redlines")
+                        if redlines:
+                            total_after = redlines.getCount()
+                            for i in range(prev_redlines_count, total_after):
+                                try:
+                                    rl = redlines.getByIndex(i)
+                                    rl.setPropertyValue("Comment", f"{author_name}: {comment_text}")
+                                    added_to_redlines += 1
+                                except Exception as e_rl:
+                                    print(f"Could not set comment on redline {i}: {e_rl}")
+                    except Exception as e_red:
+                        print(f"Could not access redlines: {e_red}")
+
+                    if added_to_redlines > 0:
+                        print(f"✅ Added comment to {added_to_redlines} tracked change(s) by {author_name}")
+                    else:
+                        # Fallback: annotate occurrences directly (previous behavior)
+                        search_desc = doc.createSearchDescriptor()
+                        search_desc.SearchString = repl if repl else find
+                        search_desc.SearchCaseSensitive = match_case
+                        search_desc.SearchWords = whole_word
+                        
+                        found_range = doc.findFirst(search_desc)
+                        added_count = 0
+                        while found_range:
                             try:
-                                annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
-                                annotation.setPropertyValue("Author", author_name)
-                                annotation.setPropertyValue("Content", comment_text)
-                                
-                                # Set proper timestamp
-                                dt = create_libreoffice_datetime()
+                                # Method 1: Try creating annotation field (most compatible)
                                 try:
-                                    annotation.setPropertyValue("Date", dt)
-                                except Exception:
-                                    annotation.setPropertyValue("DateTimeValue", dt)
-                                
-                                cursor = found_range.getText().createTextCursorByRange(found_range)
-                                # Keep the full range selected for the comment
-                                cursor.getText().insertTextContent(cursor, annotation, True)
-                                
-                                added_count += 1
-                            
-                            except Exception as e1:
-                                print(f"Annotation method failed: {e1}")
-                                
-                                # Method 2: Try PostIt field
-                                try:
-                                    annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
+                                    annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
                                     annotation.setPropertyValue("Author", author_name)
                                     annotation.setPropertyValue("Content", comment_text)
                                     
@@ -557,64 +563,85 @@ def main():
                                     
                                     added_count += 1
                                 
-                                except Exception as e2:
-                                    print(f"PostIt method failed: {e2}")
+                                except Exception as e1:
+                                    print(f"Annotation method failed: {e1}")
                                     
-                                    # Method 3: Basic annotation
+                                    # Method 2: Try PostIt field
                                     try:
-                                        annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
-                                        if annotation:
-                                            annotation.Author = author_name
-                                            annotation.Content = comment_text
-                                            
-                                            # Set proper timestamp
-                                            dt = create_libreoffice_datetime()
-                                            try:
-                                                annotation.Date = dt
-                                            except Exception:
-                                                annotation.DateTimeValue = dt
-                                            
-                                            # Insert to cover the entire found range
-                                            found_range.getText().insertTextContent(found_range, annotation, True)
-                                            added_count += 1
-                                        else:
-                                            raise Exception("Could not create annotation instance")
-                                            
-                                    except Exception as e3:
-                                        print(f"Basic annotation failed: {e3}")
+                                        annotation = doc.createInstance("com.sun.star.text.textfield.PostItField")
+                                        annotation.setPropertyValue("Author", author_name)
+                                        annotation.setPropertyValue("Content", comment_text)
                                         
-                                        # Method 4: Fallback to tracked change comment
+                                        # Set proper timestamp
+                                        dt = create_libreoffice_datetime()
                                         try:
-                                            redlines = doc.getPropertyValue("Redlines")
-                                            if redlines and redlines.getCount() > 0:
-                                                last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                                                last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
+                                            annotation.setPropertyValue("Date", dt)
+                                        except Exception:
+                                            annotation.setPropertyValue("DateTimeValue", dt)
+                                        
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                        # Keep the full range selected for the comment
+                                        cursor.getText().insertTextContent(cursor, annotation, True)
+                                        
+                                        added_count += 1
+                                    
+                                    except Exception as e2:
+                                        print(f"PostIt method failed: {e2}")
+                                        
+                                        # Method 3: Basic annotation
+                                        try:
+                                            annotation = doc.createInstance("com.sun.star.text.textfield.Annotation")
+                                            if annotation:
+                                                annotation.Author = author_name
+                                                annotation.Content = comment_text
+                                                
+                                                # Set proper timestamp
+                                                dt = create_libreoffice_datetime()
+                                                try:
+                                                    annotation.Date = dt
+                                                except Exception:
+                                                    annotation.DateTimeValue = dt
+                                                
+                                                # Insert to cover the entire found range
+                                                found_range.getText().insertTextContent(found_range, annotation, True)
                                                 added_count += 1
                                             else:
-                                                print(f"❌ No tracked changes available for comment")
-                                        except Exception as e4:
-                                            print(f"❌ All comment methods failed for replacement. Last error: {e4}")
-                        except Exception as e:
-                            print(f"Warning: Could not add comment: {e}")
+                                                raise Exception("Could not create annotation instance")
+                                                
+                                        except Exception as e3:
+                                            print(f"Basic annotation failed: {e3}")
+                                            
+                                            # Method 4: Fallback to tracked change comment (last redline)
+                                            try:
+                                                redlines = doc.getPropertyValue("Redlines")
+                                                if redlines and redlines.getCount() > 0:
+                                                    last_redline = redlines.getByIndex(redlines.getCount() - 1)
+                                                    last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
+                                                    added_count += 1
+                                                else:
+                                                    print(f"❌ No tracked changes available for comment")
+                                            except Exception as e4:
+                                                print(f"❌ All comment methods failed for replacement. Last error: {e4}")
+                            except Exception as e:
+                                print(f"Warning: Could not add comment: {e}")
+                            
+                            # Move to next occurrence
+                            found_range = doc.findNext(found_range, search_desc)
                         
-                        # Move to next occurrence
-                        found_range = doc.findNext(found_range, search_desc)
-                    
-                    if added_count > 0:
-                        print(f"✅ Added {added_count} comment(s) to replacements by {author_name}")
-                    else:
-                        # Fallback: try to attach to the most recent tracked change
-                        try:
-                            redlines = doc.getPropertyValue("Redlines")
-                            if redlines and redlines.getCount() > 0:
-                                last_redline = redlines.getByIndex(redlines.getCount() - 1)
-                                last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
-                                print(f"✅ Added comment to recent tracked change: {comment_text[:80]}...")
-                            else:
-                                print(f"❌ Could not find replacement text and no tracked changes available")
-                        except Exception as e:
-                            print(f"Could not add comment to tracked change: {e}")
-                        
+                        if added_count > 0:
+                            print(f"✅ Added {added_count} comment(s) to replacements by {author_name}")
+                        else:
+                            # Fallback: try to attach to the most recent tracked change
+                            try:
+                                redlines = doc.getPropertyValue("Redlines")
+                                if redlines and redlines.getCount() > 0:
+                                    last_redline = redlines.getByIndex(redlines.getCount() - 1)
+                                    last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
+                                    print(f"✅ Added comment to recent tracked change: {comment_text[:80]}...")
+                                else:
+                                    print(f"❌ Could not find replacement text and no tracked changes available")
+                            except Exception as e:
+                                print(f"Could not add comment to tracked change: {e}")
                 except Exception as e:
                     print(f"Warning: Could not add comment: {e}")
             
