@@ -76,7 +76,7 @@ This uses:
 
 - Converts questionnaire to CSV only if you pass an `.xlsx` file
 - Calls Claude via `ai_policy_processor.py` to:
-  - Analyze the policy document for the `[ADD_COMPANY_LOGO]` placeholder in the header
+  - Analyze the policy document for the `[ADD COMPANY LOGO]` placeholder in the header
   - Generate JSON operations for text replacements, deletions, and logo insertions
   - Include logo operations when logo is provided (URL or local file)
 - If logo flags are provided, injects logo metadata into the JSON
@@ -104,7 +104,7 @@ Notes:
 - `--csv` also accepts the JSON instructions format used here
 - `--launch` starts a headless LibreOffice listener if needed
 - Logo replacement is automatic if:
-  1. Policy document contains the `[ADD_COMPANY_LOGO]` placeholder in the header
+  1. Policy document contains the `[ADD COMPANY LOGO]` placeholder in the header
   2. Logo is provided via questionnaire (URL) or local file (`data/company_logo.png`)
   3. AI detects the placeholder and generates `replace_with_logo` operations
   4. System automatically falls back to local file if questionnaire shows URL
@@ -158,11 +158,11 @@ To add your company logo:
    LOGO_WIDTH_MM=35
    LOGO_HEIGHT_MM=0  # 0 = preserve aspect ratio
    ```
-3. **Ensure your policy document** contains the `[ADD_COMPANY_LOGO]` placeholder in the header
+3. **Ensure your policy document** contains the `[ADD COMPANY LOGO]` placeholder in the header
 
 When you run automation, Claude will:
 
-- Detect the `[ADD_COMPANY_LOGO]` placeholder in your policy header
+- Detect the `[ADD COMPANY LOGO]` placeholder in your policy header
 - Generate a `"replace_with_logo"` operation for the placeholder
 - System automatically uses local logo file (`data/company_logo.png`) if available
 - The applier will replace the placeholder with your logo image + add comments
@@ -171,4 +171,4 @@ When you run automation, Claude will:
 
 - For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
 - You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
-- Logo detection is automatic - the system detects `[ADD_COMPANY_LOGO]` and uses your local logo file
+- Logo detection is automatic - the system detects `[ADD COMPANY LOGO]` and uses your local logo file

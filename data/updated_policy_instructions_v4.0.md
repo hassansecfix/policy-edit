@@ -95,15 +95,15 @@ Analyze the data and generate JSON-formatted customization instructions based on
 **Data Field:** Look for company logo upload in CSV  
 **JSON Instruction to Generate:**
 
-- The document contains `[ADD_COMPANY_LOGO]` placeholder in the header
+- The document contains `[ADD COMPANY LOGO]` placeholder in the header
 - If logo provided in questionnaire (either URL or local file reference):
-  - target_text: "[ADD_COMPANY_LOGO]"
+  - target_text: "[ADD COMPANY LOGO]"
   - action: "replace_with_logo"
   - replacement: ""
   - comment: "Company logo inserted from questionnaire upload"
   - comment_author: "Secfix AI"
 - If no logo provided:
-  - target_text: "[ADD_COMPANY_LOGO]"
+  - target_text: "[ADD COMPANY LOGO]"
   - action: "comment"
   - comment: "Logo placeholder detected but no company logo was provided in questionnaire. Please upload a logo or manually replace this placeholder."
   - comment_author: "Secfix AI"
