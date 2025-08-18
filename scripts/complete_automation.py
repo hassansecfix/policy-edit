@@ -233,7 +233,7 @@ def main():
             print(f"❌ AI generation failed: {output}")
             sys.exit(1)
 
-        # If logo was provided, inject minimal metadata so the applier can use it
+        # If logo was provided, inject metadata so the applier can use it
         if args.logo or args.logo_width_mm or args.logo_height_mm:
             try:
                 with open(edits_json, 'r', encoding='utf-8') as f:

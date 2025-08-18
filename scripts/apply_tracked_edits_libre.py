@@ -302,101 +302,7 @@ def main():
         except Exception:
             return None
 
-    def insert_logo_into_header(document, logo_fs_path, width_mm=None, height_mm=None):
-        try:
-            if not logo_fs_path:
-                return False, "No logo path provided"
-            # Resolve path
-            candidate = logo_fs_path
-            if not os.path.isabs(candidate):
-                candidate = os.path.abspath(candidate)
-            if not os.path.exists(candidate):
-                return False, f"Logo not found: {candidate}"
 
-            file_url = to_url(candidate)
-
-            # Access page styles
-            style_families = document.getStyleFamilies()
-            page_styles = style_families.getByName("PageStyles")
-            page_style = None
-            for name in ("Default Page Style", "Default Style", "Standard"):
-                try:
-                    page_style = page_styles.getByName(name)
-                    break
-                except Exception:
-                    continue
-            if page_style is None:
-                # Fallback to first available page style
-                try:
-                    en = page_styles.createEnumeration()
-                    if en.hasMoreElements():
-                        page_style = en.nextElement()
-                except Exception:
-                    pass
-            if page_style is None:
-                return False, "Could not access page style for header insertion"
-
-            # Enable header if off
-            try:
-                if not page_style.getPropertyValue("HeaderIsOn"):
-                    page_style.setPropertyValue("HeaderIsOn", True)
-            except Exception:
-                # Some builds expose HeaderIsOn as boolean property only on set
-                try:
-                    page_style.setPropertyValue("HeaderIsOn", True)
-                except Exception:
-                    pass
-
-            # Get header text object
-            try:
-                header_text = page_style.getPropertyValue("HeaderText")
-            except Exception:
-                return False, "HeaderText not available on page style"
-
-            # Create graphic object
-            graphic = document.createInstance("com.sun.star.text.GraphicObject")
-            try:
-                graphic.setPropertyValue("GraphicURL", file_url)
-            except Exception:
-                # Older API may allow direct attribute
-                try:
-                    graphic.GraphicURL = file_url
-                except Exception:
-                    return False, "Could not set GraphicURL on graphic object"
-
-            # Size handling
-            set_size = False
-            if width_mm:
-                w = mm_to_100th_mm(width_mm)
-                if w:
-                    try:
-                        graphic.setPropertyValue("Width", w)
-                        set_size = True
-                    except Exception:
-                        pass
-            if height_mm:
-                h = mm_to_100th_mm(height_mm)
-                if h:
-                    try:
-                        graphic.setPropertyValue("Height", h)
-                        set_size = True
-                    except Exception:
-                        pass
-            if set_size:
-                try:
-                    graphic.setPropertyValue("KeepRatio", True)
-                except Exception:
-                    pass
-
-            # Insert at header start
-            try:
-                header_text.insertTextContent(header_text.getStart(), graphic, False)
-            except Exception as e:
-                return False, f"Failed to insert logo in header: {e}"
-
-            return True, f"Inserted logo from {candidate}"
-        except Exception as e:
-            return False, f"Logo insertion error: {e}"
 
     # Load hidden
     in_props = (mkprop("Hidden", True),)
@@ -452,7 +358,7 @@ def main():
         cli_logo_w = args.logo_width_mm
         cli_logo_h = args.logo_height_mm
 
-        # First, process comment-only operations directly from JSON
+        # First, process comment-only operations and logo operations directly from JSON
         if csv_path.endswith('.json'):
             with open(csv_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -475,20 +381,99 @@ def main():
                 logo_w_to_use = cli_logo_w
                 logo_h_to_use = cli_logo_h
 
-            # Insert logo if configured
-            if logo_path_to_use:
-                ok, msg = insert_logo_into_header(doc, logo_path_to_use, logo_w_to_use, logo_h_to_use)
-                if ok:
-                    print(f"🖼️  {msg}")
-                else:
-                    print(f"⚠️  {msg}")
-            
             comment_operations = [op for op in operations if op.get('action') == 'comment']
-            print(f"📝 Found {len(comment_operations)} comment-only operations to process")
+            logo_operations = [op for op in operations if op.get('action') == 'replace_with_logo']
+            print(f"📝 Found {len(comment_operations)} comment-only operations and {len(logo_operations)} logo operations to process")
             
             for op in operations:
                 action = op.get('action', 'replace')
-                if action == 'comment':
+                if action == 'replace_with_logo':
+                    # Handle logo replacement operations
+                    target_text = op.get('target_text', '')
+                    comment = op.get('comment', '')
+                    author = op.get('comment_author', 'AI Assistant')
+                    
+                    if not logo_path_to_use:
+                        print(f"⚠️  Logo operation for '{target_text}' but no logo provided")
+                        continue
+                    
+                    try:
+                        # Search for the target text throughout the document (including headers)
+                        search_desc = doc.createSearchDescriptor()
+                        search_desc.SearchString = target_text
+                        search_desc.SearchCaseSensitive = False
+                        search_desc.SearchWords = False
+                        
+                        found_range = doc.findFirst(search_desc)
+                        replaced_count = 0
+                        while found_range:
+                            try:
+                                # Create graphic object for this occurrence
+                                graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                logo_file_url = to_url(logo_path_to_use if os.path.isabs(logo_path_to_use) else os.path.abspath(logo_path_to_use))
+                                
+                                try:
+                                    graphic.setPropertyValue("GraphicURL", logo_file_url)
+                                except Exception:
+                                    graphic.GraphicURL = logo_file_url
+                                
+                                # Apply size if provided
+                                if logo_w_to_use:
+                                    w = mm_to_100th_mm(logo_w_to_use)
+                                    if w:
+                                        try:
+                                            graphic.setPropertyValue("Width", w)
+                                        except Exception:
+                                            pass
+                                if logo_h_to_use:
+                                    h = mm_to_100th_mm(logo_h_to_use)
+                                    if h:
+                                        try:
+                                            graphic.setPropertyValue("Height", h)
+                                        except Exception:
+                                            pass
+                                if logo_w_to_use or logo_h_to_use:
+                                    try:
+                                        graphic.setPropertyValue("KeepRatio", True)
+                                    except Exception:
+                                        pass
+                                
+                                # Replace the text with the graphic
+                                found_range.getText().insertTextContent(found_range, graphic, True)
+                                replaced_count += 1
+                                
+                                # Add comment annotation
+                                if comment:
+                                    try:
+                                        annotation = doc.createInstance("com.sun.star.text.TextField.Annotation")
+                                        annotation.setPropertyValue("Author", author)
+                                        annotation.setPropertyValue("Content", comment)
+                                        dt = create_libreoffice_datetime()
+                                        try:
+                                            annotation.setPropertyValue("Date", dt)
+                                        except Exception:
+                                            annotation.setPropertyValue("DateTimeValue", dt)
+                                        # Insert annotation near the logo
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                        cursor.getText().insertTextContent(cursor.getEnd(), annotation, False)
+                                    except Exception:
+                                        pass
+                                
+                            except Exception as e:
+                                print(f"Failed to replace logo occurrence: {e}")
+                            
+                            # Find next occurrence
+                            found_range = doc.findNext(found_range, search_desc)
+                        
+                        if replaced_count > 0:
+                            print(f"🖼️  Replaced {replaced_count} occurrence(s) of '{target_text}' with logo by {author}")
+                        else:
+                            print(f"⚠️  Could not find text '{target_text}' for logo replacement")
+                            
+                    except Exception as e:
+                        print(f"❌ Failed to process logo replacement operation: {e}")
+                
+                elif action == 'comment':
                     target_text = op.get('target_text', '')
                     comment = op.get('comment', '')
                     author = op.get('comment_author', 'AI Assistant')

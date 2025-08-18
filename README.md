@@ -7,21 +7,23 @@ Automate policy editing with AI and generate a DOCX with tracked changes you can
 Flow at a glance:
 
 ```
-[Policy DOCX]        [Questionnaire XLSX/CSV]
-       \                 /
-        \   (if XLSX)   /
-         -> xlsx_to_csv_converter.py
+[Policy DOCX]        [Questionnaire XLSX/CSV]        [Logo Image]
+       \                 /                                /
+        \   (if XLSX)   /                                /
+         -> xlsx_to_csv_converter.py                    /
+                   |                                   /
+                   v                                  /
+          ai_policy_processor.py (Claude)            /
+                   |                                /
+                   v                               /
+         edits/*.json (AI detects logo           /
+         placeholders + generates operations)   /
+                   |                           /
+        (local) apply_tracked_edits_libre.py  /
+         (uses logo metadata if provided) ----
                    |
                    v
-          ai_policy_processor.py (Claude)
-                   |
-                   v
-         edits/*.json (instructions + optional metadata: logo_path, logo_width_mm, logo_height_mm)
-                   |
-        (local) apply_tracked_edits_libre.py
-                   |
-                   v
-     build/<output>.docx with tracked changes
+     build/<output>.docx with tracked changes + logo replacements
 
            (optional GitHub Actions path)
                    |
@@ -34,6 +36,7 @@ Flow at a glance:
 
 - **Deletes and replaces** become real tracked changes.
 - **Comments on replacements** are attached to the deletion half for better Google Docs threading.
+- **Logo placeholders** are automatically detected by AI and replaced with your company logo.
 
 ## Quick start
 
@@ -72,8 +75,11 @@ This uses:
 ## What the automation does
 
 - Converts questionnaire to CSV only if you pass an `.xlsx` file
-- Calls Claude via `ai_policy_processor.py` to produce JSON instructions
-- If provided, injects logo metadata (path/size) into the JSON
+- Calls Claude via `ai_policy_processor.py` to:
+  - Analyze the policy document for logo placeholders (`[ADD_COMPANY_LOGO]`, `[LOGO]`, etc.)
+  - Generate JSON operations for text replacements, deletions, and logo insertions
+  - Include logo operations if placeholders are found and logo is provided
+- If logo flags are provided, injects logo metadata into the JSON
 - Optionally triggers a GitHub Actions workflow to create the final DOCX
 - Prints paths to the generated files
 
@@ -97,8 +103,10 @@ Notes:
 
 - `--csv` also accepts the JSON instructions format used here
 - `--launch` starts a headless LibreOffice listener if needed
-- To add a header logo, either pass CLI flags to the end‑to‑end script (or set .env):
-  - LOGO_PATH, LOGO_WIDTH_MM, LOGO_HEIGHT_MM
+- Logo replacement is automatic if:
+  1. Policy document contains logo placeholders (like `[ADD_COMPANY_LOGO]`)
+  2. Logo path is provided via CLI `--logo` or .env `LOGO_PATH`
+  3. AI will detect placeholders and generate appropriate operations
 
 ## Scripts in this repo
 
@@ -138,7 +146,32 @@ Notes:
 - Claude API key in `.env` for AI generation
 - Optional: GitHub Actions workflow in your remote repo if you use CI path
 
+## Logo Setup
+
+To add your company logo:
+
+1. **Place logo file** in the project (e.g., `data/company_logo.png`)
+2. **Set environment variables** in `.env`:
+   ```
+   LOGO_PATH=data/company_logo.png
+   LOGO_WIDTH_MM=35
+   LOGO_HEIGHT_MM=0  # 0 = preserve aspect ratio
+   ```
+3. **Ensure your policy document** contains a logo placeholder like:
+   - `[ADD_COMPANY_LOGO]`
+   - `[LOGO]`
+   - `{COMPANY_LOGO}`
+   - `[INSERT_LOGO]`
+   - Or similar patterns
+
+When you run automation, Claude will:
+
+- Detect logo placeholders in your policy
+- Generate `"replace_with_logo"` operations for each found placeholder
+- The applier will replace them with your logo image + add comments
+
 ## Tips
 
 - For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
 - You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
+- Logo detection is automatic - just ensure your policy has placeholders and provide the logo path
