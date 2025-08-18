@@ -359,11 +359,108 @@ def main():
         cli_logo_w = args.logo_width_mm
         cli_logo_h = args.logo_height_mm
 
-        # First, process comment-only operations and logo operations directly from JSON
+        # FIRST: Handle logo replacement BEFORE any tracking is enabled
         if csv_path.endswith('.json'):
             with open(csv_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             operations = data.get('instructions', {}).get('operations', [])
+
+            # Find logo operations and do them FIRST, before tracking
+            logo_operations = [op for op in operations if op.get('action') == 'replace_with_logo']
+            if logo_operations:
+                print(f"🖼️  Processing {len(logo_operations)} logo operations BEFORE tracking...")
+                
+                # DISABLE TRACKING COMPLETELY
+                doc.RecordChanges = False
+                
+                for logo_op in logo_operations:
+                    target_text = logo_op.get('target_text', '')
+                    print(f"🔍 Looking for logo placeholder: '{target_text}'")
+                    
+                    # Get logo from questionnaire URL
+                    questionnaire_logo = None
+                    try:
+                        questionnaire_path = 'data/questionnaire_responses.csv'
+                        if os.path.exists(questionnaire_path):
+                            with open(questionnaire_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                import re
+                                urls = re.findall(r'https://[^\s,;]+', content)
+                                for url in urls:
+                                    if 'image' in url or any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']):
+                                        questionnaire_logo = url
+                                        print(f"🔗 Found logo URL: {url}")
+                                        break
+                    except Exception as e:
+                        print(f"⚠️  Error reading questionnaire: {e}")
+                    
+                    # Download and replace logo
+                    if questionnaire_logo:
+                        try:
+                            import requests
+                            import tempfile
+                            print(f"📥 Downloading logo...")
+                            
+                            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
+                            response = requests.get(questionnaire_logo, headers=headers, stream=True, timeout=30)
+                            
+                            if response.status_code == 200:
+                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    temp_file.write(chunk)
+                                temp_file.close()
+                                
+                                # DIRECT REPLACEMENT WITHOUT TRACKING
+                                search_desc = doc.createSearchDescriptor()
+                                search_desc.SearchString = target_text
+                                search_desc.SearchCaseSensitive = False
+                                search_desc.SearchWords = False
+                                
+                                found_range = doc.findFirst(search_desc)
+                                replaced_count = 0
+                                while found_range:
+                                    try:
+                                        # Clear the text first
+                                        found_range.setString("")
+                                        
+                                        # Create and insert graphic
+                                        graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                        logo_file_url = to_url(temp_file.name)
+                                        graphic.setPropertyValue("GraphicURL", logo_file_url)
+                                        
+                                        # Set size
+                                        try:
+                                            graphic.setPropertyValue("Width", 35 * 100)  # 35mm in 1/100mm
+                                            graphic.setPropertyValue("KeepRatio", True)
+                                        except:
+                                            pass
+                                        
+                                        # Insert the graphic
+                                        found_range.getText().insertTextContent(found_range, graphic, False)
+                                        replaced_count += 1
+                                        print(f"✅ Logo inserted successfully!")
+                                        
+                                    except Exception as e:
+                                        print(f"❌ Failed to insert logo: {e}")
+                                    
+                                    found_range = doc.findNext(found_range, search_desc)
+                                
+                                # Clean up
+                                try:
+                                    os.unlink(temp_file.name)
+                                except:
+                                    pass
+                                    
+                                if replaced_count > 0:
+                                    print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s)")
+                                else:
+                                    print(f"❌ Could not find '{target_text}' in document")
+                            
+                        except Exception as e:
+                            print(f"❌ Failed to download/insert logo: {e}")
+            
+            # NOW enable tracking for other operations
+            print(f"🔄 Enabling tracking for other operations...")
 
             # If provided via JSON metadata, prefer it unless CLI overrides are present
             try:
@@ -383,165 +480,13 @@ def main():
                 logo_h_to_use = cli_logo_h
 
             comment_operations = [op for op in operations if op.get('action') == 'comment']
-            logo_operations = [op for op in operations if op.get('action') == 'replace_with_logo']
-            print(f"📝 Found {len(comment_operations)} comment-only operations and {len(logo_operations)} logo operations to process")
+            print(f"📝 Found {len(comment_operations)} comment-only operations to process")
             
             for op in operations:
                 action = op.get('action', 'replace')
                 if action == 'replace_with_logo':
-                    # Handle logo replacement operations - DIRECT REPLACEMENT, NO TRACKING!
-                    target_text = op.get('target_text', '')
-                    
-                    # TEMPORARILY DISABLE TRACKING FOR LOGO REPLACEMENT
-                    original_track_changes = doc.RecordChanges
-                    doc.RecordChanges = False
-                    print(f"🔄 Temporarily disabled tracking for logo replacement")
-                    
-                    # Determine logo path to use (URL, metadata, or fallback)
-                    final_logo_path = None
-                    
-                    # Check if we have a logo from questionnaire (could be URL or file)
-                    questionnaire_logo = None
-                    try:
-                        # Look for logo in questionnaire data
-                        questionnaire_path = 'data/questionnaire_responses.csv'
-                        if os.path.exists(questionnaire_path):
-                            with open(questionnaire_path, 'r', encoding='utf-8') as f:
-                                content = f.read()
-                                print(f"🔍 Searching for logo URL in questionnaire...")
-                                # Look for the specific logo URL pattern
-                                import re
-                                urls = re.findall(r'https://[^\s,;]+', content)
-                                for url in urls:
-                                    if 'image' in url or any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']):
-                                        questionnaire_logo = url
-                                        print(f"🔗 Found logo URL: {url}")
-                                        break
-                    except Exception as e:
-                        print(f"⚠️  Error reading questionnaire: {e}")
-                    
-                    # Priority: CLI arg > questionnaire URL/file > metadata > fallback
-                    if logo_path_to_use:
-                        final_logo_path = logo_path_to_use
-                    elif questionnaire_logo:
-                        if questionnaire_logo.startswith('http'):
-                            # Download URL to temp file
-                            try:
-                                import requests
-                                import tempfile
-                                print(f"📥 Downloading logo from: {questionnaire_logo}")
-                                
-                                headers = {
-                                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-                                }
-                                response = requests.get(questionnaire_logo, headers=headers, stream=True, timeout=30)
-                                
-                                if response.status_code == 200:
-                                    # Determine file extension from URL or content type
-                                    content_type = response.headers.get('content-type', '')
-                                    if 'png' in content_type:
-                                        suffix = '.png'
-                                    elif 'jpeg' in content_type or 'jpg' in content_type:
-                                        suffix = '.jpg'
-                                    else:
-                                        suffix = '.png'  # Default
-                                    
-                                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-                                    for chunk in response.iter_content(chunk_size=8192):
-                                        temp_file.write(chunk)
-                                    temp_file.close()
-                                    final_logo_path = temp_file.name
-                                    print(f"✅ Downloaded logo successfully to: {final_logo_path}")
-                                else:
-                                    print(f"❌ HTTP {response.status_code} - Could not download logo from URL: {questionnaire_logo}")
-                            except Exception as e:
-                                print(f"❌ Failed to download logo: {e}")
-                                print(f"   URL was: {questionnaire_logo}")
-                        else:
-                            final_logo_path = questionnaire_logo
-                    
-                    # Fallback to local file if nothing else worked
-                    if not final_logo_path:
-                        local_fallback = "data/company_logo.png"
-                        if os.path.exists(local_fallback):
-                            final_logo_path = local_fallback
-                            print(f"📁 Using fallback logo: {local_fallback}")
-                        else:
-                            print(f"⚠️  Logo operation for '{target_text}' but no logo available")
-                            continue
-                    
-                    try:
-                        # Search for the target text throughout the document (including headers)
-                        search_desc = doc.createSearchDescriptor()
-                        search_desc.SearchString = target_text
-                        search_desc.SearchCaseSensitive = False
-                        search_desc.SearchWords = False
-                        
-                        found_range = doc.findFirst(search_desc)
-                        replaced_count = 0
-                        while found_range:
-                            try:
-                                # Create graphic object for this occurrence
-                                graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                logo_file_url = to_url(final_logo_path if os.path.isabs(final_logo_path) else os.path.abspath(final_logo_path))
-                                
-                                try:
-                                    graphic.setPropertyValue("GraphicURL", logo_file_url)
-                                except Exception:
-                                    graphic.GraphicURL = logo_file_url
-                                
-                                # Apply size if provided
-                                if logo_w_to_use:
-                                    w = mm_to_100th_mm(logo_w_to_use)
-                                    if w:
-                                        try:
-                                            graphic.setPropertyValue("Width", w)
-                                        except Exception:
-                                            pass
-                                if logo_h_to_use:
-                                    h = mm_to_100th_mm(logo_h_to_use)
-                                    if h:
-                                        try:
-                                            graphic.setPropertyValue("Height", h)
-                                        except Exception:
-                                            pass
-                                if logo_w_to_use or logo_h_to_use:
-                                    try:
-                                        graphic.setPropertyValue("KeepRatio", True)
-                                    except Exception:
-                                        pass
-                                
-                                # SIMPLE REPLACEMENT: Just replace the text with the graphic - NO TRACKING, NO COMMENTS!
-                                found_range.getText().insertTextContent(found_range, graphic, True)
-                                replaced_count += 1
-                                print(f"✅ Direct logo replacement completed - no tracking, no comments!")
-                                
-                            except Exception as e:
-                                print(f"Failed to replace logo occurrence: {e}")
-                            
-                            # Find next occurrence
-                            found_range = doc.findNext(found_range, search_desc)
-                        
-                        if replaced_count > 0:
-                            print(f"🖼️  Successfully replaced {replaced_count} occurrence(s) of '{target_text}' with logo by {author}")
-                        else:
-                            print(f"❌ Could not find text '{target_text}' for logo replacement")
-                            print(f"   Make sure the document contains exactly: {target_text}")
-                            
-                        # Clean up temp file if we downloaded one
-                        if questionnaire_logo and questionnaire_logo.startswith('http') and final_logo_path and final_logo_path.startswith('/tmp'):
-                            try:
-                                os.unlink(final_logo_path)
-                                print(f"🧹 Cleaned up temporary logo file")
-                            except:
-                                pass
-                            
-                    except Exception as e:
-                        print(f"❌ Failed to process logo replacement operation: {e}")
-                    finally:
-                        # RESTORE TRACKING SETTING
-                        doc.RecordChanges = original_track_changes
-                        print(f"🔄 Restored tracking setting to: {original_track_changes}")
+                    # Skip - already handled above before tracking was enabled
+                    continue
                 
                 elif action == 'comment':
                     target_text = op.get('target_text', '')
