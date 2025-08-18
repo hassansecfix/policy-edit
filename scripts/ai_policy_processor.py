@@ -152,10 +152,10 @@ def validate_json_content(json_content):
                 raise ValueError(f"Operation {i+1} missing required field: {field}")
         
         # Check action is valid
-        if operation['action'] not in ['replace', 'delete', 'comment']:
+        if operation['action'] not in ['replace', 'delete', 'comment', 'replace_with_logo']:
             raise ValueError(f"Operation {i+1} has invalid action: {operation['action']}")
         
-        # Replacement field is optional for 'comment' actions, required for others
+        # Replacement field is optional for 'comment' and 'replace_with_logo' actions, required for others
         if operation['action'] in ['replace', 'delete']:
             if 'replacement' not in operation:
                 raise ValueError(f"Operation {i+1} with action '{operation['action']}' missing required field: replacement")
