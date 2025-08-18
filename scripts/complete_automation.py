@@ -39,8 +39,12 @@ def run_command(cmd, description):
     
     if result.returncode != 0:
         print(f"❌ {description} failed!")
-        print(f"Error: {result.stderr}")
-        return False, result.stderr
+        error_msg = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()
+        if not error_msg:
+            error_msg = f"Command failed with exit code {result.returncode} but no error message"
+        print(f"Error: {error_msg}")
+        print(f"Command was: {cmd}")
+        return False, error_msg
     
     print(f"✅ {description} completed")
     return True, result.stdout
