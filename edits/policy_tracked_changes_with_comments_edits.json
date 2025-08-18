@@ -24,7 +24,7 @@
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "[LOGO]",
+        "target_text": "[ADD_COMPANY_LOGO]",
         "action": "replace_with_logo",
         "replacement": "",
         "comment": "Company logo inserted from questionnaire upload",

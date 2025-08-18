@@ -76,9 +76,9 @@ This uses:
 
 - Converts questionnaire to CSV only if you pass an `.xlsx` file
 - Calls Claude via `ai_policy_processor.py` to:
-  - Analyze the policy document for logo placeholders (`[ADD_COMPANY_LOGO]`, `[LOGO]`, etc.)
+  - Analyze the policy document for the `[ADD_COMPANY_LOGO]` placeholder in the header
   - Generate JSON operations for text replacements, deletions, and logo insertions
-  - Include logo operations if placeholders are found and logo is provided
+  - Include logo operations when logo is provided (URL or local file)
 - If logo flags are provided, injects logo metadata into the JSON
 - Optionally triggers a GitHub Actions workflow to create the final DOCX
 - Prints paths to the generated files
@@ -104,9 +104,10 @@ Notes:
 - `--csv` also accepts the JSON instructions format used here
 - `--launch` starts a headless LibreOffice listener if needed
 - Logo replacement is automatic if:
-  1. Policy document contains logo placeholders (like `[ADD_COMPANY_LOGO]`)
-  2. Logo path is provided via CLI `--logo` or .env `LOGO_PATH`
-  3. AI will detect placeholders and generate appropriate operations
+  1. Policy document contains the `[ADD_COMPANY_LOGO]` placeholder in the header
+  2. Logo is provided via questionnaire (URL) or local file (`data/company_logo.png`)
+  3. AI detects the placeholder and generates `replace_with_logo` operations
+  4. System automatically falls back to local file if questionnaire shows URL
 
 ## Scripts in this repo
 
@@ -157,21 +158,17 @@ To add your company logo:
    LOGO_WIDTH_MM=35
    LOGO_HEIGHT_MM=0  # 0 = preserve aspect ratio
    ```
-3. **Ensure your policy document** contains a logo placeholder like:
-   - `[ADD_COMPANY_LOGO]`
-   - `[LOGO]`
-   - `{COMPANY_LOGO}`
-   - `[INSERT_LOGO]`
-   - Or similar patterns
+3. **Ensure your policy document** contains the `[ADD_COMPANY_LOGO]` placeholder in the header
 
 When you run automation, Claude will:
 
-- Detect logo placeholders in your policy
-- Generate `"replace_with_logo"` operations for each found placeholder
-- The applier will replace them with your logo image + add comments
+- Detect the `[ADD_COMPANY_LOGO]` placeholder in your policy header
+- Generate a `"replace_with_logo"` operation for the placeholder
+- System automatically uses local logo file (`data/company_logo.png`) if available
+- The applier will replace the placeholder with your logo image + add comments
 
 ## Tips
 
 - For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
 - You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
-- Logo detection is automatic - just ensure your policy has placeholders and provide the logo path
+- Logo detection is automatic - the system detects `[ADD_COMPANY_LOGO]` and uses your local logo file

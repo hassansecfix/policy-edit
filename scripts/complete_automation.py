@@ -233,23 +233,40 @@ def main():
             print(f"❌ AI generation failed: {output}")
             sys.exit(1)
 
-        # If logo was provided, inject metadata so the applier can use it
-        if args.logo or args.logo_width_mm or args.logo_height_mm:
-            try:
-                with open(edits_json, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                data.setdefault('metadata', {})
+        # If logo was provided via CLI, inject metadata. Otherwise, check if we need fallback logic
+        try:
+            with open(edits_json, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            data.setdefault('metadata', {})
+            
+            # Check if CLI logo provided
+            if args.logo or args.logo_width_mm or args.logo_height_mm:
                 if args.logo:
                     data['metadata']['logo_path'] = args.logo
                 if args.logo_width_mm is not None:
                     data['metadata']['logo_width_mm'] = args.logo_width_mm
                 if args.logo_height_mm is not None:
                     data['metadata']['logo_height_mm'] = args.logo_height_mm
-                with open(edits_json, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
-                print("🖼️  Injected logo metadata into edits JSON")
-            except Exception as e:
-                print(f"⚠️  Could not inject logo metadata: {e}")
+                print("🖼️  Injected CLI logo metadata into edits JSON")
+            else:
+                # Check if there are logo operations but no local logo path set
+                operations = data.get('instructions', {}).get('operations', [])
+                has_logo_operations = any(op.get('action') == 'replace_with_logo' for op in operations)
+                
+                if has_logo_operations and not data['metadata'].get('logo_path'):
+                    # Fallback to local logo file if it exists
+                    local_logo_path = "data/company_logo.png"
+                    if os.path.exists(local_logo_path):
+                        data['metadata']['logo_path'] = local_logo_path
+                        print(f"🖼️  Fallback: Using local logo file {local_logo_path}")
+                    else:
+                        print("⚠️  Logo operation generated but no local logo file found at data/company_logo.png")
+            
+            with open(edits_json, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                
+        except Exception as e:
+            print(f"⚠️  Could not process logo metadata: {e}")
         
         # Step 3: Trigger GitHub Actions
         if not args.skip_github:
