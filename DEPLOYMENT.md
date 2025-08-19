@@ -12,29 +12,28 @@ This guide covers deploying both the Flask API backend and Next.js frontend to p
 
 ### Option 1: Render (Recommended - Free Tier Available)
 
-1. **Create account** at [render.com](https://render.com)
+**📋 Quick Configuration:**
 
-2. **Connect your repository** and create a new Web Service
+```
+Name: policy-automation-api
+Environment: Python 3
+Root Directory: web_ui
+Build Command: pip install -r requirements.txt
+Start Command: python3 app.py
+```
 
-3. **Configure the service:**
+**🔑 Environment Variables:**
 
-   ```
-   Name: policy-automation-api
-   Environment: Python 3
-   Build Command: cd web_ui && pip install -r requirements.txt
-   Start Command: cd web_ui && python3 app.py
-   ```
+```
+CLAUDE_API_KEY = your_claude_api_key_here
+PORT = 5001
+SKIP_API_CALL = true
+GITHUB_TOKEN = your_github_token_here (optional)
+```
 
-4. **Set environment variables:**
+**📖 For detailed step-by-step instructions with screenshots and troubleshooting, see: [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)**
 
-   ```
-   CLAUDE_API_KEY=your_claude_api_key_here
-   GITHUB_TOKEN=your_github_token_here
-   SKIP_API_CALL=true
-   PORT=5001
-   ```
-
-5. **Deploy** - Render will provide you with a URL like `https://policy-automation-api.onrender.com`
+**🎯 Result:** You'll get a URL like `https://policy-automation-api.onrender.com`
 
 ### Option 2: Railway
 
