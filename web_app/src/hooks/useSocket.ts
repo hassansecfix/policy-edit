@@ -24,18 +24,24 @@ export function useSocket(url: string = getApiUrl()): UseSocketReturn {
 
   useEffect(() => {
     // Initialize socket connection
+    console.log('🔌 Socket: Attempting to connect to:', url);
     const socket = io(url);
     socketRef.current = socket;
 
     // Connection event handlers
     socket.on('connect', () => {
       setIsConnected(true);
-      console.log('Connected to server');
+      console.log('✅ Socket: Connected to server at:', url);
     });
 
     socket.on('disconnect', () => {
       setIsConnected(false);
-      console.log('Disconnected from server');
+      console.log('❌ Socket: Disconnected from server at:', url);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket: Connection error:', error);
+      console.error('❌ Socket: Failed to connect to:', url);
     });
 
     // Application event handlers
