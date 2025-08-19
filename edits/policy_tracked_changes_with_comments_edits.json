@@ -39,21 +39,21 @@
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
-        "comment": "You indicated you use GitHub and BitBucket for version control, so source code access controls are required. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use GitHub and BitBucket for version control, so this section should be maintained. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Password Management System",
         "action": "delete",
         "replacement": "",
-        "comment": "You indicated you don't use any password management tool, so this section should be removed. No password tool = section removed; Using specific tool = policy references actual system.",
+        "comment": "You indicated you don't use any tool for password management, so this section should be removed. No password tool = section removed; Using specific tool = policy references actual system.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be submitted through the ticketing system (Jira/Trello)",
-        "comment": "You indicated you use Jira and Trello for ticket management and prefer ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "replacement": "All requests will be submitted through the ticketing system (Trello/Jira)",
+        "comment": "You indicated you use Trello and Jira for ticket management and prefer ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
