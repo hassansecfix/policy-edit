@@ -1,4 +1,4 @@
-name: Redline DOCX (LibreOffice headless)
+name: Redline DOCX (LibreOffice headless) - OPTIMIZED
 
 on:
   workflow_dispatch:
@@ -22,65 +22,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install LibreOffice and Python UNO
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libreoffice python3-uno libreoffice-dev
-          # Set up LibreOffice environment
-          export PYTHONPATH="/usr/lib/python3/dist-packages:$PYTHONPATH"
+      # OPTIMIZATION 1: Cache LibreOffice installation
+      - name: Cache LibreOffice installation
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/lib/libreoffice
+            /usr/lib/python3/dist-packages/*uno*
+            /usr/share/libreoffice
+          key: libreoffice-${{ runner.os }}-v2
+          restore-keys: |
+            libreoffice-${{ runner.os }}-
 
-      # Test and setup Python UNO
-      - name: Setup Python UNO
+      # OPTIMIZATION 2: Only install if not cached
+      - name: Install LibreOffice and Python UNO (if not cached)
+        run: |
+          if [ ! -d "/usr/lib/libreoffice" ]; then
+            echo "LibreOffice not found in cache, installing..."
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends libreoffice python3-uno
+          else
+            echo "LibreOffice found in cache, skipping installation"
+          fi
+          
+      # OPTIMIZATION 3: Simplified Python UNO setup
+      - name: Setup Python UNO (Fast)
         id: lo_py
         run: |
-          set -e
-
-          # Set up environment for UNO
           export PYTHONPATH="/usr/lib/python3/dist-packages:/usr/lib/libreoffice/program:$PYTHONPATH"
-          export UNO_PATH="/usr/lib/libreoffice/program"
-
-          echo "Testing Python UNO import..."
-          echo "PYTHONPATH: $PYTHONPATH"
-
-          # Test if system Python can import uno
-          if python3 -c "import sys; sys.path.insert(0, '/usr/lib/python3/dist-packages'); import uno; print('UNO import successful')" 2>/dev/null; then
-            echo "✅ System Python with UNO works!"
+          if python3 -c "import uno; print('UNO OK')" 2>/dev/null; then
             echo "path=python3" >> $GITHUB_OUTPUT
             echo "pythonpath=/usr/lib/python3/dist-packages:/usr/lib/libreoffice/program" >> $GITHUB_OUTPUT
           else
-            echo "❌ UNO import failed. Debugging..."
-            echo "Available packages in /usr/lib/python3/dist-packages:"
-            ls -la /usr/lib/python3/dist-packages/ | grep -i uno || echo "No UNO packages found"
-            echo "LibreOffice program directory:"
-            ls -la /usr/lib/libreoffice/program/ | head -10 || echo "Program directory not found"
-            
-            # Try alternative paths
-            if python3 -c "import sys; sys.path.append('/usr/lib/libreoffice/program'); import uno; print('UNO import successful with alternative path')" 2>/dev/null; then
-              echo "✅ UNO works with alternative path"
-              echo "path=python3" >> $GITHUB_OUTPUT
-              echo "pythonpath=/usr/lib/libreoffice/program" >> $GITHUB_OUTPUT
-            else
-              echo "Failed to import UNO. Trying direct LibreOffice Python..."
-              # Look for LibreOffice's own Python
-              if [ -x "/usr/lib/libreoffice/program/python3" ]; then
-                echo "Found LibreOffice Python"
-                echo "path=/usr/lib/libreoffice/program/python3" >> $GITHUB_OUTPUT
-                echo "pythonpath=" >> $GITHUB_OUTPUT
-              else
-                echo "No working Python with UNO found" >&2
-                exit 1
-              fi
-            fi
+            echo "path=/usr/lib/libreoffice/program/python3" >> $GITHUB_OUTPUT
+            echo "pythonpath=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Verify input files
+      # OPTIMIZATION 4: Pre-validate files quickly
+      - name: Verify input files (Fast)
         run: |
-          echo "Input file exists: $(test -f '${{ github.event.inputs.input_docx }}' && echo 'YES' || echo 'NO')"
-          echo "CSV/JSON file exists: $(test -f '${{ github.event.inputs.edits_csv }}' && echo 'YES' || echo 'NO')"
-          ls -la '${{ github.event.inputs.input_docx }}' || echo "Input DOCX not found"
-          ls -la '${{ github.event.inputs.edits_csv }}' || echo "CSV/JSON not found"
+          [ -f '${{ github.event.inputs.input_docx }}' ] || (echo "Input DOCX missing" && exit 1)
+          [ -f '${{ github.event.inputs.edits_csv }}' ] || (echo "CSV/JSON missing" && exit 1)
+          echo "✅ All input files present"
 
-      - name: Run redline job
+      # OPTIMIZATION 5: Streamlined execution
+      - name: Run redline job (Optimized)
         env:
           LO_PY: ${{ steps.lo_py.outputs.path }}
           PYTHONPATH: ${{ steps.lo_py.outputs.pythonpath }}
@@ -88,27 +74,31 @@ jobs:
           DISPLAY: :99
         run: |
           mkdir -p build
-          echo "Using Python: $LO_PY"
-          echo "PYTHONPATH: $PYTHONPATH"
-
-          # Set up virtual display for LibreOffice headless
-          sudo apt-get install -y xvfb
-          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
           
-          # Kill any existing LibreOffice processes
+          # OPTIMIZATION: Start services in parallel
+          (sudo apt-get install -y --no-install-recommends xvfb > /dev/null 2>&1 &)
+          
+          # Kill existing processes quickly
           sudo pkill -f soffice || true
-          sleep 2
-
-          # Set up environment and run script with more verbose output
+          
+          # Start virtual display (faster setup)
+          Xvfb :99 -screen 0 800x600x16 > /dev/null 2>&1 &
+          
+          # Wait for display
+          sleep 1
+          
+          # Run with optimized flags
           export PYTHONPATH="$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
           export DISPLAY=:99
-
+          
+          # OPTIMIZATION: Add --fast flag to skip heavy operations
           "$LO_PY" scripts/apply_tracked_edits_libre.py \
             --in "${{ github.event.inputs.input_docx }}" \
             --csv "${{ github.event.inputs.edits_csv }}" \
             --out "${{ github.event.inputs.output_docx }}" \
-            --launch
+            --launch \
+            --fast
 
       - name: Upload output
         uses: actions/upload-artifact@v4
