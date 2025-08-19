@@ -104,12 +104,12 @@ OUTPUT_NAME = policy_tracked_changes_with_comments
 Building...
 Installing dependencies...
 Starting web service...
-Your service is live at https://policy-automation-api.onrender.com
+Your service is live at https://policy-configurator-api.onrender.com
 ```
 
 ### Step 7: Test Your Deployment
 
-1. **Copy your Render URL** (e.g., `https://policy-automation-api.onrender.com`)
+1. **Copy your Render URL** (e.g., `https://policy-configurator-api.onrender.com`)
 
 2. **Test the API endpoints**:
 
@@ -229,12 +229,12 @@ Upgrade: Paid plans don't sleep
 
 After successful deployment:
 
-1. **Copy your Render URL** (e.g., `https://policy-automation-api.onrender.com`)
+1. **Copy your Render URL** (e.g., `https://policy-configurator-api.onrender.com`)
 
 2. **Deploy Next.js frontend** using this URL:
 
    ```bash
-   ./deploy.sh https://policy-automation-api.onrender.com
+   ./deploy.sh https://policy-configurator-api.onrender.com
    ```
 
 3. **Test the complete system** with frontend + backend
