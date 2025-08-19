@@ -141,6 +141,14 @@ The project now includes a modern Next.js dashboard for monitoring and controlli
 
 This script automatically starts both the Flask API backend and Next.js frontend, then opens your browser to http://localhost:3000
 
+**☁️ Deploy to Production:**
+
+```bash
+./deploy.sh https://your-flask-api-url
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
+
 **📖 Manual Way - Individual Services:**
 
 1. **Start the Flask API backend:**

@@ -1,5 +1,6 @@
 'use client';
 
+import { getApiUrl } from '@/config/api';
 import type { FileDownload, LogEntry, ProgressUpdate } from '@/types';
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
@@ -14,7 +15,7 @@ interface UseSocketReturn {
   addLog: (log: LogEntry) => void;
 }
 
-export function useSocket(url: string = 'http://localhost:5001'): UseSocketReturn {
+export function useSocket(url: string = getApiUrl()): UseSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [progress, setProgress] = useState<ProgressUpdate | null>(null);

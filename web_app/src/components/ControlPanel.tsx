@@ -1,5 +1,6 @@
 'use client';
 
+import { API_CONFIG, getApiUrl } from '@/config/api';
 import { cn } from '@/lib/utils';
 import type { SystemStatus } from '@/types';
 import { Play, Settings, Square, Trash2 } from 'lucide-react';
@@ -27,7 +28,7 @@ export function ControlPanel({
 
   const checkStatus = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/status');
+      const response = await fetch(getApiUrl(API_CONFIG.endpoints.status));
       const data = await response.json();
       setStatus(data);
       setSkipApi(data.skip_api);

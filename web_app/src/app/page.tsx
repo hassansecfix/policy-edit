@@ -6,6 +6,7 @@ import { DownloadSection } from '@/components/DownloadSection';
 import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
 import { ProgressTracker } from '@/components/ProgressTracker';
+import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
 import { formatTime } from '@/lib/utils';
 import { useCallback, useState } from 'react';
@@ -17,7 +18,7 @@ export default function Dashboard() {
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
       try {
-        const response = await fetch('http://localhost:5001/api/start', {
+        const response = await fetch(getApiUrl(API_CONFIG.endpoints.start), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -54,7 +55,7 @@ export default function Dashboard() {
 
   const handleStopAutomation = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/stop', {
+      const response = await fetch(getApiUrl(API_CONFIG.endpoints.stop), {
         method: 'POST',
       });
 

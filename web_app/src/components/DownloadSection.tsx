@@ -1,5 +1,6 @@
 'use client';
 
+import { API_CONFIG, getApiUrl } from '@/config/api';
 import type { FileDownload } from '@/types';
 import { Download, FileText } from 'lucide-react';
 
@@ -14,7 +15,9 @@ export function DownloadSection({ files, visible }: DownloadSectionProps) {
   }
 
   const handleDownload = (file: FileDownload) => {
-    const downloadUrl = `http://localhost:5001/api/download/${encodeURIComponent(file.path)}`;
+    const downloadUrl = getApiUrl(
+      `${API_CONFIG.endpoints.download}/${encodeURIComponent(file.path)}`,
+    );
 
     // Create a temporary anchor element to trigger download
     const link = document.createElement('a');
