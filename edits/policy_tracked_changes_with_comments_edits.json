@@ -52,8 +52,8 @@
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be submitted through the ticketing system (Trello/Jira)",
-        "comment": "You indicated you use Trello and Jira for ticket management and prefer using ticketing systems for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "replacement": "All requests will be submitted through the ticketing system (Jira/Trello)",
+        "comment": "You indicated you use Jira and Trello for ticket management and prefer using a ticketing system for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
