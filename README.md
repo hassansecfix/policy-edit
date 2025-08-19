@@ -40,16 +40,25 @@ Flow at a glance:
 
 ## Quick start
 
-1. Create `.env` with your Claude API key and optional configuration:
+1. Set up your environment variables by copying the template:
 
 ```bash
-CLAUDE_API_KEY=your_key_here
-
-# Optional: Customize file paths (single source of truth)
-# POLICY_FILE=data/v5 Freya POL-11 Access Control.docx
-# QUESTIONNAIRE_FILE=data/questionnaire_responses.csv
-# OUTPUT_NAME=policy_tracked_changes_with_comments
+cp env.example .env
+# Edit .env and add your required variables
 ```
+
+**Required for all environments:**
+
+- `CLAUDE_API_KEY` - Your Anthropic Claude API key
+
+**Required for production deployment (Render, Railway, etc.):**
+
+- `GITHUB_REPO_OWNER` - Your GitHub username
+- `GITHUB_REPO_NAME` - Your repository name
+- `GIT_USER_NAME` - Your full name for git commits
+- `GIT_USER_EMAIL` - Your email for git commits
+
+See `env.example` for complete details and optional configuration.
 
 2. Run the default automation:
 
@@ -239,10 +248,12 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
 
 ## Requirements
 
-- Python 3
-- LibreOffice (for local generation and review)
-- Claude API key in `.env` for AI generation
-- Optional: GitHub Actions workflow in your remote repo if you use CI path
+- **Python 3** - For running automation scripts
+- **LibreOffice** - For local generation and review
+- **Environment Variables** - Set up in `.env` file (see `env.example`):
+  - `CLAUDE_API_KEY` - Required for AI generation
+  - For production: `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GIT_USER_NAME`, `GIT_USER_EMAIL`
+- **Optional:** GitHub Actions workflow in your remote repo if you use CI path
 
 ## Logo Setup
 
