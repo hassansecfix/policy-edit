@@ -746,7 +746,8 @@ def main():
             count_replaced = doc.replaceAll(rd)
             
             # Special handling for company name/address to prevent logo overflow
-            if find == "<Company name, address>" and count_replaced > 0:
+            # DISABLED: This feature was accidentally removing logo content
+            if False and find == "<Company name, address>" and count_replaced > 0:
                 try:
                     # Calculate how many extra characters the replacement adds
                     original_length = len(find)  # Length of "<Company name, address>"
@@ -774,8 +775,8 @@ def main():
                                 available_spaces = 0
                                 temp_cursor = cursor.getText().createTextCursorByRange(cursor)
                                 
-                                # Check each character following the replacement text
-                                max_check = extra_chars + 10  # Check a bit beyond what we need
+                                # Check each character following the replacement text - ONLY count actual spaces
+                                max_check = extra_chars + 5  # Check just a bit beyond what we need
                                 for i in range(max_check):
                                     try:
                                         # Try to move one character forward
@@ -783,16 +784,17 @@ def main():
                                             break  # Reached end of document
                                         
                                         char = temp_cursor.getString()
-                                        if char in ' \t\n\r':  # Is whitespace
+                                        if char == ' ':  # ONLY count actual space characters, not tabs/newlines/other content
                                             available_spaces += 1
                                             temp_cursor.collapseToEnd()  # Move to next position
                                         else:
-                                            break  # Found non-whitespace, stop
+                                            break  # Found non-space character, stop immediately
                                     except Exception:
                                         break  # Error or end reached
                                 
                                 # Remove exactly the number of extra characters (or available spaces, whichever is smaller)
-                                spaces_to_remove = min(extra_chars, available_spaces)
+                                # But be extra conservative - only remove up to half of what we calculated to be safe
+                                spaces_to_remove = min(extra_chars, available_spaces, max(1, extra_chars // 2))
                                 
                                 if spaces_to_remove > 0:
                                     # Select and delete exactly that many trailing whitespace characters
