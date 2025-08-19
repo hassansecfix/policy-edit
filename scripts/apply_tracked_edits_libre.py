@@ -451,80 +451,56 @@ def main():
                                 replaced_count = 0
                                 while found_range:
                                     try:
-                                        # Get the paragraph cursor to work with the entire paragraph
-                                        paragraph_cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        paragraph_cursor.gotoStartOfParagraph(False)
-                                        paragraph_cursor.gotoEndOfParagraph(True)
+                                        # Clear the text first
+                                        found_range.setString("")
                                         
-                                        # Get the text that comes before the logo placeholder
-                                        full_paragraph = paragraph_cursor.getString()
-                                        logo_placeholder_pos = full_paragraph.find(target_text)
+                                        # Create and insert graphic
+                                        graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                        logo_file_url = to_url(temp_file.name)
+                                        graphic.setPropertyValue("GraphicURL", logo_file_url)
                                         
-                                        if logo_placeholder_pos >= 0:
-                                            # Extract the text before the logo placeholder
-                                            text_before_logo = full_paragraph[:logo_placeholder_pos].strip()
-                                            text_after_logo = full_paragraph[logo_placeholder_pos + len(target_text):].strip()
-                                            
-                                            # Clear the entire paragraph
-                                            paragraph_cursor.setString("")
-                                            
-                                            # Insert the text before logo
-                                            if text_before_logo:
-                                                paragraph_cursor.setString(text_before_logo)
-                                                paragraph_cursor.collapseToEnd()
-                                            
-                                            # Create and insert graphic with right positioning
-                                            graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                            logo_file_url = to_url(temp_file.name)
-                                            graphic.setPropertyValue("GraphicURL", logo_file_url)
-                                            
-                                            # Set anchor type and positioning
+                                        # Set anchor type to ensure proper positioning
+                                        try:
+                                            from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                            graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                        except:
+                                            pass
+                                        
+                                        # Set size properly - LibreOffice uses 1/100mm units
+                                        try:
+                                            # Default to 35mm width, even smaller height for header
+                                            width_100mm = 35 * 100  # 35mm = 3500 units
+                                            height_100mm = 10 * 100  # 10mm = 1000 units
+                                            graphic.setPropertyValue("Width", width_100mm)
+                                            graphic.setPropertyValue("Height", height_100mm)
+                                            graphic.setPropertyValue("SizeType", 1)  # Fixed size
+                                            graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
+                                            graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
+                                            print(f"📏 Set logo size to 25mm width x 10mm height")
+                                        except Exception as e:
+                                            print(f"⚠️  Could not set logo size: {e}")
+                                            # Fallback: try different size approaches
                                             try:
-                                                from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
-                                                graphic.setPropertyValue("AnchorType", AT_PARAGRAPH)
-                                                # Position relative to paragraph - right side
-                                                graphic.setPropertyValue("HoriOrient", 2)  # Right
-                                                graphic.setPropertyValue("HoriOrientPosition", 0)
-                                                graphic.setPropertyValue("HoriOrientRelation", 0)  # Entire page
-                                                graphic.setPropertyValue("VertOrient", 1)  # Top
-                                                graphic.setPropertyValue("VertOrientRelation", 1)  # Paragraph area
-                                                print(f"📍 Set logo to right-aligned paragraph anchor")
-                                            except Exception as pos_error:
-                                                print(f"⚠️  Advanced positioning failed: {pos_error}, using basic AS_CHARACTER")
+                                                graphic.setPropertyValue("Width", 3500)  # 35mm
+                                                graphic.setPropertyValue("Height", 1000)  # 10mm
+                                                print(f"📏 Fallback: Set logo to 35x10mm")
+                                            except Exception as e2:
+                                                print(f"⚠️  Fallback sizing also failed: {e2}")
+                                                # Last resort: try with Size property
                                                 try:
-                                                    from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
-                                                    graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                                    from com.sun.star.awt import Size
+                                                    size = Size()
+                                                    size.Width = 3500  # 35mm
+                                                    size.Height = 1000  # 10mm 
+                                                    graphic.setPropertyValue("Size", size)
+                                                    print(f"📏 Last resort: Set size to 35x10mm using Size object")
                                                 except:
-                                                    pass
-                                            
-                                            # Set size
-                                            try:
-                                                graphic.setPropertyValue("Width", 2500)  # 25mm
-                                                graphic.setPropertyValue("Height", 800)   # 8mm
-                                                print(f"📏 Set logo size to 25x8mm")
-                                            except Exception as e:
-                                                print(f"⚠️  Could not set logo size: {e}")
-                                            
-                                            # Insert the graphic
-                                            paragraph_cursor.getText().insertTextContent(paragraph_cursor, graphic, False)
-                                            
-                                            # Add any text that was after the logo placeholder
-                                            if text_after_logo:
-                                                paragraph_cursor.setString(text_after_logo)
-                                            
-                                            replaced_count += 1
-                                            print(f"✅ Logo inserted with paragraph positioning!")
-                                        else:
-                                            print(f"⚠️  Could not find logo placeholder in paragraph")
-                                            # Fallback to simple replacement
-                                            found_range.setString("")
-                                            graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                            logo_file_url = to_url(temp_file.name)
-                                            graphic.setPropertyValue("GraphicURL", logo_file_url)
-                                            graphic.setPropertyValue("Width", 2500)
-                                            graphic.setPropertyValue("Height", 800)
-                                            found_range.getText().insertTextContent(found_range, graphic, False)
-                                            replaced_count += 1
+                                                    print(f"⚠️  All sizing methods failed - using default size")
+                                        
+                                        # Insert the graphic
+                                        found_range.getText().insertTextContent(found_range, graphic, False)
+                                        replaced_count += 1
+                                        print(f"✅ Logo inserted successfully!")
                                         
                                     except Exception as e:
                                         print(f"❌ Failed to insert logo: {e}")
