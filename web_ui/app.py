@@ -232,9 +232,9 @@ class AutomationRunner:
             self.update_progress(2, "active")
             self.emit_log("🔧 Building automation command...", "info")
             
-            # Build the command
+            # Instead of running shell script, call Python functions directly
+            # This avoids .env file issues on Render
             base_path = Path(__file__).parent.parent
-            script_path = base_path / "quick_automation.sh"
             
             # Set environment variables
             env = os.environ.copy()
@@ -246,61 +246,44 @@ class AutomationRunner:
             
             # Step 3: Run automation
             self.update_progress(3, "active")
-            self.emit_log("🤖 Running automation script...", "info")
+            self.emit_log("🤖 Running automation directly...", "info")
             
-            # Execute the script and capture output in real-time
-            self.process = subprocess.Popen(
-                [str(script_path)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-                bufsize=1,
-                env=env,
-                cwd=str(base_path)  # Run from the project root directory
-            )
-            
-            # Read output line by line
-            while self.running and self.process.poll() is None:
-                line = self.process.stdout.readline()
-                if line:
-                    clean_line = line.strip()
-                    if clean_line:
-                        # Parse the log level based on emoji/content
-                        level = "info"
-                        if any(emoji in clean_line for emoji in ["❌", "Error:", "failed"]):
-                            level = "error"
-                        elif any(emoji in clean_line for emoji in ["✅", "SUCCESS", "completed"]):
-                            level = "success"
-                        elif any(emoji in clean_line for emoji in ["⚠️", "Warning:", "💰"]):
-                            level = "warning"
-                            
-                        self.emit_log(clean_line, level)
-                        
-                        # Update progress based on log content
-                        if "STEP 2:" in clean_line:
-                            self.update_progress(3, "active")
-                        elif "STEP 3:" in clean_line:
-                            self.update_progress(4, "active")
-                        elif "GitHub Actions workflow triggered successfully" in clean_line:
-                            self.emit_log("🔍 Monitoring GitHub Actions workflow...", "info")
-                            # Extract workflow URL if available and start monitoring
-                            self.start_github_monitoring()
-                        elif "AUTOMATION COMPLETE" in clean_line:
-                            self.update_progress(4, "completed")
-                            self.update_progress(5, "completed")
-                            
-            # Check final result
-            if self.process.returncode == 0:
+            try:
+                # Import the automation function
+                import sys
+                sys.path.append(str(base_path))
+                
+                from scripts.complete_automation import main as run_automation
+                
+                # Set up arguments for the automation
+                policy_file = env.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
+                questionnaire_file = env.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+                output_name = env.get('OUTPUT_NAME', 'policy_tracked_changes_with_comments')
+                
+                # Create argument list
+                args = [
+                    '--policy', policy_file,
+                    '--questionnaire', questionnaire_file,
+                    '--output-name', output_name
+                ]
+                
+                if skip_api:
+                    args.append('--skip-api')
+                
+                # Run the automation
+                self.emit_log("🚀 Starting automation process...", "info")
+                run_automation(args)
+                
                 self.emit_log("🎉 Automation completed successfully!", "success")
+                self.update_progress(4, "completed")
                 self.update_progress(5, "completed")
-                
-                # Check for generated files
-                self.check_generated_files()
-                
                 return True
-            else:
-                self.emit_log("❌ Automation failed with errors", "error")
-                self.update_progress(self.current_step, "error")
+                
+            except ImportError as e:
+                self.emit_log(f"❌ Failed to import automation script: {e}", "error")
+                return False
+            except Exception as e:
+                self.emit_log(f"❌ Automation failed: {str(e)}", "error")
                 return False
                 
         except Exception as e:
