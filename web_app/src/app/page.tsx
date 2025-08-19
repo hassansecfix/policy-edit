@@ -15,20 +15,6 @@ export default function Dashboard() {
   const [automationRunning, setAutomationRunning] = useState(false);
   const { socket, isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
-  // Debug: Log the API URL being used
-  useEffect(() => {
-    console.log('🔍 Debug Info:');
-    console.log('API Base URL:', API_CONFIG.baseURL);
-    console.log('Full API URL:', getApiUrl());
-    console.log('Environment:', process.env.NODE_ENV);
-
-    addLog({
-      timestamp: formatTime(new Date()),
-      message: `🔍 Debug: Using API at ${getApiUrl()}`,
-      level: 'info',
-    });
-  }, [addLog]);
-
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
       try {
