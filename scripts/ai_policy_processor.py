@@ -65,7 +65,6 @@ def load_file_content(file_path):
 
 def extract_json_from_response(response_text):
     """Extract JSON content from Claude's response."""
-    import json
     
     # Look for JSON blocks in the response
     json_patterns = [
@@ -77,12 +76,12 @@ def extract_json_from_response(response_text):
     for pattern in json_patterns:
         match = re.search(pattern, response_text, re.DOTALL | re.IGNORECASE)
         if match:
-            json_content = match.group(1).strip()
+            content = match.group(1).strip()
             try:
                 # Validate it's proper JSON
-                parsed = json.loads(json_content)
+                parsed = json.loads(content)
                 if 'metadata' in parsed and 'instructions' in parsed:
-                    return json_content
+                    return content
             except json.JSONDecodeError:
                 continue
     
@@ -100,11 +99,11 @@ def extract_json_from_response(response_text):
             brace_count += stripped.count('{') - stripped.count('}')
             if brace_count == 0:
                 # Found complete JSON
-                json_content = '\n'.join(lines[json_start:i+1])
+                content = '\n'.join(lines[json_start:i+1])
                 try:
-                    parsed = json.loads(json_content)
+                    parsed = json.loads(content)
                     if 'metadata' in parsed and 'instructions' in parsed:
-                        return json_content
+                        return content
                 except json.JSONDecodeError:
                     pass
                 json_start = -1
@@ -112,12 +111,11 @@ def extract_json_from_response(response_text):
     
     raise ValueError("Could not extract valid JSON from Claude's response")
 
-def validate_json_content(json_content):
+def validate_json_content(content):
     """Validate the generated JSON has the correct format."""
-    import json
     
     try:
-        parsed = json.loads(json_content)
+        parsed = json.loads(content)
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON format: {e}")
     
@@ -226,15 +224,62 @@ def main():
     parser.add_argument('--policy-instructions', required=True, help='Path to policy processing instructions (updated_policy_instructions_v4.0.md)')
     parser.add_argument('--output', required=True, help='Output path for generated JSON file')
     parser.add_argument('--api-key', help='Claude API key (or set CLAUDE_API_KEY env var)')
+    parser.add_argument('--skip-api', action='store_true', help='Skip API call and use existing JSON file (for testing/development)')
     
     args = parser.parse_args()
     
-    # Get API key
+    # Check for skip API configuration
+    skip_api_env = os.environ.get('SKIP_API_CALL', '').lower()
+    skip_api = args.skip_api or skip_api_env in ['true', '1', 'yes', 'on']
+    
+    if skip_api:
+        # Check if output file already exists
+        if not Path(args.output).exists():
+            print("❌ Error: --skip-api specified but output JSON file doesn't exist!")
+            print(f"   Expected file: {args.output}")
+            print("   Either run without --skip-api first, or provide an existing JSON file")
+            sys.exit(1)
+        
+        print("🔄 SKIP_API_CALL enabled - Using existing JSON file for testing/development")
+        print(f"📁 Using existing file: {args.output}")
+        
+        # Validate the existing JSON file
+        try:
+            with open(args.output, 'r', encoding='utf-8') as f:
+                content = f.read()
+            validate_json_content(content)
+            
+            # Show stats from existing file
+            parsed = json.loads(content)
+            operations_count = len(parsed['instructions']['operations'])
+            company_name = parsed['metadata']['company_name']
+            
+            print(f"✅ Using existing JSON: {operations_count} operations for {company_name}")
+            
+            # Show operation types summary
+            actions = {}
+            for op in parsed['instructions']['operations']:
+                action = op['action']
+                actions[action] = actions.get(action, 0) + 1
+            
+            print("\n📋 Operations Summary (from existing file):")
+            for action, count in actions.items():
+                print(f"   {action}: {count} operations")
+            
+            print(f"\n💰 API call skipped - cost savings for testing/development!")
+            return
+            
+        except Exception as e:
+            print(f"❌ Error validating existing JSON file: {e}")
+            sys.exit(1)
+    
+    # Get API key (only if not skipping API)
     api_key = args.api_key or os.environ.get('CLAUDE_API_KEY')
     if not api_key:
         print("❌ Error: Claude API key required!")
         print("   Set CLAUDE_API_KEY environment variable or use --api-key")
         print("   Get your key from: https://console.anthropic.com/")
+        print("   Or use --skip-api to use existing JSON file for testing")
         sys.exit(1)
     
     print("🤖 AI Policy Processor Starting (JSON Mode)...")
@@ -265,25 +310,24 @@ def main():
         
         # Extract JSON from response
         print("\n🔍 Extracting JSON from AI response...")
-        json_content = extract_json_from_response(response)
+        content = extract_json_from_response(response)
         
         # Validate JSON
         print("✅ Validating JSON format...")
-        validate_json_content(json_content)
+        validate_json_content(content)
         
         # Save output
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(json_content)
+            f.write(content)
         
         print(f"\n🎉 SUCCESS! Generated JSON instructions:")
         print(f"📁 Saved to: {output_path}")
         
         # Show JSON stats
-        import json
-        parsed = json.loads(json_content)
+        parsed = json.loads(content)
         operations_count = len(parsed['instructions']['operations'])
         company_name = parsed['metadata']['company_name']
         

@@ -69,8 +69,7 @@ Generate a complete JSON structure as specified in processing instructions v3.8,
 ## Comment Requirements:
 
 - **For RULE_01, RULE_02, RULE_03**: Use "Replaced"
-- **For RULE_04-RULE_12**: Format as "[Customer-specific context]\\n\\n[General business logic]"
-- Use `\\n\\n` for paragraph breaks in JSON strings
+- **For RULE_04-RULE_12**: Format as "[Customer-specific context] [General business logic]"
 - Reference what the customer indicated in their responses
 - Explain the business principle (e.g., "No office = no guest network needed")
 

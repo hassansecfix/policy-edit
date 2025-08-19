@@ -118,12 +118,12 @@ Analyze the data and generate JSON-formatted customization instructions based on
   - target_text: `Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.`
   - action: "delete"
   - replacement: ""
-  - comment: "You indicated that you do not have an office, so [explanation].\\n\\nNo office = no guest network needed; Having office = visitors need controlled network access for security."
+  - comment: "You indicated that you do not have an office, so [explanation]. No office = no guest network needed; Having office = visitors need controlled network access for security."
   - comment_author: "Secfix AI"
 - If answer is "Yes":
   - target_text: `Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.`
   - action: "comment"
-  - comment: "You indicated that you have an office, so [explanation].\\n\\nNo office = no guest network needed; Having office = visitors need controlled network access."
+  - comment: "You indicated that you have an office, so [explanation]. No office = no guest network needed; Having office = visitors need controlled network access."
   - comment_author: "Secfix AI"
 
 ## RULE_05: Source Code Access Section
@@ -135,13 +135,13 @@ Analyze the data and generate JSON-formatted customization instructions based on
   - target_text: `Access to Program Source Code`
   - action: "delete"
   - replacement: ""
-  - comment: "You indicated [response], so [explanation].\\n\\nNo version control = no source code to protect; Using version control = IP protection needed."
+  - comment: "You indicated [response], so [explanation]. No version control = no source code to protect; Using version control = IP protection needed."
   - comment_author: "Secfix AI"
 - If answer is "Other" + custom text: Interpret the custom text - if it indicates no version control (e.g., "No version control", "Manual processes", "Don't track code"), treat as "None". If it indicates actual version control tools (e.g., "SVN", "Perforce", "Custom Git server"), treat as having version control.
 - If any standard tool selected:
   - target_text: `Access to Program Source Code`
   - action: "comment"
-  - comment: "You indicated you use [tool] for version control, so [explanation].\\n\\nNo version control = no source code to protect; Using version control = IP protection needed."
+  - comment: "You indicated you use [tool] for version control, so [explanation]. No version control = no source code to protect; Using version control = IP protection needed."
   - comment_author: "Secfix AI"
 
 ## RULE_06: Password Management System Section
@@ -153,13 +153,13 @@ Analyze the data and generate JSON-formatted customization instructions based on
   - target_text: `Password Management System`
   - action: "delete"
   - replacement: ""
-  - comment: "You indicated [response], so [explanation].\\n\\nNo password tool = section removed; Using specific tool = policy references actual system."
+  - comment: "You indicated [response], so [explanation]. No password tool = section removed; Using specific tool = policy references actual system."
   - comment_author: "Secfix AI"
 - If specific tool (1Password, LastPass, Dashlane, etc.):
   - target_text: `Password management systems should be user-friendly`
   - action: "replace"
   - replacement: `Password management systems, specifically [tool name], should be user-friendly`
-  - comment: "You indicated you use [tool] for password management, so [explanation].\\n\\nNo password tool = section removed; Using specific tool = policy references actual system rather than generic language."
+  - comment: "You indicated you use [tool] for password management, so [explanation]. No password tool = section removed; Using specific tool = policy references actual system rather than generic language."
   - comment_author: "Secfix AI"
 - If answer is "Other" + custom text: Interpret the custom text - if it indicates no password management (e.g., "Individual passwords", "No central management", "Manual"), treat as "None". If it indicates actual password management tool (e.g., "Keeper", "Enpass", "Corporate vault"), replace `Password management systems should be user-friendly` with `Password management systems, specifically [custom tool name], should be user-friendly`. If unclear, keep generic `Password management systems should be user-friendly` unchanged.
 
@@ -171,7 +171,7 @@ Analyze the data and generate JSON-formatted customization instructions based on
 - target_text: `All requests will be sent by email to <email>`
 - action: "replace"
 - replacement: [Based on user's selection and ticket tool]
-- comment: "[Customer-specific context].\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks."
+- comment: "[Customer-specific context]. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks."
 - comment_author: "Secfix AI"
 
 **Special handling for "Other" responses:**
@@ -188,14 +188,14 @@ Analyze the data and generate JSON-formatted customization instructions based on
 - If current text matches user selection:
   - target_text: `quarterly basis`
   - action: "comment"
-  - comment: "You selected [frequency] which matches the current quarterly basis.\\n\\nWe recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
+  - comment: "You selected [frequency] which matches the current quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
   - comment_author: "Secfix AI"
 - If replacement needed:
 
   - target_text: `quarterly basis`
   - action: "replace"
   - replacement: [user's selected frequency]
-  - comment: "You selected [frequency] instead of quarterly basis.\\n\\nWe recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
+  - comment: "You selected [frequency] instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
   - comment_author: "Secfix AI"
 
 - **If "Other" + custom text:** Interpret the custom frequency (e.g., "Every 6 months" → "semi-annual basis", "Twice yearly" → "semi-annual basis", "As needed" → "as-needed basis")
@@ -209,13 +209,13 @@ Analyze the data and generate JSON-formatted customization instructions based on
 - If current text matches user selection:
   - target_text: `<24 business hours>`
   - action: "comment"
-  - comment: "You selected [timeframe] which matches the current placeholder.\\n\\nWe recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe."
+  - comment: "You selected [timeframe] which matches the current placeholder. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe."
   - comment_author: "Secfix AI"
 - If replacement needed:
   - target_text: `<24 business hours>`
   - action: "replace"
   - replacement: [user's selected timeframe without angle brackets]
-  - comment: "You selected [timeframe] instead of 24 business hours.\\n\\nWe recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe."
+  - comment: "You selected [timeframe] instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe."
   - comment_author: "Secfix AI"
 - **Include company size context:** For companies with fewer than 50 employees, mention this is appropriate for smaller organizations
 
@@ -229,7 +229,7 @@ Analyze the data and generate JSON-formatted customization instructions based on
 - target_text: `<owner>`
 - action: "replace"
 - replacement: [email]
-- comment: "You indicated that [email] is the owner of this access control policy, so the owner placeholder needs to be replaced.\\n\\nThis person is the enforcer of the policy. If your employees have questions about the policy, that person should be easily identified by employees and prepared to answer any of their questions regarding the policy."
+- comment: "You indicated that [email] is the owner of this access control policy, so the owner placeholder needs to be replaced. This person is the enforcer of the policy. If your employees have questions about the policy, that person should be easily identified by employees and prepared to answer any of their questions regarding the policy."
 - comment_author: "Secfix AI"
 
 ## RULE_11: Exception Approval Authority
@@ -240,7 +240,7 @@ Analyze the data and generate JSON-formatted customization instructions based on
 - target_text: `<Exceptions: IT Manager>`
 - action: "replace"
 - replacement: [user's selected approver]
-- comment: "You indicated that the [selected role] is responsible for approving exceptions to this policy, so the IT Manager placeholder should be updated.\\n\\nCan be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person."
+- comment: "You indicated that the [selected role] is responsible for approving exceptions to this policy, so the IT Manager placeholder should be updated. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person."
 - comment_author: "Secfix AI"
 
 - **If "Other" + custom text:** Use the custom role/title as provided (e.g., "Head of Security", "VP Technology", "Department Lead")
@@ -253,7 +253,7 @@ Analyze the data and generate JSON-formatted customization instructions based on
 - target_text: `<Violations: IT Manager>`
 - action: "replace"
 - replacement: [user's selected reporter]
-- comment: "You indicated that the [selected role] is responsible for handling policy violations, so the IT Manager placeholder should be updated.\\n\\nCan be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person."
+- comment: "You indicated that the [selected role] is responsible for handling policy violations, so the IT Manager placeholder should be updated. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person."
 - comment_author: "Secfix AI"
 
 - **If "Other" + custom text:** Use the custom role/title as provided (e.g., "Compliance Officer", "Security Team", "Direct Supervisor")
@@ -281,7 +281,7 @@ Generate a JSON structure with the following format:
         "target_text": "[exact text to find]",
         "action": "replace|delete|comment",
         "replacement": "[replacement text for replace action, empty string for delete/comment]",
-        "comment": "[customer context + business logic with \\n\\n for paragraph breaks]",
+        "comment": "[customer context + business logic]",
         "comment_author": "Secfix AI"
       }
     ]
@@ -302,8 +302,7 @@ Generate a JSON structure with the following format:
 
 - **For RULE_01, RULE_02:** Use "Replaced"
 - **For RULE_03:** Use specific comment based on logo availability (see RULE_03 instructions)
-- **For all other rules:** Format as: "[Customer-specific context]\\n\\n[General business logic]"
-- Use `\\n\\n` for paragraph breaks in JSON strings
+- **For all other rules:** Format as: "[Customer-specific context] [General business logic]"
 - Customer context should reference what the user indicated in their responses
 - Business logic should explain the general principle (e.g., "No office = no guest network needed")
 

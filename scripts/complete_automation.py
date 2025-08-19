@@ -54,20 +54,29 @@ def convert_xlsx_to_csv(xlsx_path, csv_path):
     cmd = f"python3 scripts/xlsx_to_csv_converter.py '{xlsx_path}' '{csv_path}'"
     return run_command(cmd, "Converting Excel to CSV")
 
-def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, api_key):
-    """Generate JSON instructions using AI."""
+def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, api_key, skip_api=False):
+    """Generate JSON instructions using AI or use existing file."""
     
-    # Generate JSON with AI
-    print("🧠 Step 2: Generating JSON instructions with Claude Sonnet 4...")
-    cmd = f"""python3 scripts/ai_policy_processor.py \
-        --policy '{policy_path}' \
-        --questionnaire '{questionnaire_csv}' \
-        --prompt '{prompt_path}' \
-        --policy-instructions '{policy_instructions_path}' \
-        --output '{output_json}' \
-        --api-key '{api_key}'"""
+    if skip_api:
+        print("🔄 Step 2: Using existing JSON file (API call skipped for testing/development)...")
+        cmd = f"""python3 scripts/ai_policy_processor.py \
+            --policy '{policy_path}' \
+            --questionnaire '{questionnaire_csv}' \
+            --prompt '{prompt_path}' \
+            --policy-instructions '{policy_instructions_path}' \
+            --output '{output_json}' \
+            --skip-api"""
+    else:
+        print("🧠 Step 2: Generating JSON instructions with Claude Sonnet 4...")
+        cmd = f"""python3 scripts/ai_policy_processor.py \
+            --policy '{policy_path}' \
+            --questionnaire '{questionnaire_csv}' \
+            --prompt '{prompt_path}' \
+            --policy-instructions '{policy_instructions_path}' \
+            --output '{output_json}' \
+            --api-key '{api_key}'"""
     
-    return run_command(cmd, "Generating JSON instructions")
+    return run_command(cmd, "Processing JSON instructions")
 
 def commit_and_push_json(edits_json):
     """Commit and push the generated JSON file to GitHub."""
@@ -182,18 +191,24 @@ def main():
     parser.add_argument('--api-key', help='Claude API key (or set CLAUDE_API_KEY env var)')
     parser.add_argument('--github-token', help='GitHub token for auto-triggering (optional)')
     parser.add_argument('--skip-github', action='store_true', help='Skip GitHub Actions step')
+    parser.add_argument('--skip-api', action='store_true', help='Skip API call and use existing JSON file (for testing/development)')
     parser.add_argument('--logo', help='Optional path to company logo image (png/jpg) to insert in header')
     parser.add_argument('--logo-width-mm', type=int, help='Optional logo width in millimeters')
     parser.add_argument('--logo-height-mm', type=int, help='Optional logo height in millimeters')
     
     args = parser.parse_args()
     
-    # Get API key
+    # Check for skip API configuration
+    skip_api_env = os.environ.get('SKIP_API_CALL', '').lower()
+    skip_api = args.skip_api or skip_api_env in ['true', '1', 'yes', 'on']
+    
+    # Get API key (only required if not skipping API)
     api_key = args.api_key or os.environ.get('CLAUDE_API_KEY')
-    if not api_key:
+    if not skip_api and not api_key:
         print("❌ Error: Claude API key required!")
         print("   Set CLAUDE_API_KEY environment variable or use --api-key")
         print("   Get your key from: https://console.anthropic.com/")
+        print("   Or use --skip-api to use existing JSON file for testing")
         sys.exit(1)
     
     # GitHub token (optional)
@@ -228,10 +243,13 @@ def main():
             print(f"\n📊 STEP 1: Using existing CSV: {questionnaire_csv}")
         
         # Step 2: Generate edits with AI (JSON only)
-        print("\n🧠 STEP 2: Generating Edits with Claude Sonnet 4")
+        if skip_api:
+            print("\n🔄 STEP 2: Using Existing JSON File (API Skipped)")
+        else:
+            print("\n🧠 STEP 2: Generating Edits with Claude Sonnet 4")
         success, output = generate_edits_with_ai(
             args.policy, questionnaire_csv, prompt_path, policy_instructions_path, 
-            edits_json, api_key
+            edits_json, api_key, skip_api
         )
         if not success:
             print(f"❌ AI generation failed: {output}")

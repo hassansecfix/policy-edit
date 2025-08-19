@@ -96,12 +96,19 @@ echo ""
 build_logo_args
 build_github_arg
 
+# Check for skip API configuration
+SKIP_API_ARG=""
+if [[ "${SKIP_API_CALL}" == "true" ]] || [[ "${SKIP_API_CALL}" == "TRUE" ]] || [[ "${SKIP_API_CALL}" == "True" ]]; then
+    SKIP_API_ARG=" --skip-api"
+    echo "💰 SKIP_API_CALL enabled - will use existing JSON file"
+fi
+
 # Execute the automation (passing questionnaire to both automation and libre scripts)
 eval "python3 scripts/complete_automation.py \
     --policy \"$POLICY_FILE\" \
     --questionnaire \"$QUESTIONNAIRE_FILE\" \
     --output-name \"$OUTPUT_NAME\" \
-    --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}"
+    --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}${SKIP_API_ARG}"
 
 echo ""
 echo "🎉 Automation completed!"
