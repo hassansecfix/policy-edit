@@ -2,5 +2,9 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "env": {
+    "GITHUB_REPO_OWNER": "hassantayyab",
+    "GITHUB_REPO_NAME": "policy-edit"
+  }
 }

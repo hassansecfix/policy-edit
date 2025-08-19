@@ -29,6 +29,8 @@ CLAUDE_API_KEY = your_claude_api_key_here
 PORT = 5001
 SKIP_API_CALL = true
 GITHUB_TOKEN = your_github_token_here (optional)
+GITHUB_REPO_OWNER = your_github_username
+GITHUB_REPO_NAME = your_repository_name
 ```
 
 **📖 For detailed step-by-step instructions with screenshots and troubleshooting, see: [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)**
@@ -93,7 +95,9 @@ GITHUB_TOKEN = your_github_token_here (optional)
 4. **Set environment variable:**
 
    ```
-   NEXT_PUBLIC_API_URL = https://your-flask-api-url.onrender.com
+   NEXT_PUBLIC_API_URL = https://your-flask-api-url.com
+   GITHUB_REPO_OWNER = your_github_username
+   GITHUB_REPO_NAME = your_repository_name
    ```
 
 5. **Deploy** - Vercel will provide you with a URL

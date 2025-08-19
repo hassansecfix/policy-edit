@@ -53,21 +53,27 @@ class GitHubActionsMonitor:
         self._get_repo_info()
         
     def _get_repo_info(self):
-        """Extract GitHub repository info from git remote"""
-        try:
-            result = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
-                                  capture_output=True, text=True, cwd=Path.cwd())
-            if result.returncode == 0:
-                url = result.stdout.strip()
-                # Parse GitHub URL (both HTTPS and SSH formats)
-                if 'github.com' in url:
-                    # Extract owner/repo from URL
-                    match = re.search(r'github\.com[:/]([^/]+)/([^/\.]+)', url)
-                    if match:
-                        self.repo_owner = match.group(1)
-                        self.repo_name = match.group(2)
-        except:
-            pass
+        """Extract GitHub repository info from environment variables or git remote"""
+        # First try environment variables (for production deployment)
+        self.repo_owner = os.environ.get('GITHUB_REPO_OWNER')
+        self.repo_name = os.environ.get('GITHUB_REPO_NAME')
+        
+        # If environment variables are not set, try git (for local development)
+        if not self.repo_owner or not self.repo_name:
+            try:
+                result = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
+                                      capture_output=True, text=True, cwd=Path.cwd())
+                if result.returncode == 0:
+                    url = result.stdout.strip()
+                    # Parse GitHub URL (both HTTPS and SSH formats)
+                    if 'github.com' in url:
+                        # Extract owner/repo from URL
+                        match = re.search(r'github\.com[:/]([^/]+)/([^/\.]+)', url)
+                        if match:
+                            self.repo_owner = match.group(1)
+                            self.repo_name = match.group(2)
+            except:
+                pass
     
     def get_latest_workflow_runs(self, workflow_name="redline-docx.yml", limit=5):
         """Get recent workflow runs"""
