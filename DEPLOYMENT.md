@@ -33,6 +33,14 @@ GITHUB_REPO_OWNER = your_github_username
 GITHUB_REPO_NAME = your_repository_name
 ```
 
+**📦 Dependencies:**
+Your `requirements.txt` now includes all necessary packages:
+
+- Flask and extensions for the web server
+- Anthropic for Claude API integration
+- Pandas and openpyxl for Excel file processing
+- Requests for HTTP calls
+
 **📖 For detailed step-by-step instructions with screenshots and troubleshooting, see: [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)**
 
 **🎯 Result:** You'll get a URL like `https://policy-automation-api.onrender.com`
