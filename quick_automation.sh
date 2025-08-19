@@ -7,8 +7,19 @@ echo "⚡ Quick AI Automation"
 echo "Uses your current setup with smart environment handling"
 echo ""
 
-# Check for .env file
-if [ ! -f ".env" ]; then
+# Check for required environment variables (for production deployment)
+if [ -n "$CLAUDE_API_KEY" ]; then
+    echo "✅ CLAUDE_API_KEY found in environment variables"
+elif [ -f ".env" ]; then
+    echo "🔧 Loading environment from .env file..."
+    source .env
+    if [ -z "$CLAUDE_API_KEY" ]; then
+        echo "❌ CLAUDE_API_KEY not found in .env file"
+        echo "⚠️  Please edit .env and add your CLAUDE_API_KEY"
+        echo "🔑 Get it from: https://console.anthropic.com/"
+        exit 1
+    fi
+else
     echo "🔧 Setting up environment file..."
     if [ -f "env.example" ]; then
         cp env.example .env
@@ -27,8 +38,6 @@ fi
 # Your exact command with environment loading
 echo "🚀 Running your automation command..."
 echo ""
-
-source .env
 
 # Load shared configuration (single source of truth)
 source "$(dirname "$0")/config.sh"
