@@ -451,56 +451,91 @@ def main():
                                 replaced_count = 0
                                 while found_range:
                                     try:
+                                        # Get the paragraph that contains the found range
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                        cursor.gotoStartOfParagraph(False)
+                                        cursor.gotoEndOfParagraph(True)
+                                        
+                                        # Store the original text content
+                                        original_paragraph = cursor.getString()
+                                        
                                         # Clear the text first
                                         found_range.setString("")
+                                        
+                                        # Insert a tab to push logo to the right
+                                        found_range.setString("\t")
                                         
                                         # Create and insert graphic
                                         graphic = doc.createInstance("com.sun.star.text.GraphicObject")
                                         logo_file_url = to_url(temp_file.name)
                                         graphic.setPropertyValue("GraphicURL", logo_file_url)
                                         
-                                        # Set anchor type to ensure proper positioning
+                                        # Set anchor type for inline positioning (right-aligned)
                                         try:
                                             from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                            # Use AS_CHARACTER but with proper paragraph alignment
                                             graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                            # Set wrap to ensure it stays inline
+                                            graphic.setPropertyValue("Surround", 0)  # No wrap, inline
                                         except:
                                             pass
                                         
                                         # Set size properly - LibreOffice uses 1/100mm units
                                         try:
-                                            # Default to 35mm width, even smaller height for header
-                                            width_100mm = 35 * 100  # 35mm = 3500 units
-                                            height_100mm = 10 * 100  # 10mm = 1000 units
+                                            # Smaller size for inline header positioning 
+                                            width_100mm = 25 * 100  # 25mm = 2500 units (reduced)
+                                            height_100mm = 8 * 100  # 8mm = 800 units (reduced)
                                             graphic.setPropertyValue("Width", width_100mm)
                                             graphic.setPropertyValue("Height", height_100mm)
                                             graphic.setPropertyValue("SizeType", 1)  # Fixed size
                                             graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
                                             graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
-                                            print(f"📏 Set logo size to 25mm width x 10mm height")
+                                            print(f"📏 Set logo size to 25mm width x 8mm height")
                                         except Exception as e:
                                             print(f"⚠️  Could not set logo size: {e}")
                                             # Fallback: try different size approaches
                                             try:
-                                                graphic.setPropertyValue("Width", 3500)  # 35mm
-                                                graphic.setPropertyValue("Height", 1000)  # 10mm
-                                                print(f"📏 Fallback: Set logo to 35x10mm")
+                                                graphic.setPropertyValue("Width", 2500)  # 25mm
+                                                graphic.setPropertyValue("Height", 800)  # 8mm
+                                                print(f"📏 Fallback: Set logo to 25x8mm")
                                             except Exception as e2:
                                                 print(f"⚠️  Fallback sizing also failed: {e2}")
                                                 # Last resort: try with Size property
                                                 try:
                                                     from com.sun.star.awt import Size
                                                     size = Size()
-                                                    size.Width = 3500  # 35mm
-                                                    size.Height = 1000  # 10mm 
+                                                    size.Width = 2500  # 25mm
+                                                    size.Height = 800  # 8mm 
                                                     graphic.setPropertyValue("Size", size)
-                                                    print(f"📏 Last resort: Set size to 35x10mm using Size object")
+                                                    print(f"📏 Last resort: Set size to 25x8mm using Size object")
                                                 except:
                                                     print(f"⚠️  All sizing methods failed - using default size")
                                         
-                                        # Insert the graphic
+                                        # Insert the graphic at the current position (after tab)
                                         found_range.getText().insertTextContent(found_range, graphic, False)
+                                        
+                                        # Set up paragraph formatting with right tab stop
+                                        try:
+                                            paragraph = cursor.getText().createTextCursorByRange(found_range)
+                                            paragraph.gotoStartOfParagraph(False)
+                                            paragraph.gotoEndOfParagraph(True)
+                                            
+                                            # Set right tab stop at page width
+                                            from com.sun.star.style.TabAlign import RIGHT
+                                            from com.sun.star.style import TabStop
+                                            
+                                            tab_stop = TabStop()
+                                            tab_stop.Position = 16000  # 160mm from left (near right margin)
+                                            tab_stop.Alignment = RIGHT
+                                            
+                                            tab_stops = (tab_stop,)
+                                            paragraph.setPropertyValue("ParaTabStops", tab_stops)
+                                            print(f"📐 Set right tab stop for logo alignment")
+                                        except Exception as tab_error:
+                                            print(f"⚠️  Could not set tab stops: {tab_error}")
+                                        
                                         replaced_count += 1
-                                        print(f"✅ Logo inserted successfully!")
+                                        print(f"✅ Logo inserted successfully with right alignment!")
                                         
                                     except Exception as e:
                                         print(f"❌ Failed to insert logo: {e}")
