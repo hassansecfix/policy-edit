@@ -24,8 +24,10 @@ import csv
 import re
 import warnings
 from pathlib import Path
-import anthropic
 import json
+
+# Import anthropic only when needed (not when skipping API)
+anthropic = None
 
 # Suppress deprecation warnings for the Claude API
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -166,6 +168,14 @@ def validate_json_content(content):
 
 def call_claude_api(prompt_content, questionnaire_content, policy_instructions_content, policy_content, api_key):
     """Call Claude Sonnet 4 API to generate JSON instructions."""
+    
+    # Import anthropic here when actually needed
+    global anthropic
+    if anthropic is None:
+        try:
+            import anthropic
+        except ImportError:
+            raise ImportError("anthropic package is required for API calls. Install it with: pip install anthropic")
     
     client = anthropic.Anthropic(api_key=api_key)
     
