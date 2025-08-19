@@ -41,6 +41,7 @@ def parse_args():
     p.add_argument("--logo-width-mm", dest="logo_width_mm", type=int, help="Optional logo width in millimeters")
     p.add_argument("--logo-height-mm", dest="logo_height_mm", type=int, help="Optional logo height in millimeters")
     p.add_argument("--questionnaire", dest="questionnaire_csv", help="Optional path to questionnaire CSV for logo URL extraction")
+    p.add_argument("--fast", action="store_true", help="Enable fast mode: use shorter timeouts, minimal retries, optimized logo downloads")
     return p.parse_args()
 
 def bool_from_str(s, default=False):
@@ -139,24 +140,25 @@ def rows_from_csv(path):
                     "Author": rec.get("Author") or rec.get("author") or rec.get("AUTHOR") or "AI Assistant",
                 }
 
-def ensure_listener():
+def ensure_listener(fast_mode=False):
     # Start a headless LibreOffice UNO listener on port 2002 if not already running.
     # Harmless if one is already up.
     try:
         # Kill any existing LibreOffice processes to ensure clean start
-        subprocess.run(["pkill", "-f", "soffice"], capture_output=True, timeout=5)
-        time.sleep(1)
+        subprocess.run(["pkill", "-f", "soffice"], capture_output=True, timeout=2 if fast_mode else 5)
+        time.sleep(0.5 if fast_mode else 1)
         
-        # Create a temporary user profile with correct author info
+        # Create a temporary user profile with correct author info (skip in fast mode)
         profile_dir = "/tmp/lo_profile_secfix"
-        try:
-            import shutil
-            if os.path.exists(profile_dir):
-                shutil.rmtree(profile_dir)
-            os.makedirs(profile_dir, exist_ok=True)
-            
-            # Create a registrymodifications.xcu file to set user info
-            registry_content = '''<?xml version="1.0" encoding="UTF-8"?>
+        if not fast_mode:
+            try:
+                import shutil
+                if os.path.exists(profile_dir):
+                    shutil.rmtree(profile_dir)
+                os.makedirs(profile_dir, exist_ok=True)
+                
+                # Create a registrymodifications.xcu file to set user info
+                registry_content = '''<?xml version="1.0" encoding="UTF-8"?>
 <oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <item oor:path="/org.openoffice.UserProfile/Data">
     <prop oor:name="givenname" oor:op="fuse">
@@ -167,18 +169,18 @@ def ensure_listener():
     </prop>
   </item>
 </oor:items>'''
-            with open(f"{profile_dir}/registrymodifications.xcu", "w") as f:
-                f.write(registry_content)
-            print("✅ Created LibreOffice profile with Secfix AI author")
-        except Exception as e:
-            print(f"Could not create profile: {e}")
+                with open(f"{profile_dir}/registrymodifications.xcu", "w") as f:
+                    f.write(registry_content)
+                print("✅ Created LibreOffice profile with Secfix AI author")
+            except Exception as e:
+                print(f"Could not create profile: {e}")
         
         # Set environment variables for LibreOffice user info
         os.environ['LO_USER_GIVENNAME'] = 'Secfix'
         os.environ['LO_USER_SURNAME'] = 'AI'
         
         # Start LibreOffice headless listener with custom profile
-        process = subprocess.Popen([
+        subprocess.Popen([
             "soffice",
             "--headless",
             "--nologo",
@@ -189,10 +191,12 @@ def ensure_listener():
             '--accept=socket,host=127.0.0.1,port=2002;urp;StarOffice.ServiceManager'
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=os.environ)
         
-        # Wait longer and test connection
+        # Wait and test connection (reduced time in fast mode)
+        max_wait = 10 if fast_mode else 30
+        wait_interval = 0.5 if fast_mode else 1
         print("Starting LibreOffice listener...")
-        for i in range(30):  # Try for up to 30 seconds
-            time.sleep(1)
+        for i in range(max_wait):
+            time.sleep(wait_interval)
             try:
                 # Test if we can connect
                 import socket
@@ -224,7 +228,7 @@ def main():
         print("CSV not found:", csv_path, file=sys.stderr); sys.exit(2)
 
     if args.launch:
-        ensure_listener()
+        ensure_listener(fast_mode=args.fast)
 
     try:
         import uno
@@ -233,13 +237,14 @@ def main():
         print("ERROR: UNO bridge not available. Run with LibreOffice's Python (recommended).", file=sys.stderr)
         sys.exit(1)
 
-    # Connect to running LibreOffice with retries
+    # Connect to running LibreOffice with retries (fewer retries in fast mode)
     local_ctx = uno.getComponentContext()
     resolver = local_ctx.ServiceManager.createInstanceWithContext("com.sun.star.bridge.UnoUrlResolver", local_ctx)
     
     print("Connecting to LibreOffice...")
     ctx = None
-    for attempt in range(10):  # Try 10 times
+    max_attempts = 5 if args.fast else 10
+    for attempt in range(max_attempts):
         try:
             ctx = resolver.resolve("uno:socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext")
             print("Successfully connected to LibreOffice!")
@@ -297,11 +302,12 @@ def main():
             pass
         return ""
 
-    def mm_to_100th_mm(mm):
-        try:
-            return int(mm) * 100
-        except Exception:
-            return None
+    # Utility function for unit conversion (currently unused but kept for future use)
+    # def mm_to_100th_mm(mm):
+    #     try:
+    #         return int(mm) * 100
+    #     except Exception:
+    #         return None
 
 
 
@@ -336,7 +342,6 @@ def main():
             
         # Try to set user data which affects tracked changes
         try:
-            from com.sun.star.util import XChangesNotifier
             config_provider = smgr.createInstance("com.sun.star.configuration.ConfigurationProvider")
             config_access = config_provider.createInstanceWithArguments(
                 "com.sun.star.configuration.ConfigurationUpdateAccess",
@@ -396,21 +401,45 @@ def main():
                     except Exception as e:
                         print(f"⚠️  Error reading questionnaire: {e}")
                     
-                    # Download and replace logo
+                    # Download and replace logo (optimized for fast mode)
                     if questionnaire_logo:
                         try:
                             import requests
                             import tempfile
                             print(f"📥 Downloading logo...")
                             
-                            headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
-                            response = requests.get(questionnaire_logo, headers=headers, stream=True, timeout=30)
+                            headers = {
+                                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                                'Accept': 'image/*',  # Only accept images
+                                'Connection': 'close'  # Don't keep connection alive
+                            }
+                            # Optimized timeout: shorter in fast mode but still downloads
+                            timeout = 10 if args.fast else 30
+                            # Add session reuse and compression
+                            session = requests.Session()
+                            session.headers.update(headers)
+                            response = session.get(questionnaire_logo, stream=True, timeout=timeout)
                             
                             if response.status_code == 200:
+                                # Check content length to avoid huge downloads
+                                content_length = response.headers.get('content-length')
+                                if content_length and int(content_length) > 5 * 1024 * 1024:  # 5MB limit
+                                    print(f"⚠️  Logo file too large ({int(content_length)/1024/1024:.1f}MB), skipping...")
+                                    response.close()
+                                    continue
+                                
                                 temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                downloaded_size = 0
+                                max_size = 5 * 1024 * 1024  # 5MB limit
+                                
                                 for chunk in response.iter_content(chunk_size=8192):
+                                    downloaded_size += len(chunk)
+                                    if downloaded_size > max_size:
+                                        print(f"⚠️  Logo download exceeded size limit, truncating...")
+                                        break
                                     temp_file.write(chunk)
                                 temp_file.close()
+                                session.close()
                                 
                                 # DIRECT REPLACEMENT WITHOUT TRACKING
                                 search_desc = doc.createSearchDescriptor()
@@ -490,7 +519,12 @@ def main():
                                     print(f"❌ Could not find '{target_text}' in document")
                             
                         except Exception as e:
-                            print(f"❌ Failed to download/insert logo: {e}")
+                            if args.fast:
+                                print(f"⚡ Fast mode: Logo download failed quickly, continuing without logo: {e}")
+                            else:
+                                print(f"❌ Failed to download/insert logo: {e}")
+                    else:
+                        print(f"⚠️  No logo URL found in questionnaire")
             
         # ALWAYS enable tracking for other operations (whether we had logo operations or not)
         print(f"🔄 Enabling tracking for text replacements and other changes...")
@@ -498,21 +532,20 @@ def main():
         print(f"✅ Tracking enabled - all subsequent changes will be tracked")
 
         # If provided via JSON metadata, prefer it unless CLI overrides are present
+        # Logo parameter preparation (variables prepared but not currently used in logic)
         try:
             meta = data.get('metadata', {})
             json_logo_path = (meta.get('logo_path') or meta.get('logo') or '').strip() or None
             json_logo_w = meta.get('logo_width_mm')
             json_logo_h = meta.get('logo_height_mm')
-            if cli_logo_path:
-                logo_path_to_use = cli_logo_path
-            else:
-                logo_path_to_use = json_logo_path
-            logo_w_to_use = cli_logo_w if cli_logo_w is not None else json_logo_w
-            logo_h_to_use = cli_logo_h if cli_logo_h is not None else json_logo_h
+            # logo_path_to_use = cli_logo_path if cli_logo_path else json_logo_path
+            # logo_w_to_use = cli_logo_w if cli_logo_w is not None else json_logo_w
+            # logo_h_to_use = cli_logo_h if cli_logo_h is not None else json_logo_h
         except Exception:
-            logo_path_to_use = cli_logo_path
-            logo_w_to_use = cli_logo_w
-            logo_h_to_use = cli_logo_h
+            # logo_path_to_use = cli_logo_path
+            # logo_w_to_use = cli_logo_w
+            # logo_h_to_use = cli_logo_h
+            pass
 
         comment_operations = [op for op in operations if op.get('action') == 'comment']
         print(f"📝 Found {len(comment_operations)} comment-only operations to process")
