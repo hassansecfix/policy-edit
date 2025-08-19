@@ -33,13 +33,13 @@
       {
         "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
         "action": "comment",
-        "comment": "You indicated that you have an office, so guest network access controls should be maintained.\\n\\nNo office = no guest network needed; Having office = visitors need controlled network access for security.",
+        "comment": "You indicated that you have an office, so guest network access controls should remain in place.\\n\\nNo office = no guest network needed; Having office = visitors need controlled network access for security.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
-        "comment": "You indicated you use GitHub and BitBucket for version control, so source code access controls should be maintained.\\n\\nNo version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use GitHub and BitBucket for version control, so source code access controls should remain in place.\\n\\nNo version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -52,8 +52,8 @@
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be submitted through the ticketing system (Trello/Jira)",
-        "comment": "You indicated you use Trello and Jira for ticket management and prefer using a ticketing system for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "replacement": "All requests will be submitted through the ticketing system (Jira/Trello)",
+        "comment": "You indicated you use Jira and Trello for ticket management and prefer using ticketing systems for access requests.\\n\\nEmail = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
