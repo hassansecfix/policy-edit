@@ -81,6 +81,21 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
 def commit_and_push_json(edits_json):
     """Commit and push the generated JSON file to GitHub."""
     try:
+        # Check if we're in a production environment (no git repo)
+        if not os.path.exists('.git'):
+            print("ℹ️  Production environment detected - skipping git operations")
+            print("💡 JSON file generated successfully, manual git operations may be needed")
+            return True, "Git operations skipped in production"
+        
+        # Configure git identity if environment variables are set
+        git_user_name = os.environ.get('GIT_USER_NAME')
+        git_user_email = os.environ.get('GIT_USER_EMAIL')
+        
+        if git_user_name and git_user_email:
+            subprocess.run(['git', 'config', 'user.name', git_user_name], capture_output=True)
+            subprocess.run(['git', 'config', 'user.email', git_user_email], capture_output=True)
+            print(f"✅ Git identity configured: {git_user_name} <{git_user_email}>")
+        
         # Add the JSON file
         result = subprocess.run(['git', 'add', edits_json], capture_output=True, text=True)
         if result.returncode != 0:
@@ -137,22 +152,35 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
     
     # Auto-trigger with GitHub API (if token provided)
     try:
-        # Get repository info from git remote
-        result = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
-                              capture_output=True, text=True)
-        if result.returncode != 0:
-            return False, "Could not get repository URL"
+        # Get repository info from environment variables first, then git
+        repo_owner = os.environ.get('GITHUB_REPO_OWNER')
+        repo_name = os.environ.get('GITHUB_REPO_NAME')
         
-        repo_url = result.stdout.strip()
-        # Extract owner/repo from URL
-        if 'github.com' in repo_url:
-            if repo_url.endswith('.git'):
-                repo_url = repo_url[:-4]
-            parts = repo_url.split('/')
-            owner = parts[-2]
-            repo = parts[-1]
+        if repo_owner and repo_name:
+            print(f"✅ Repository info from environment: {repo_owner}/{repo_name}")
+            owner = repo_owner
+            repo = repo_name
         else:
-            return False, "Not a GitHub repository"
+            # Fallback to git remote (for local development)
+            if not os.path.exists('.git'):
+                return False, "No git repository and GITHUB_REPO_OWNER/GITHUB_REPO_NAME environment variables not set"
+                
+            result = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
+                                  capture_output=True, text=True)
+            if result.returncode != 0:
+                return False, "Could not get repository URL from git and environment variables not set"
+            
+            repo_url = result.stdout.strip()
+            # Extract owner/repo from URL
+            if 'github.com' in repo_url:
+                if repo_url.endswith('.git'):
+                    repo_url = repo_url[:-4]
+                parts = repo_url.split('/')
+                owner = parts[-2]
+                repo = parts[-1]
+                print(f"✅ Repository info from git: {owner}/{repo}")
+            else:
+                return False, "Not a GitHub repository"
         
         # Trigger workflow
         api_url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/redline-docx.yml/dispatches"
