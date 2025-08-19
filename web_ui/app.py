@@ -248,6 +248,16 @@ class AutomationRunner:
             self.update_progress(3, "active")
             self.emit_log("🤖 Running automation script...", "info")
             
+            # Debug: Log environment variables being passed
+            debug_env_vars = {
+                'CLAUDE_API_KEY': '***PRESENT***' if env.get('CLAUDE_API_KEY') else 'NOT SET',
+                'GITHUB_REPO_OWNER': env.get('GITHUB_REPO_OWNER', 'NOT SET'),
+                'GITHUB_REPO_NAME': env.get('GITHUB_REPO_NAME', 'NOT SET'),
+                'GIT_USER_NAME': env.get('GIT_USER_NAME', 'NOT SET'),
+                'GIT_USER_EMAIL': env.get('GIT_USER_EMAIL', 'NOT SET')
+            }
+            self.emit_log(f"🔍 Environment variables: {debug_env_vars}", "info")
+            
             # Execute the script and capture output in real-time
             self.process = subprocess.Popen(
                 [str(script_path)],
@@ -492,6 +502,16 @@ def get_status():
     policy_path = base_path / policy_file
     questionnaire_path = base_path / questionnaire_file
     
+    # Debug: Check environment variables
+    env_vars_debug = {
+        'CLAUDE_API_KEY': '***PRESENT***' if api_key else 'NOT SET',
+        'GITHUB_REPO_OWNER': os.environ.get('GITHUB_REPO_OWNER', 'NOT SET'),
+        'GITHUB_REPO_NAME': os.environ.get('GITHUB_REPO_NAME', 'NOT SET'),
+        'GIT_USER_NAME': os.environ.get('GIT_USER_NAME', 'NOT SET'),
+        'GIT_USER_EMAIL': os.environ.get('GIT_USER_EMAIL', 'NOT SET'),
+        'GITHUB_TOKEN': '***PRESENT***' if os.environ.get('GITHUB_TOKEN') else 'NOT SET'
+    }
+    
     response = jsonify({
         'policy_exists': policy_path.exists(),
         'questionnaire_exists': questionnaire_path.exists(),
@@ -499,7 +519,8 @@ def get_status():
         'skip_api': skip_api,
         'automation_running': runner.running,
         'policy_file': policy_file,
-        'questionnaire_file': questionnaire_file
+        'questionnaire_file': questionnaire_file,
+        'env_vars_debug': env_vars_debug
     })
     
     # Add CORS headers directly
