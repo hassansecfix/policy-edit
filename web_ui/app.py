@@ -15,7 +15,7 @@ import signal
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_file, url_for
+from flask import Flask, request, jsonify, send_file
 from flask_socketio import SocketIO, emit
 from dotenv import load_dotenv
 
@@ -27,6 +27,16 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'policy-automation-secret-key-2024'
+
+# Manual CORS headers
+@app.after_request
+def after_request(response):
+    print("CORS: Adding headers to response")  # Debug output
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+    return response
+
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Global variables
@@ -385,22 +395,44 @@ class AutomationRunner:
         """Check for generated files and emit download links"""
         files_found = []
         
-        # Check for JSON file
-        json_path = Path("edits/policy_tracked_changes_with_comments_edits.json")
-        if json_path.exists():
-            size = json_path.stat().st_size
-            files_found.append({
-                'name': 'AI Generated Edits (JSON)',
-                'path': str(json_path),
-                'size': f"{size / 1024:.1f} KB",
-                'type': 'json'
-            })
+        # Get project root directory (parent of web_ui)
+        base_path = Path(__file__).parent.parent
+        
+        # Check for local DOCX output in build directory
+        build_path = base_path / "build"
+        if build_path.exists():
+            output_name = os.environ.get('OUTPUT_NAME', 'policy_tracked_changes_with_comments')
+            docx_files = list(build_path.glob(f"{output_name}*.docx"))
+            for docx_file in docx_files:
+                size = docx_file.stat().st_size
+                files_found.append({
+                    'name': f'Policy Document - {docx_file.name}',
+                    'path': f'build/{docx_file.name}',  # Relative to project root
+                    'size': f"{size / 1024:.1f} KB",
+                    'type': 'docx'
+                })
+        
+        # Check for any DOCX files in the root directory (from LibreOffice output)
+        # Exclude the original policy file
+        original_policy = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
+        docx_files = list(base_path.glob("*.docx"))
+        for docx_file in docx_files:
+            # Skip the original policy file and any files in the data directory
+            if docx_file.name not in original_policy and 'data/' not in str(docx_file):
+                size = docx_file.stat().st_size
+                files_found.append({
+                    'name': f'Policy Document - {docx_file.name}',
+                    'path': f'{docx_file.name}',  # Relative to project root
+                    'size': f"{size / 1024:.1f} KB",
+                    'type': 'docx'
+                })
             
-        # Check for GitHub Actions artifacts (this would need GitHub API integration)
-        # For now, we'll show a placeholder
         if files_found:
-            self.emit_log("📁 Generated files are ready for download", "success")
+            self.emit_log("📄 Policy document is ready for download", "success")
+            self.emit_log(f"📄 Found {len(files_found)} document(s): {', '.join([f['name'] for f in files_found])}", "info")
             socketio.emit('files_ready', {'files': files_found})
+        else:
+            self.emit_log("📄 No policy documents found yet", "warning")
             
     def stop(self):
         """Stop the automation process"""
@@ -419,12 +451,26 @@ class AutomationRunner:
 runner = AutomationRunner()
 
 @app.route('/')
-def index():
-    """Main dashboard page"""
-    skip_api = os.environ.get('SKIP_API_CALL', '').lower() in ['true', '1', 'yes', 'on']
-    return render_template('index.html', 
-                         skip_api=skip_api,
-                         current_time=datetime.now().strftime("%H:%M:%S"))
+def health_check():
+    """Health check endpoint for API"""
+    response = jsonify({
+        'status': 'running',
+        'service': 'Policy Automation API',
+        'timestamp': datetime.now().isoformat()
+    })
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    print("Added CORS headers to health check")
+    return response
+
+@app.route('/test-cors')
+def test_cors():
+    """Simple test endpoint for CORS"""
+    response = jsonify({'message': 'CORS test', 'success': True})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    print("Test CORS endpoint called")
+    return response
 
 @app.route('/api/status')
 def get_status():
@@ -440,7 +486,7 @@ def get_status():
     policy_path = base_path / policy_file
     questionnaire_path = base_path / questionnaire_file
     
-    return jsonify({
+    response = jsonify({
         'policy_exists': policy_path.exists(),
         'questionnaire_exists': questionnaire_path.exists(),
         'api_key_configured': bool(api_key) or skip_api,
@@ -449,6 +495,13 @@ def get_status():
         'policy_file': policy_file,
         'questionnaire_file': questionnaire_file
     })
+    
+    # Add CORS headers directly
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    
+    return response
 
 @app.route('/api/start', methods=['POST'])
 def start_automation():
@@ -480,12 +533,23 @@ def download_file(filename):
         artifact_id = filename.replace('github_artifact_', '')
         return download_github_artifact(artifact_id)
     
-    # Handle regular files
-    file_path = Path(filename)
+    # Handle regular files - need to resolve relative to project root
+    base_path = Path(__file__).parent.parent
+    file_path = base_path / filename
+    
+    print(f"Download request for: {filename}")
+    print(f"Looking for file at: {file_path.absolute()}")
+    print(f"File exists: {file_path.exists()}")
+    
     if file_path.exists() and file_path.is_file():
-        return send_file(str(file_path.absolute()), as_attachment=True)
+        response = send_file(str(file_path.absolute()), as_attachment=True)
+        # Add CORS headers to download response
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
     else:
-        return jsonify({'error': 'File not found'}), 404
+        response = jsonify({'error': 'File not found'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response, 404
 
 def download_github_artifact(artifact_id):
     """Download and extract DOCX file from GitHub Actions artifact"""
@@ -571,7 +635,6 @@ def handle_clear_logs():
 if __name__ == '__main__':
     print("🚀 Starting Policy Automation Web UI...")
     print(f"📁 Working directory: {Path.cwd()}")
-    print(f"🌐 Access the dashboard at: http://localhost:5000")
     
     # Handle Ctrl+C gracefully
     def signal_handler(sig, frame):
@@ -583,6 +646,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     
     try:
-        socketio.run(app, debug=False, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+        socketio.run(app, debug=False, host='0.0.0.0', port=5001, allow_unsafe_werkzeug=True)
     except KeyboardInterrupt:
         print("\n🛑 Server stopped by user")

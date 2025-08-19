@@ -1,35 +1,50 @@
-# Policy Automation Web UI
+# Policy Automation API Backend
 
-A modern web interface for the Policy Automation system with real-time logs, progress tracking, and file downloads.
+A Flask-based API backend for the Policy Automation system. This serves as the backend API for the Next.js frontend dashboard.
 
-## Features
+## Overview
 
-- **Real-time Logs**: Watch automation progress with live log streaming
-- **Progress Tracking**: Visual progress indicator with step-by-step status
-- **File Downloads**: Download generated files directly from the UI
-- **GitHub Actions Integration**: Monitor workflow status and download artifacts
-- **API Cost Savings**: Skip API calls during testing with existing JSON files
+This Flask application provides:
+
+- **RESTful API endpoints** for automation control
+- **WebSocket support** for real-time communication with the frontend
+- **File download endpoints** for generated documents
+- **Integration** with existing Python automation scripts
+- **GitHub Actions monitoring** and artifact downloading
+
+## API Endpoints
+
+- `GET /api/status` - System configuration status
+- `POST /api/start` - Start automation process
+- `POST /api/stop` - Stop automation process
+- `GET /api/download/<path>` - Download generated files
+- WebSocket endpoints for real-time logs and progress
 
 ## Quick Start
 
-1. **Start the web UI:**
+1. **Install dependencies:**
+
    ```bash
    cd web_ui
-   ./start_ui.sh
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
    ```
 
-2. **Access the dashboard:**
-   Open your browser and go to http://localhost:5000
+2. **Start the API backend:**
 
-3. **Run automation:**
-   - Check that all configuration is ready (green badges)
-   - Enable "Skip API Call" to use existing JSON files during testing
-   - Click "Start Policy Automation"
-   - Watch the logs and progress in real-time
+   ```bash
+   python3 app.py
+   ```
+
+   API runs on http://localhost:5001
+
+3. **Use with Next.js frontend:**
+   The API is designed to work with the Next.js dashboard in `../web_app/`
 
 ## Configuration
 
-The web UI reads configuration from your main `.env` file:
+The API reads configuration from your main `.env` file:
 
 - `CLAUDE_API_KEY` - Your Anthropic API key (not needed if skipping API)
 - `GITHUB_TOKEN` - GitHub token for monitoring workflows (optional)
@@ -39,35 +54,23 @@ The web UI reads configuration from your main `.env` file:
 
 ## Architecture
 
-- **Backend**: Flask with WebSocket support for real-time communication
-- **Frontend**: Bootstrap UI with Socket.IO for live updates
-- **Automation**: Integrates with existing shell scripts
-- **GitHub Integration**: Monitors workflows and downloads artifacts
-
-## Screenshots
-
-The dashboard provides:
-- Configuration status indicators
-- One-click automation start
-- Real-time log streaming with color coding
-- Step-by-step progress tracking
-- Download section for generated files
-
-## Troubleshooting
-
-- **Port 5000 in use**: Change the port in `app.py` line 530
-- **Missing dependencies**: Run `pip install -r requirements.txt` in the web_ui directory  
-- **GitHub integration not working**: Make sure `GITHUB_TOKEN` is set in your `.env` file
-- **Files not downloading**: Check file permissions and paths
+- **Flask** - Web framework with CORS support
+- **Flask-SocketIO** - WebSocket support for real-time communication
+- **Automation Integration** - Calls existing shell scripts and Python modules
+- **File Management** - Serves generated files for download
+- **GitHub API Integration** - Monitors workflows and downloads artifacts
 
 ## Development
 
-To run in development mode:
+For development with auto-reload:
+
 ```bash
 cd web_ui
-python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
 export FLASK_ENV=development
 python3 app.py
 ```
+
+## API-Only
+
+Note: This is now an API-only backend. The UI has been moved to a separate Next.js application in `../web_app/`. This Flask app no longer serves HTML templates or static files.

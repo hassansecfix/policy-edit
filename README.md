@@ -127,16 +127,92 @@ LOGO_HEIGHT_MM=0
 - `scripts/apply_tracked_edits_libre.py`: Applies edits with tracked changes (local or in CI)
 - Runners: `quick_automation.sh`, `run_complete_automation.sh`, `run_custom_automation.sh`
 
+## Web UI Dashboard
+
+The project now includes a modern Next.js dashboard for monitoring and controlling the automation process.
+
+### Quick Start
+
+**🚀 Easy Way - Start Everything at Once:**
+
+```bash
+./start_app.sh
+```
+
+This script automatically starts both the Flask API backend and Next.js frontend, then opens your browser to http://localhost:3000
+
+**📖 Manual Way - Individual Services:**
+
+1. **Start the Flask API backend:**
+
+   ```bash
+   cd web_ui
+   source venv/bin/activate  # or create venv if needed
+   pip install -r requirements.txt
+   python3 app.py
+   ```
+
+   API runs on http://localhost:5001
+
+2. **Start the Next.js frontend:**
+   ```bash
+   cd web_app
+   npm install  # first time only
+   npm run dev
+   ```
+   Dashboard runs on http://localhost:3000
+
+### Features
+
+- Real-time automation monitoring with WebSocket connections
+- Live progress tracking and log streaming
+- Modern TypeScript + Tailwind CSS interface
+- File download management
+- Configuration status checking
+
+### Troubleshooting
+
+**Common Issues:**
+
+1. **"command not found: python"**
+
+   - Use `python3` instead of `python` on macOS
+   - Make sure you're in the `web_ui` directory and virtual environment is activated
+
+2. **"Port 5000 is in use"**
+
+   - This is usually macOS AirPlay Receiver
+   - The app is configured to use port 5001 instead
+   - Disable AirPlay Receiver in System Preferences if needed
+
+3. **CORS errors in browser**
+
+   - Make sure Flask backend is running on port 5001
+   - Check that both services are running before accessing the dashboard
+
+4. **"Failed to fetch" errors**
+   - Ensure Flask backend is running: `curl http://localhost:5001/api/status`
+   - Check that virtual environment is activated in Flask terminal
+
 ## Current project structure
 
 ```
 .
 ├── README.md
+├── start_app.sh                   # Start both Flask API and Next.js frontend
 ├── config.sh                      # Shared configuration defaults (DRY)
 ├── env.example                    # Configuration template
 ├── quick_automation.sh            # Fastest setup
 ├── run_complete_automation.sh     # Production automation
 ├── run_custom_automation.sh       # Flexible configuration
+├── web_ui/                        # Flask API backend
+│   ├── app.py
+│   ├── requirements.txt
+│   └── README.md
+├── web_app/                       # Next.js frontend
+│   ├── src/
+│   ├── package.json
+│   └── next.config.ts
 ├── edits/
 │   └── policy_tracked_changes_with_comments_edits.json
 ├── data/
