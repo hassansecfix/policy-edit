@@ -99,6 +99,21 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
 def commit_and_push_json(edits_json, logo_file=None):
     """Commit and push the generated JSON file and optional logo file to GitHub."""
     try:
+        # Debug environment information
+        print(f"🔧 Environment Debug Info:")
+        print(f"   Working Directory: {os.getcwd()}")
+        print(f"   JSON File Path: {edits_json}")
+        print(f"   JSON File Absolute Path: {os.path.abspath(edits_json)}")
+        
+        # Check if we're in the right directory
+        expected_files = ['data', 'edits', 'scripts', '.git']
+        missing_dirs = [d for d in expected_files if not os.path.exists(d)]
+        if missing_dirs:
+            print(f"⚠️  Missing expected directories: {missing_dirs}")
+            print(f"📁 Current directory contents: {os.listdir('.')}")
+        else:
+            print(f"✅ All expected directories present")
+        
         # Ensure we have a git repository
         if not os.path.exists('.git'):
             return False, "No git repository found - .git directory missing"
@@ -314,6 +329,52 @@ def commit_and_push_json(edits_json, logo_file=None):
         else:
             print(f"✅ Pushed to origin/{current_branch}")
         
+        # CRITICAL: Verify the push actually worked by checking remote status
+        print("🔍 Verifying push was successful...")
+        
+        # Check if local and remote are in sync
+        fetch_result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True)
+        if fetch_result.returncode == 0:
+            print("✅ Fetched latest remote state")
+        else:
+            print(f"⚠️  Fetch failed: {fetch_result.stderr}")
+        
+        # Check git status to see if we're ahead/behind remote
+        status_result = subprocess.run(['git', 'status', '-uno'], capture_output=True, text=True)
+        if status_result.returncode == 0:
+            status_output = status_result.stdout
+            print(f"📊 Git status after push:")
+            print(f"   {status_output.strip()}")
+            
+            if "ahead of" in status_output:
+                print("🚨 WARNING: Local is still ahead of remote - push may have failed!")
+                return False, "Local repository is still ahead of remote after push - push failed"
+            elif "behind" in status_output:
+                print("⚠️  Local is behind remote - unexpected state")
+            elif "up to date" in status_output:
+                print("✅ Local and remote are in sync")
+        
+        # Verify remote URL is correct
+        remote_url_check = subprocess.run(['git', 'remote', 'get-url', 'origin'], capture_output=True, text=True)
+        if remote_url_check.returncode == 0:
+            actual_remote = remote_url_check.stdout.strip()
+            print(f"🔗 Confirmed remote URL: {actual_remote}")
+        
+        # Check what branch we're actually on
+        actual_branch = subprocess.run(['git', 'branch', '--show-current'], capture_output=True, text=True)
+        if actual_branch.returncode == 0 and actual_branch.stdout.strip():
+            current_actual_branch = actual_branch.stdout.strip()
+            print(f"🌿 Confirmed current branch: {current_actual_branch}")
+            if current_actual_branch != current_branch:
+                print(f"🚨 WARNING: Branch mismatch! Pushed to {current_branch} but on {current_actual_branch}")
+        
+        # List recent commits to verify our commit is there
+        recent_commits = subprocess.run(['git', 'log', '--oneline', '-3'], capture_output=True, text=True)
+        if recent_commits.returncode == 0:
+            print(f"📜 Recent commits:")
+            for line in recent_commits.stdout.strip().split('\n'):
+                print(f"   {line}")
+        
         committed_files = "JSON and logo files" if logo_file else "JSON file"
         print(f"✅ {committed_files} committed and pushed to GitHub")
         return True, f"{committed_files} pushed successfully"
@@ -388,28 +449,73 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
         
         def verify_file_on_github(file_path, max_retries=6, delay=5):
             """Verify a file exists on GitHub with retries."""
+            print(f"🔍 Checking file on GitHub: {file_path}")
+            api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{file_path}"
+            print(f"   API URL: {api_url}")
+            
             for attempt in range(max_retries):
                 try:
-                    api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{file_path}"
                     headers = {
+                        'Authorization': f'token {github_token[:8]}...{github_token[-4:]}' if github_token else 'NO_TOKEN',
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                    
+                    # Use actual token for request
+                    actual_headers = {
                         'Authorization': f'token {github_token}',
                         'Accept': 'application/vnd.github.v3+json'
                     }
                     
-                    response = requests.get(api_url, headers=headers)
+                    response = requests.get(api_url, headers=actual_headers, timeout=10)
+                    
+                    print(f"   Attempt {attempt + 1}: Status {response.status_code}")
+                    
                     if response.status_code == 200:
                         print(f"✅ File verified on GitHub: {file_path}")
+                        # Show file info
+                        try:
+                            file_info = response.json()
+                            print(f"   File size: {file_info.get('size', 'unknown')} bytes")
+                            print(f"   SHA: {file_info.get('sha', 'unknown')[:8]}...")
+                        except:
+                            pass
                         return True
                     elif response.status_code == 404:
-                        print(f"⏳ File not yet available on GitHub (attempt {attempt + 1}/{max_retries}): {file_path}")
+                        print(f"⏳ File not found (404) on attempt {attempt + 1}/{max_retries}")
+                        if attempt == 0:
+                            # On first failure, check what files ARE available in the directory
+                            try:
+                                dir_path = '/'.join(file_path.split('/')[:-1]) if '/' in file_path else ''
+                                if dir_path:
+                                    dir_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{dir_path}"
+                                    dir_response = requests.get(dir_url, headers=actual_headers, timeout=10)
+                                    if dir_response.status_code == 200:
+                                        files = dir_response.json()
+                                        available_files = [f['name'] for f in files if isinstance(f, dict)]
+                                        print(f"   📁 Available files in {dir_path}/: {available_files}")
+                                    else:
+                                        print(f"   📁 Could not list directory {dir_path} (status {dir_response.status_code})")
+                            except Exception as e:
+                                print(f"   📁 Error listing directory: {e}")
+                        
                         if attempt < max_retries - 1:
                             print(f"   Waiting {delay} seconds before retry...")
                             time.sleep(delay)
+                    elif response.status_code == 401:
+                        print(f"❌ Authentication failed (401) - check GITHUB_TOKEN")
+                        return False
+                    elif response.status_code == 403:
+                        print(f"❌ Access forbidden (403) - check repository permissions")
+                        return False
                     else:
-                        print(f"⚠️  Unexpected response {response.status_code} for {file_path}")
+                        print(f"⚠️  Unexpected response {response.status_code}: {response.text[:200]}")
                         if attempt < max_retries - 1:
                             time.sleep(delay)
                         
+                except requests.exceptions.Timeout:
+                    print(f"⚠️  Request timeout on attempt {attempt + 1}")
+                    if attempt < max_retries - 1:
+                        time.sleep(delay)
                 except Exception as e:
                     print(f"⚠️  Error checking file {file_path} (attempt {attempt + 1}): {e}")
                     if attempt < max_retries - 1:
