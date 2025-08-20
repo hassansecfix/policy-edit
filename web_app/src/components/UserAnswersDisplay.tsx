@@ -11,8 +11,12 @@ interface ServerAnswersResponse {
   lineCount?: number;
   isUserSpecific?: boolean;
   dataDir?: string;
+  originalDataDir?: string;
+  isServerless?: boolean;
   availableUserFiles?: string[];
   searchedPaths?: string[];
+  searchedDirectories?: string[];
+  cwd?: string;
   error?: string | object;
 }
 
@@ -239,9 +243,25 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                       {serverAnswers.isUserSpecific && ' (User-specific timestamped file)'}
                     </p>
                     <p className='text-xs text-gray-600'>📁 Path: {serverAnswers.filePath}</p>
+                    {serverAnswers.isServerless && (
+                      <p className='text-xs text-yellow-600 font-medium'>
+                        🌐 Serverless environment detected
+                      </p>
+                    )}
                     {serverAnswers.dataDir && (
                       <p className='text-xs text-gray-600'>
                         📂 Data directory: {serverAnswers.dataDir}
+                      </p>
+                    )}
+                    {serverAnswers.originalDataDir &&
+                      serverAnswers.originalDataDir !== serverAnswers.dataDir && (
+                        <p className='text-xs text-gray-600'>
+                          📂 Original data directory: {serverAnswers.originalDataDir}
+                        </p>
+                      )}
+                    {serverAnswers.cwd && (
+                      <p className='text-xs text-gray-500'>
+                        🏠 Working directory: {serverAnswers.cwd}
                       </p>
                     )}
                     {serverAnswers.availableUserFiles &&
@@ -310,6 +330,26 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                 ) : (
                   <>
                     <p className='text-sm text-red-600'>❌ No file found on server</p>
+                    {serverAnswers.isServerless && (
+                      <p className='text-xs text-yellow-600 font-medium'>
+                        🌐 Serverless environment detected
+                      </p>
+                    )}
+                    {serverAnswers.cwd && (
+                      <p className='text-xs text-gray-500'>
+                        🏠 Working directory: {serverAnswers.cwd}
+                      </p>
+                    )}
+                    {serverAnswers.searchedDirectories && (
+                      <div className='text-xs text-gray-600'>
+                        <strong>Searched directories:</strong>
+                        {serverAnswers.searchedDirectories.map((path: string, index: number) => (
+                          <div key={index} className='font-mono ml-2'>
+                            • {path}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     {serverAnswers.searchedPaths && (
                       <div className='text-xs text-gray-600'>
                         <strong>Searched paths:</strong>

@@ -149,13 +149,27 @@ export async function POST(request: NextRequest) {
     const csvContent = csvLines.join('\n');
 
     // Determine the data directory from the questions path
-    const dataDir = path.dirname(questionsPath);
-    const answersPath = path.join(dataDir, 'user_questionnaire_responses.csv');
+    const originalDataDir = path.dirname(questionsPath);
+
+    // In serverless environments, /var/task is read-only, so use /tmp for writing
+    const isServerless =
+      process.cwd().includes('/var/task') || process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
+    const writableDir = isServerless ? '/tmp' : originalDataDir;
+
+    console.log('🌐 Environment check:', {
+      isServerless: isServerless,
+      originalDataDir: originalDataDir,
+      writableDir: writableDir,
+      cwd: process.cwd(),
+      platform: process.platform,
+    });
+
+    const answersPath = path.join(writableDir, 'user_questionnaire_responses.csv');
 
     // Generate a unique filename with timestamp to avoid conflicts
     const timestamp = Date.now();
     const userSpecificFilename = `user_questionnaire_responses_${timestamp}.csv`;
-    const userSpecificPath = path.join(dataDir, userSpecificFilename);
+    const userSpecificPath = path.join(writableDir, userSpecificFilename);
 
     console.log('💾 Saving answers to main file:', answersPath);
     console.log('💾 Saving answers to user-specific file:', userSpecificPath);
@@ -164,9 +178,10 @@ export async function POST(request: NextRequest) {
 
     // Check directory permissions and existence
     try {
-      const dirStats = fs.statSync(dataDir);
-      console.log('📁 Data directory exists:', true);
-      console.log('📁 Data directory stats:', {
+      const dirStats = fs.statSync(writableDir);
+      console.log('📁 Writable directory exists:', true);
+      console.log('📁 Writable directory stats:', {
+        path: writableDir,
         isDirectory: dirStats.isDirectory(),
         mode: dirStats.mode.toString(8),
         uid: dirStats.uid,
@@ -174,12 +189,22 @@ export async function POST(request: NextRequest) {
       });
 
       // Test if we can create a temporary file in the directory
-      const testFilePath = path.join(dataDir, `test_write_${timestamp}.tmp`);
+      const testFilePath = path.join(writableDir, `test_write_${timestamp}.tmp`);
       fs.writeFileSync(testFilePath, 'test', 'utf-8');
       console.log('✅ Directory write test successful');
       fs.unlinkSync(testFilePath); // Clean up test file
     } catch (dirError) {
       console.error('❌ Directory permission check failed:', dirError);
+
+      // If /tmp fails, try creating it
+      if (isServerless && writableDir === '/tmp') {
+        try {
+          fs.mkdirSync('/tmp', { recursive: true });
+          console.log('✅ Created /tmp directory');
+        } catch (mkdirError) {
+          console.error('❌ Failed to create /tmp directory:', mkdirError);
+        }
+      }
     }
 
     let writeSuccess = false;
@@ -277,7 +302,9 @@ export async function POST(request: NextRequest) {
         {
           error: 'Failed to write answers file to any location',
           attemptedPaths: filesToTry.map((f) => f.path),
-          dataDir: dataDir,
+          dataDir: writableDir,
+          originalDataDir: originalDataDir,
+          isServerless: isServerless,
           cwd: process.cwd(),
         },
         { status: 500 },
@@ -291,7 +318,9 @@ export async function POST(request: NextRequest) {
       filePath: actualFilePath,
       userSpecificPath: userSpecificPath,
       mainFilePath: answersPath,
-      dataDir: dataDir,
+      dataDir: writableDir,
+      originalDataDir: originalDataDir,
+      isServerless: isServerless,
       timestamp: timestamp,
       answers: sortedAnswers.map((a) => ({ field: a.field, value: a.value })), // Include answers for debugging
     });
@@ -303,7 +332,24 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    // Find the data directory first by looking for questions.csv
+    // Detect serverless environment
+    const isServerless =
+      process.cwd().includes('/var/task') || process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
+    const writableDir = isServerless ? '/tmp' : null;
+
+    console.log('🌐 GET Environment check:', {
+      isServerless: isServerless,
+      writableDir: writableDir,
+      cwd: process.cwd(),
+    });
+
+    // Directories to search (writable directory first if serverless, then original data directories)
+    const searchDirectories = [];
+    if (writableDir) {
+      searchDirectories.push(writableDir);
+    }
+
+    // Find the original data directory by looking for questions.csv
     const possibleQuestionsPaths = [
       path.join(process.cwd(), '../data/questions.csv'),
       path.join(process.cwd(), '../../data/questions.csv'),
@@ -311,118 +357,95 @@ export async function GET() {
       path.join(process.cwd(), './data/questions.csv'),
     ];
 
-    let dataDir = '';
+    let originalDataDir = '';
     for (const testPath of possibleQuestionsPaths) {
       if (fs.existsSync(testPath)) {
-        dataDir = path.dirname(testPath);
-        console.log('✅ Found data directory at:', dataDir);
+        originalDataDir = path.dirname(testPath);
+        searchDirectories.push(originalDataDir);
+        console.log('✅ Found original data directory at:', originalDataDir);
         break;
       }
     }
 
-    if (!dataDir) {
-      console.log('📁 Data directory not found, using fallback paths');
-      // Fallback to original behavior
-      const possibleAnswersPaths = [
-        path.join(process.cwd(), '../data/user_questionnaire_responses.csv'),
-        path.join(process.cwd(), '../../data/user_questionnaire_responses.csv'),
-        path.join(process.cwd(), 'data/user_questionnaire_responses.csv'),
-        path.join(process.cwd(), './data/user_questionnaire_responses.csv'),
-      ];
+    console.log('🔍 Searching directories:', searchDirectories);
 
-      let answersPath = '';
-      for (const testPath of possibleAnswersPaths) {
-        if (fs.existsSync(testPath)) {
-          answersPath = testPath;
-          console.log('✅ Found answers file at:', answersPath);
-          break;
+    // Search through all possible directories
+    for (const searchDir of searchDirectories) {
+      try {
+        if (!fs.existsSync(searchDir)) {
+          console.log('📁 Directory does not exist:', searchDir);
+          continue;
         }
-      }
 
-      if (!answersPath) {
-        console.log('📄 No answers file found at any of these paths:', possibleAnswersPaths);
-        return NextResponse.json(
-          {
-            exists: false,
-            message: 'No answers file found',
-            searchedPaths: possibleAnswersPaths,
-          },
-          { status: 404 },
+        // Look for both main file and user-specific files in this directory
+        const mainAnswersPath = path.join(searchDir, 'user_questionnaire_responses.csv');
+        const allFiles = fs.readdirSync(searchDir);
+        const userSpecificFiles = allFiles.filter(
+          (file) => file.startsWith('user_questionnaire_responses_') && file.endsWith('.csv'),
         );
+
+        console.log(`📁 In directory ${searchDir}, found user-specific files:`, userSpecificFiles);
+
+        // Prefer the most recent user-specific file, then fall back to main file
+        let answersPath = '';
+        let isUserSpecific = false;
+
+        if (userSpecificFiles.length > 0) {
+          // Sort by timestamp (filename contains timestamp)
+          userSpecificFiles.sort((a, b) => {
+            const timestampA = parseInt(
+              a.replace('user_questionnaire_responses_', '').replace('.csv', ''),
+            );
+            const timestampB = parseInt(
+              b.replace('user_questionnaire_responses_', '').replace('.csv', ''),
+            );
+            return timestampB - timestampA; // Most recent first
+          });
+
+          answersPath = path.join(searchDir, userSpecificFiles[0]);
+          isUserSpecific = true;
+          console.log('✅ Using most recent user-specific file:', userSpecificFiles[0]);
+        } else if (fs.existsSync(mainAnswersPath)) {
+          answersPath = mainAnswersPath;
+          console.log('✅ Using main answers file:', mainAnswersPath);
+        }
+
+        if (answersPath && fs.existsSync(answersPath)) {
+          const csvContent = fs.readFileSync(answersPath, 'utf-8');
+          const lineCount = csvContent.split('\n').length;
+          console.log('📊 Found answers file with', lineCount, 'lines');
+
+          return NextResponse.json({
+            exists: true,
+            content: csvContent,
+            message: 'Answers file found',
+            filePath: answersPath,
+            lineCount: lineCount,
+            isUserSpecific: isUserSpecific,
+            dataDir: searchDir,
+            originalDataDir: originalDataDir,
+            isServerless: isServerless,
+            availableUserFiles: userSpecificFiles,
+          });
+        }
+      } catch (dirError) {
+        console.log(`❌ Error searching directory ${searchDir}:`, dirError);
+        continue;
       }
-
-      const csvContent = fs.readFileSync(answersPath, 'utf-8');
-      const lineCount = csvContent.split('\n').length;
-
-      return NextResponse.json({
-        exists: true,
-        content: csvContent,
-        message: 'Answers file found',
-        filePath: answersPath,
-        lineCount: lineCount,
-      });
     }
 
-    // Look for both main file and user-specific files in the data directory
-    const mainAnswersPath = path.join(dataDir, 'user_questionnaire_responses.csv');
-    const allFiles = fs.readdirSync(dataDir);
-    const userSpecificFiles = allFiles.filter(
-      (file) => file.startsWith('user_questionnaire_responses_') && file.endsWith('.csv'),
+    // If no files found in any directory, return 404
+    console.log('📄 No answers file found in any directory');
+    return NextResponse.json(
+      {
+        exists: false,
+        message: 'No answers file found in any directory',
+        searchedDirectories: searchDirectories,
+        isServerless: isServerless,
+        cwd: process.cwd(),
+      },
+      { status: 404 },
     );
-
-    console.log('📁 Found user-specific files:', userSpecificFiles);
-
-    // Prefer the most recent user-specific file, then fall back to main file
-    let answersPath = '';
-    let isUserSpecific = false;
-
-    if (userSpecificFiles.length > 0) {
-      // Sort by timestamp (filename contains timestamp)
-      userSpecificFiles.sort((a, b) => {
-        const timestampA = parseInt(
-          a.replace('user_questionnaire_responses_', '').replace('.csv', ''),
-        );
-        const timestampB = parseInt(
-          b.replace('user_questionnaire_responses_', '').replace('.csv', ''),
-        );
-        return timestampB - timestampA; // Most recent first
-      });
-
-      answersPath = path.join(dataDir, userSpecificFiles[0]);
-      isUserSpecific = true;
-      console.log('✅ Using most recent user-specific file:', userSpecificFiles[0]);
-    } else if (fs.existsSync(mainAnswersPath)) {
-      answersPath = mainAnswersPath;
-      console.log('✅ Using main answers file:', mainAnswersPath);
-    }
-
-    if (!answersPath) {
-      console.log('📄 No answers file found in data directory');
-      return NextResponse.json(
-        {
-          exists: false,
-          message: 'No answers file found in data directory',
-          dataDir: dataDir,
-          availableFiles: allFiles,
-        },
-        { status: 404 },
-      );
-    }
-
-    const csvContent = fs.readFileSync(answersPath, 'utf-8');
-    const lineCount = csvContent.split('\n').length;
-    console.log('📊 Found answers file with', lineCount, 'lines');
-
-    return NextResponse.json({
-      exists: true,
-      content: csvContent,
-      message: 'Answers file found',
-      filePath: answersPath,
-      lineCount: lineCount,
-      isUserSpecific: isUserSpecific,
-      dataDir: dataDir,
-      availableUserFiles: userSpecificFiles,
-    });
   } catch (error) {
     console.error('Error checking answers:', error);
     return NextResponse.json({ error: 'Failed to check answers' }, { status: 500 });
