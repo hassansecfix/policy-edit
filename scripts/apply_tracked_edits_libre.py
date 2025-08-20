@@ -383,63 +383,53 @@ def main():
                     target_text = logo_op.get('target_text', '')
                     print(f"🔍 Looking for logo placeholder: '{target_text}'")
                     
-                    # Get logo from questionnaire URL
+                    # Get logo from user's uploaded data (base64 embedded in questionnaire)
                     questionnaire_logo = None
-                    try:
-                        # Use the questionnaire parameter if provided, otherwise fallback to default
-                        questionnaire_path = args.questionnaire_csv or 'data/questionnaire_responses.csv'
-                        if os.path.exists(questionnaire_path):
-                            with open(questionnaire_path, 'r', encoding='utf-8') as f:
-                                content = f.read()
-                                import re
-                                urls = re.findall(r'https://[^\s,;]+', content)
-                                for url in urls:
-                                    if 'image' in url or any(ext in url.lower() for ext in ['.png', '.jpg', '.jpeg', '.gif']):
-                                        questionnaire_logo = url
-                                        print(f"🔗 Found logo URL: {url}")
-                                        break
-                    except Exception as e:
-                        print(f"⚠️  Error reading questionnaire: {e}")
+                    logo_base64_data = None
                     
-                    # Download and replace logo (optimized for fast mode)
-                    if questionnaire_logo:
+                    # ONLY use the provided questionnaire file - NO FALLBACKS
+                    if args.questionnaire_csv and os.path.exists(args.questionnaire_csv):
                         try:
-                            import requests
-                            import tempfile
-                            print(f"📥 Downloading logo...")
-                            
-                            headers = {
-                                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                                'Accept': 'image/*',  # Only accept images
-                                'Connection': 'close'  # Don't keep connection alive
-                            }
-                            # Optimized timeout: shorter in fast mode but still downloads
-                            timeout = 10 if args.fast else 30
-                            # Add session reuse and compression
-                            session = requests.Session()
-                            session.headers.update(headers)
-                            response = session.get(questionnaire_logo, stream=True, timeout=timeout)
-                            
-                            if response.status_code == 200:
-                                # Check content length to avoid huge downloads
-                                content_length = response.headers.get('content-length')
-                                if content_length and int(content_length) > 5 * 1024 * 1024:  # 5MB limit
-                                    print(f"⚠️  Logo file too large ({int(content_length)/1024/1024:.1f}MB), skipping...")
-                                    response.close()
-                                    continue
+                            with open(args.questionnaire_csv, 'r', encoding='utf-8') as f:
+                                content = f.read()
                                 
-                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-                                downloaded_size = 0
-                                max_size = 5 * 1024 * 1024  # 5MB limit
-                                
-                                for chunk in response.iter_content(chunk_size=8192):
-                                    downloaded_size += len(chunk)
-                                    if downloaded_size > max_size:
-                                        print(f"⚠️  Logo download exceeded size limit, truncating...")
+                            # Look for embedded base64 logo data first (user upload)
+                            for line in content.split('\n'):
+                                if line.startswith('99;Logo Base64 Data;_logo_base64_data;'):
+                                    parts = line.split(';', 4)
+                                    if len(parts) >= 5:
+                                        logo_base64_data = parts[4]
+                                        print(f"🖼️  Found user's uploaded logo data")
                                         break
-                                    temp_file.write(chunk)
+                        except Exception as e:
+                            print(f"⚠️  Error reading user questionnaire: {e}")
+                    else:
+                        print(f"⚠️  No user questionnaire file provided - skipping logo")
+                    
+                    # Use user's uploaded logo (base64 data)
+                    if logo_base64_data:
+                        try:
+                            import tempfile
+                            import base64
+                            print(f"🖼️  Processing user's uploaded logo...")
+                            
+                            # Convert base64 to file
+                            try:
+                                # Remove data URL prefix if present
+                                if ',' in logo_base64_data:
+                                    base64_content = logo_base64_data.split(',')[1]
+                                else:
+                                    base64_content = logo_base64_data
+                                
+                                # Decode base64 to binary
+                                logo_binary = base64.b64decode(base64_content)
+                                
+                                # Create temporary file
+                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                temp_file.write(logo_binary)
                                 temp_file.close()
-                                session.close()
+                                
+                                print(f"✅ User logo converted from base64 ({len(logo_binary)} bytes)")
                                 
                                 # DIRECT REPLACEMENT WITHOUT TRACKING
                                 search_desc = doc.createSearchDescriptor()
@@ -476,7 +466,7 @@ def main():
                                             graphic.setPropertyValue("SizeType", 1)  # Fixed size
                                             graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
                                             graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
-                                            print(f"📏 Set logo size to 25mm width x 10mm height")
+                                            print(f"📏 Set logo size to 35mm width x 10mm height")
                                         except Exception as e:
                                             print(f"⚠️  Could not set logo size: {e}")
                                             # Fallback: try different size approaches
@@ -500,10 +490,10 @@ def main():
                                         # Insert the graphic
                                         found_range.getText().insertTextContent(found_range, graphic, False)
                                         replaced_count += 1
-                                        print(f"✅ Logo inserted successfully!")
+                                        print(f"✅ User's logo inserted successfully!")
                                         
                                     except Exception as e:
-                                        print(f"❌ Failed to insert logo: {e}")
+                                        print(f"❌ Failed to insert user's logo: {e}")
                                     
                                     found_range = doc.findNext(found_range, search_desc)
                                 
@@ -514,17 +504,17 @@ def main():
                                     pass
                                     
                                 if replaced_count > 0:
-                                    print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s)")
+                                    print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s) with user's logo")
                                 else:
                                     print(f"❌ Could not find '{target_text}' in document")
+                                    
+                            except Exception as e:
+                                print(f"❌ Failed to decode user's logo data: {e}")
                             
                         except Exception as e:
-                            if args.fast:
-                                print(f"⚡ Fast mode: Logo download failed quickly, continuing without logo: {e}")
-                            else:
-                                print(f"❌ Failed to download/insert logo: {e}")
+                            print(f"❌ Failed to process user's logo: {e}")
                     else:
-                        print(f"⚠️  No logo URL found in questionnaire")
+                        print(f"⚠️  No user logo data found - skipping logo replacement")
             
         # ALWAYS enable tracking for other operations (whether we had logo operations or not)
         print(f"🔄 Enabling tracking for text replacements and other changes...")
