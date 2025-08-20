@@ -459,10 +459,38 @@ def main():
                                 replaced_count = 0
                                 while found_range:
                                     try:
-                                        # Clear the text first
-                                        found_range.setString("")
+                                        # Get the cursor to work with surrounding text
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
                                         
-                                        # Create and insert graphic
+                                        # Store the original text length for space removal calculation
+                                        original_text = found_range.getString()
+                                        original_length = len(original_text)
+                                        
+                                        # Expand cursor to include spaces before the target text
+                                        cursor.collapseToStart()
+                                        
+                                        # Move cursor backward to find and select preceding spaces
+                                        spaces_removed = 0
+                                        while cursor.goLeft(1, True):  # Move left and select
+                                            selected_char = cursor.getString()
+                                            if selected_char == ' ' or selected_char == '\t':
+                                                spaces_removed += 1
+                                                # Continue to select more spaces if we need more room
+                                                if spaces_removed >= original_length:
+                                                    break
+                                            else:
+                                                # Hit non-space character, move back one position
+                                                cursor.goRight(1, False)
+                                                spaces_removed -= 1
+                                                break
+                                        
+                                        # Now extend selection to include the original target text
+                                        cursor.goRight(original_length, True)
+                                        
+                                        # Clear all selected content (spaces + original text)
+                                        cursor.setString("")
+                                        
+                                        # Create and insert graphic at the cleared position
                                         graphic = doc.createInstance("com.sun.star.text.GraphicObject")
                                         logo_file_url = to_url(actual_logo_path)
                                         graphic.setPropertyValue("GraphicURL", logo_file_url)
@@ -505,10 +533,10 @@ def main():
                                                 except:
                                                     print(f"⚠️  All sizing methods failed - using default size")
                                         
-                                        # Insert the graphic
-                                        found_range.getText().insertTextContent(found_range, graphic, False)
+                                        # Insert the graphic at the cursor position
+                                        cursor.getText().insertTextContent(cursor, graphic, False)
                                         replaced_count += 1
-                                        print(f"✅ User's logo inserted successfully!")
+                                        print(f"✅ User's logo inserted successfully! (removed {spaces_removed} preceding spaces)")
                                         
                                     except Exception as e:
                                         print(f"❌ Failed to insert user's logo: {e}")
