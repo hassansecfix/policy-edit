@@ -253,9 +253,30 @@ class AutomationRunner:
             # Create a temporary JSON file with the answers for the automation script
             import tempfile
             
-            temp_answers_file = os.path.join(tempfile.gettempdir(), f"questionnaire_answers_{timestamp}.json")
-            with open(temp_answers_file, 'w', encoding='utf-8') as f:
-                json.dump(questionnaire_answers, f, indent=2)
+            # Debug temp directory and permissions
+            temp_dir = tempfile.gettempdir()
+            self.emit_log(f"🔍 DEBUG: Temp directory: {temp_dir}", "info")
+            self.emit_log(f"🔍 DEBUG: Temp dir exists: {os.path.exists(temp_dir)}", "info")
+            self.emit_log(f"🔍 DEBUG: Temp dir writable: {os.access(temp_dir, os.W_OK)}", "info")
+            
+            temp_answers_file = os.path.join(temp_dir, f"questionnaire_answers_{timestamp}.json")
+            self.emit_log(f"🔍 DEBUG: Will create temp file: {temp_answers_file}", "info")
+            
+            try:
+                with open(temp_answers_file, 'w', encoding='utf-8') as f:
+                    json.dump(questionnaire_answers, f, indent=2)
+                
+                # Verify file was created successfully
+                if os.path.exists(temp_answers_file):
+                    file_size = os.path.getsize(temp_answers_file)
+                    self.emit_log(f"✅ Temp file created successfully: {file_size} bytes", "info")
+                else:
+                    self.emit_log(f"❌ Temp file was not created!", "error")
+                    return False
+                    
+            except Exception as e:
+                self.emit_log(f"❌ Failed to create temp file: {str(e)}", "error")
+                return False
             
             env['QUESTIONNAIRE_ANSWERS_JSON'] = temp_answers_file
             env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
@@ -569,10 +590,14 @@ def start_automation():
         return jsonify({'error': 'Automation is already running'}), 400
         
     data = request.get_json() or {}
+    print(f"🔍 DEBUG: Full request data: {data}")
+    
     skip_api = data.get('skip_api', False)
     questionnaire_answers = data.get('questionnaire_answers', {})
     timestamp = data.get('timestamp', int(time.time() * 1000))
     
+    print(f"🔍 DEBUG: Extracted questionnaire_answers: {questionnaire_answers}")
+    print(f"🔍 DEBUG: Type of questionnaire_answers: {type(questionnaire_answers)}")
     print(f"🚀 Starting automation with {len(questionnaire_answers)} questionnaire answers")
     print(f"📊 Answer fields: {list(questionnaire_answers.keys())}")
     
