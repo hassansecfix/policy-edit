@@ -515,17 +515,33 @@ def main():
                                     print(f"⚠️  Regex strategies failed: {e}")
                                     replaced_count = 0
                                 
-                                # Strategy 3: Try tab characters and mixed whitespace if regex failed
-                                if replaced_count == 0:
-                                    print(f"🔄 Strategy 3: Trying tabs and mixed whitespace patterns")
+                                # Strategy 3: Try tab characters and mixed whitespace if regex failed AND spaces are allowed
+                                if replaced_count == 0 and MAX_LOGO_SPACES_TO_REMOVE > 0:
+                                    print(f"🔄 Strategy 3: Trying tabs and mixed whitespace patterns (since MAX_LOGO_SPACES_TO_REMOVE = {MAX_LOGO_SPACES_TO_REMOVE})")
                                     
-                                    # Try various whitespace combinations
-                                    whitespace_patterns = [
-                                        f"\t\t\t\t\t{target_text}",          # Tabs
-                                        f"\t\t\t\t {target_text}",           # Tabs + space
-                                        f"\t   \t   \t{target_text}",        # Mixed tabs and spaces
-                                        f"\u00A0\u00A0\u00A0\u00A0{target_text}",  # Non-breaking spaces
-                                    ]
+                                    # Generate whitespace patterns dynamically based on MAX_LOGO_SPACES_TO_REMOVE
+                                    whitespace_patterns = []
+                                    
+                                    # Add tab patterns only if we allow space removal
+                                    max_tabs = min(5, MAX_LOGO_SPACES_TO_REMOVE)  # Limit tabs to reasonable number
+                                    for num_tabs in range(max_tabs, 0, -1):
+                                        tabs = "\t" * num_tabs
+                                        whitespace_patterns.append(f"{tabs}{target_text}")
+                                    
+                                    # Add mixed tab/space patterns
+                                    if MAX_LOGO_SPACES_TO_REMOVE >= 2:
+                                        whitespace_patterns.extend([
+                                            f"\t {target_text}",           # Tab + space
+                                            f" \t{target_text}",           # Space + tab
+                                        ])
+                                    
+                                    # Add non-breaking space patterns
+                                    max_nbsp = min(4, MAX_LOGO_SPACES_TO_REMOVE)
+                                    for num_nbsp in range(max_nbsp, 0, -1):
+                                        nbsp = "\u00A0" * num_nbsp
+                                        whitespace_patterns.append(f"{nbsp}{target_text}")
+                                    
+                                    print(f"🔍 Generated {len(whitespace_patterns)} whitespace patterns for MAX_LOGO_SPACES_TO_REMOVE={MAX_LOGO_SPACES_TO_REMOVE}")
                                     
                                     for pattern in whitespace_patterns:
                                         rd_ws = doc.createReplaceDescriptor()
@@ -539,6 +555,8 @@ def main():
                                             replaced_count += count
                                             print(f"🎯 Found and replaced {count} instance(s) with special whitespace")
                                             break
+                                elif replaced_count == 0 and MAX_LOGO_SPACES_TO_REMOVE == 0:
+                                    print(f"🔄 Strategy 3: SKIPPED (MAX_LOGO_SPACES_TO_REMOVE = 0, no whitespace removal allowed)")
                                 
                                 # Strategy 4: Manual space removal if all other strategies failed
                                 if replaced_count == 0:
