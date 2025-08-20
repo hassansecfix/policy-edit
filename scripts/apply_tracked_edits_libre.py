@@ -449,33 +449,141 @@ def main():
                                 print(f"✅ Logo converted from base64 ({len(logo_binary)} bytes)")
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
-                                # DIRECT REPLACEMENT WITHOUT TRACKING using regex to remove spaces + placeholder
-                                print(f"🔄 Using regex to remove up to 20 spaces before '{target_text}'")
+                                # DIRECT REPLACEMENT WITHOUT TRACKING using multiple strategies to remove spaces + placeholder
+                                print(f"🔄 Attempting to remove spaces before '{target_text}' using multiple strategies")
                                 
-                                # Use regex to find up to 20 spaces followed by the target text
                                 import re
                                 escaped_target = re.escape(target_text)
-                                # Pattern: up to 20 spaces followed by the target text
-                                regex_pattern = f" {{0,20}}{escaped_target}"
+                                replaced_count = 0
                                 
-                                rd = doc.createReplaceDescriptor()
-                                rd.SearchString = regex_pattern
-                                rd.ReplaceString = "__LOGO_PLACEHOLDER__"  # Temporary replacement
-                                rd.SearchCaseSensitive = False
-                                rd.SearchWords = False
-                                # Enable regex
+                                # Strategy 0: Debug - Find what's actually around the target text
                                 try:
-                                    rd.setPropertyValue("RegularExpressions", True)
-                                    print(f"🔍 Using regex pattern: '{regex_pattern}'")
+                                    search_desc = doc.createSearchDescriptor()
+                                    search_desc.SearchString = target_text
+                                    search_desc.SearchCaseSensitive = False
+                                    search_desc.SearchWords = False
+                                    
+                                    found_range = doc.findFirst(search_desc)
+                                    if found_range:
+                                        # Get surrounding text to see what's actually there
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                        cursor.goLeft(25, True)  # Expand left to capture preceding chars
+                                        cursor.gotoRange(found_range.getEnd(), True)  # Extend to end of original range
+                                        surrounding_text = cursor.getString()
+                                        
+                                        # Show character codes for debugging
+                                        char_codes = [f"'{char}'({ord(char)})" for char in surrounding_text[-50:]]
+                                        print(f"🔍 Debug: Text around target (last 50 chars): {' '.join(char_codes)}")
+                                        print(f"🔍 Debug: Full surrounding text: '{surrounding_text}'")
+                                    else:
+                                        print(f"🔍 Debug: Could not find target text '{target_text}' for inspection")
                                 except Exception as e:
-                                    print(f"⚠️  Could not enable regex: {e}")
-                                    # Fallback to simple replacement
-                                    rd.SearchString = target_text
-                                    rd.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                    print(f"🔍 Debug: Could not inspect surrounding text: {e}")
                                 
-                                # Replace with temporary placeholder
-                                replaced_count = doc.replaceAll(rd)
-                                print(f"🔄 Replaced {replaced_count} instances with temp placeholder")
+                                # Strategy 1: Try comprehensive whitespace regex (spaces, tabs, non-breaking spaces)
+                                try:
+                                    # Pattern: up to 20 whitespace chars (spaces, tabs, non-breaking spaces) followed by target
+                                    regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,20}}{escaped_target}"
+                                    
+                                    rd1 = doc.createReplaceDescriptor()
+                                    rd1.SearchString = regex_pattern
+                                    rd1.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                    rd1.SearchCaseSensitive = False
+                                    rd1.SearchWords = False
+                                    rd1.setPropertyValue("RegularExpressions", True)
+                                    
+                                    replaced_count = doc.replaceAll(rd1)
+                                    print(f"🔍 Strategy 1 (comprehensive whitespace regex): replaced {replaced_count} instances")
+                                    
+                                    if replaced_count == 0:
+                                        # Strategy 2: Try simpler space-only regex
+                                        regex_pattern2 = f" {{0,20}}{escaped_target}"
+                                        rd2 = doc.createReplaceDescriptor()
+                                        rd2.SearchString = regex_pattern2
+                                        rd2.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                        rd2.SearchCaseSensitive = False
+                                        rd2.SearchWords = False
+                                        rd2.setPropertyValue("RegularExpressions", True)
+                                        
+                                        replaced_count = doc.replaceAll(rd2)
+                                        print(f"🔍 Strategy 2 (simple space regex): replaced {replaced_count} instances")
+                                        
+                                except Exception as e:
+                                    print(f"⚠️  Regex strategies failed: {e}")
+                                    replaced_count = 0
+                                
+                                # Strategy 3: Try tab characters and mixed whitespace if regex failed
+                                if replaced_count == 0:
+                                    print(f"🔄 Strategy 3: Trying tabs and mixed whitespace patterns")
+                                    
+                                    # Try various whitespace combinations
+                                    whitespace_patterns = [
+                                        f"\t\t\t\t\t{target_text}",          # Tabs
+                                        f"\t\t\t\t {target_text}",           # Tabs + space
+                                        f"\t   \t   \t{target_text}",        # Mixed tabs and spaces
+                                        f"\u00A0\u00A0\u00A0\u00A0{target_text}",  # Non-breaking spaces
+                                    ]
+                                    
+                                    for pattern in whitespace_patterns:
+                                        rd_ws = doc.createReplaceDescriptor()
+                                        rd_ws.SearchString = pattern
+                                        rd_ws.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                        rd_ws.SearchCaseSensitive = False
+                                        rd_ws.SearchWords = False
+                                        
+                                        count = doc.replaceAll(rd_ws)
+                                        if count > 0:
+                                            replaced_count += count
+                                            print(f"🎯 Found and replaced {count} instance(s) with special whitespace")
+                                            break
+                                
+                                # Strategy 4: Manual space removal if all other strategies failed
+                                if replaced_count == 0:
+                                    print(f"🔄 Strategy 4: Manual space removal approach")
+                                    
+                                    # Try different space combinations manually
+                                    space_patterns = [
+                                        f"                    {target_text}",  # 20 spaces
+                                        f"                   {target_text}",   # 19 spaces
+                                        f"                  {target_text}",    # 18 spaces
+                                        f"                 {target_text}",     # 17 spaces
+                                        f"                {target_text}",      # 16 spaces
+                                        f"               {target_text}",       # 15 spaces
+                                        f"              {target_text}",        # 14 spaces
+                                        f"             {target_text}",         # 13 spaces
+                                        f"            {target_text}",          # 12 spaces
+                                        f"           {target_text}",           # 11 spaces
+                                        f"          {target_text}",            # 10 spaces
+                                        f"         {target_text}",             # 9 spaces
+                                        f"        {target_text}",              # 8 spaces
+                                        f"       {target_text}",               # 7 spaces
+                                        f"      {target_text}",                # 6 spaces
+                                        f"     {target_text}",                 # 5 spaces
+                                        f"    {target_text}",                  # 4 spaces
+                                        f"   {target_text}",                   # 3 spaces
+                                        f"  {target_text}",                    # 2 spaces
+                                        f" {target_text}",                     # 1 space
+                                        target_text                            # No spaces
+                                    ]
+                                    
+                                    for pattern in space_patterns:
+                                        rd3 = doc.createReplaceDescriptor()
+                                        rd3.SearchString = pattern
+                                        rd3.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                        rd3.SearchCaseSensitive = False
+                                        rd3.SearchWords = False
+                                        
+                                        count = doc.replaceAll(rd3)
+                                        if count > 0:
+                                            replaced_count += count
+                                            spaces_count = len(pattern) - len(target_text)
+                                            print(f"🎯 Found and replaced {count} instance(s) with {spaces_count} spaces")
+                                            break  # Stop after first successful replacement pattern
+                                    
+                                    if replaced_count == 0:
+                                        print(f"⚠️  Could not find '{target_text}' with any space combination")
+                                
+                                print(f"🔄 Total replaced: {replaced_count} instances with temp placeholder")
                                 
                                 if replaced_count > 0:
                                     # Now find and replace the temp placeholder with actual logo
