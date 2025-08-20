@@ -473,15 +473,14 @@ def main():
                                 print(f"✅ Logo converted from base64 ({len(logo_binary)} bytes)")
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
-                                # DIRECT REPLACEMENT WITHOUT TRACKING using multiple strategies to remove spaces + placeholder
-                                print(f"🔄 Attempting to remove up to {dynamic_spaces_to_remove} spaces before '{target_text}' using multiple strategies")
-                                
-                                import re
-                                escaped_target = re.escape(target_text)
-                                replaced_count = 0
-                                
-                                # Strategy 0: Debug - Find what's actually around the target text
-                                try:
+                                # Handle both space removal (positive) and space addition (negative)
+                                if dynamic_spaces_to_remove >= 0:
+                                    print(f"🔄 Attempting to remove up to {dynamic_spaces_to_remove} spaces before '{target_text}' using multiple strategies")
+                                else:
+                                    spaces_to_add = abs(dynamic_spaces_to_remove)
+                                    print(f"🔄 Attempting to add {spaces_to_add} spaces before '{target_text}'")
+                                    
+                                    # Add spaces by finding target and inserting spaces before it
                                     search_desc = doc.createSearchDescriptor()
                                     search_desc.SearchString = target_text
                                     search_desc.SearchCaseSensitive = False
@@ -489,52 +488,124 @@ def main():
                                     
                                     found_range = doc.findFirst(search_desc)
                                     if found_range:
-                                        # Get surrounding text to see what's actually there
+                                        # Insert spaces before the target text
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        cursor.goLeft(dynamic_spaces_to_remove + 5, True)  # Expand left to capture preceding chars
-                                        cursor.gotoRange(found_range.getEnd(), True)  # Extend to end of original range
-                                        surrounding_text = cursor.getString()
+                                        cursor.collapseToStart()
+                                        spaces_to_insert = " " * spaces_to_add
+                                        cursor.getText().insertString(cursor, spaces_to_insert, False)
+                                        print(f"✅ Added {spaces_to_add} spaces before logo placeholder")
+                                    
+                                    # For negative difference, directly replace target with logo (no space removal needed)
+                                    search_desc = doc.createSearchDescriptor()
+                                    search_desc.SearchString = target_text
+                                    search_desc.SearchCaseSensitive = False
+                                    search_desc.SearchWords = False
+                                    
+                                    found_range = doc.findFirst(search_desc)
+                                    logo_count = 0
+                                    
+                                    while found_range:
+                                        try:
+                                            # Clear the target text
+                                            found_range.setString("")
+                                            
+                                            # Create and insert graphic
+                                            graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                            logo_file_url = to_url(actual_logo_path)
+                                            graphic.setPropertyValue("GraphicURL", logo_file_url)
+                                            
+                                            # Set anchor type
+                                            try:
+                                                from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                                graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                            except:
+                                                pass
+                                            
+                                            # Set size - 35mm x 10mm
+                                            try:
+                                                graphic.setPropertyValue("Width", 3500)  # 35mm
+                                                graphic.setPropertyValue("Height", 1000)  # 10mm
+                                                graphic.setPropertyValue("SizeType", 1)
+                                                graphic.setPropertyValue("RelativeWidth", 0)
+                                                graphic.setPropertyValue("KeepRatio", False)
+                                                print(f"📏 Set logo size to 35mm x 10mm")
+                                            except Exception as e:
+                                                print(f"⚠️  Using default logo size: {e}")
+                                            
+                                            # Insert the graphic
+                                            found_range.getText().insertTextContent(found_range, graphic, False)
+                                            logo_count += 1
+                                            print(f"✅ Logo #{logo_count} inserted successfully!")
+                                            
+                                        except Exception as e:
+                                            print(f"❌ Failed to insert logo: {e}")
                                         
-                                        # Show character codes for debugging
-                                        char_codes = [f"'{char}'({ord(char)})" for char in surrounding_text[-50:]]
-                                        print(f"🔍 Debug: Text around target (last 50 chars): {' '.join(char_codes)}")
-                                        print(f"🔍 Debug: Full surrounding text: '{surrounding_text}'")
-                                    else:
-                                        print(f"🔍 Debug: Could not find target text '{target_text}' for inspection")
-                                except Exception as e:
-                                    print(f"🔍 Debug: Could not inspect surrounding text: {e}")
+                                        found_range = doc.findNext(found_range, search_desc)
+                                    
+                                    print(f"🎉 Successfully replaced {logo_count} logo placeholder(s) with user's logo after adding spaces")
                                 
-                                # Strategy 1: Try comprehensive whitespace regex (spaces, tabs, non-breaking spaces)
-                                try:
-                                    # Pattern: up to dynamic_spaces_to_remove whitespace chars (spaces, tabs, non-breaking spaces) followed by target
-                                    regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,{dynamic_spaces_to_remove}}}{escaped_target}"
-                                    
-                                    rd1 = doc.createReplaceDescriptor()
-                                    rd1.SearchString = regex_pattern
-                                    rd1.ReplaceString = "__LOGO_PLACEHOLDER__"
-                                    rd1.SearchCaseSensitive = False
-                                    rd1.SearchWords = False
-                                    rd1.setPropertyValue("RegularExpressions", True)
-                                    
-                                    replaced_count = doc.replaceAll(rd1)
-                                    print(f"🔍 Strategy 1 (comprehensive whitespace regex): replaced {replaced_count} instances")
-                                    
-                                    if replaced_count == 0:
-                                        # Strategy 2: Try simpler space-only regex
-                                        regex_pattern2 = f" {{0,{dynamic_spaces_to_remove}}}{escaped_target}"
-                                        rd2 = doc.createReplaceDescriptor()
-                                        rd2.SearchString = regex_pattern2
-                                        rd2.ReplaceString = "__LOGO_PLACEHOLDER__"
-                                        rd2.SearchCaseSensitive = False
-                                        rd2.SearchWords = False
-                                        rd2.setPropertyValue("RegularExpressions", True)
+                                # For positive difference, proceed with space removal and logo replacement
+                                import re
+                                escaped_target = re.escape(target_text)
+                                replaced_count = 0
+                                
+                                if dynamic_spaces_to_remove >= 0:
+                                    # Only do space removal strategies when we need to remove spaces
+                                    # Strategy 0: Debug - Find what's actually around the target text
+                                    try:
+                                        search_desc = doc.createSearchDescriptor()
+                                        search_desc.SearchString = target_text
+                                        search_desc.SearchCaseSensitive = False
+                                        search_desc.SearchWords = False
                                         
-                                        replaced_count = doc.replaceAll(rd2)
-                                        print(f"🔍 Strategy 2 (simple space regex): replaced {replaced_count} instances")
+                                        found_range = doc.findFirst(search_desc)
+                                        if found_range:
+                                            # Get surrounding text to see what's actually there
+                                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                                            cursor.goLeft(dynamic_spaces_to_remove + 5, True)  # Expand left to capture preceding chars
+                                            cursor.gotoRange(found_range.getEnd(), True)  # Extend to end of original range
+                                            surrounding_text = cursor.getString()
+                                            
+                                            # Show character codes for debugging
+                                            char_codes = [f"'{char}'({ord(char)})" for char in surrounding_text[-50:]]
+                                            print(f"🔍 Debug: Text around target (last 50 chars): {' '.join(char_codes)}")
+                                            print(f"🔍 Debug: Full surrounding text: '{surrounding_text}'")
+                                        else:
+                                            print(f"🔍 Debug: Could not find target text '{target_text}' for inspection")
+                                    except Exception as e:
+                                        print(f"🔍 Debug: Could not inspect surrounding text: {e}")
+                                    
+                                    # Strategy 1: Try comprehensive whitespace regex (spaces, tabs, non-breaking spaces)
+                                    try:
+                                        # Pattern: up to dynamic_spaces_to_remove whitespace chars (spaces, tabs, non-breaking spaces) followed by target
+                                        regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,{dynamic_spaces_to_remove}}}{escaped_target}"
                                         
-                                except Exception as e:
-                                    print(f"⚠️  Regex strategies failed: {e}")
-                                    replaced_count = 0
+                                        rd1 = doc.createReplaceDescriptor()
+                                        rd1.SearchString = regex_pattern
+                                        rd1.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                        rd1.SearchCaseSensitive = False
+                                        rd1.SearchWords = False
+                                        rd1.setPropertyValue("RegularExpressions", True)
+                                        
+                                        replaced_count = doc.replaceAll(rd1)
+                                        print(f"🔍 Strategy 1 (comprehensive whitespace regex): replaced {replaced_count} instances")
+                                        
+                                        if replaced_count == 0:
+                                            # Strategy 2: Try simpler space-only regex
+                                            regex_pattern2 = f" {{0,{dynamic_spaces_to_remove}}}{escaped_target}"
+                                            rd2 = doc.createReplaceDescriptor()
+                                            rd2.SearchString = regex_pattern2
+                                            rd2.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                            rd2.SearchCaseSensitive = False
+                                            rd2.SearchWords = False
+                                            rd2.setPropertyValue("RegularExpressions", True)
+                                            
+                                            replaced_count = doc.replaceAll(rd2)
+                                            print(f"🔍 Strategy 2 (simple space regex): replaced {replaced_count} instances")
+                                            
+                                    except Exception as e:
+                                        print(f"⚠️  Regex strategies failed: {e}")
+                                        replaced_count = 0
                                 
                                 # Strategy 3: Try tab characters and mixed whitespace if regex failed AND spaces are allowed
                                 if replaced_count == 0 and dynamic_spaces_to_remove > 0:
