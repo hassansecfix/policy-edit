@@ -9,6 +9,7 @@ import { ProgressTracker } from '@/components/ProgressTracker';
 import { Questionnaire } from '@/components/Questionnaire';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
+import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { formatTime } from '@/lib/utils';
 import { QuestionnaireAnswer } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
@@ -21,14 +22,15 @@ export default function Dashboard() {
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
   const { socket, isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
-  // Check if questionnaire is already completed
+  // Check if questionnaire is already completed (from localStorage)
   useEffect(() => {
-    const checkQuestionnaireStatus = async () => {
+    const checkQuestionnaireStatus = () => {
       try {
-        const response = await fetch('/api/answers');
-        if (response.ok) {
-          const result = await response.json();
-          setQuestionnaireCompleted(result.exists);
+        const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
+        if (savedAnswers) {
+          const answers = JSON.parse(savedAnswers);
+          // Consider questionnaire completed if we have at least some answers
+          setQuestionnaireCompleted(Object.keys(answers).length > 0);
         }
       } catch (error) {
         console.error('Failed to check questionnaire status:', error);

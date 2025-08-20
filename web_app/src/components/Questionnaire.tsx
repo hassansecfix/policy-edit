@@ -1,7 +1,8 @@
 'use client';
 
 import { QuestionInput } from '@/components/QuestionInput';
-import { FileUpload, Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
+import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
+import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionnaireProps {
@@ -39,53 +40,24 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     loadQuestions();
   }, []);
 
-  // Load existing answers if available (for editing mode)
+  // Load existing answers from localStorage
   useEffect(() => {
-    const loadExistingAnswers = async () => {
+    const loadExistingAnswers = () => {
       if (questions.length === 0) return; // Wait for questions to load first
 
       try {
-        const response = await fetch('/api/answers');
-        if (response.ok) {
-          const result = await response.json();
-          if (result.exists && result.content) {
-            // Parse the CSV content to extract answers
-            const lines = result.content.trim().split('\n').slice(1); // Skip header
-            const existingAnswers: Record<string, QuestionnaireAnswer> = {};
+        const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
+        if (savedAnswers) {
+          const existingAnswers: Record<string, QuestionnaireAnswer> = JSON.parse(savedAnswers);
 
-            lines.forEach((line: string) => {
-              const [questionNumber, , field, , value] = line.split(';');
-              if (field && value && value !== '{}') {
-                // Skip empty file objects
-                let processedValue: string | number | File | FileUpload = value;
-
-                // Handle file uploads - for logo files, show as uploaded file
-                if (field === 'onboarding.company_logo' && value === 'data/company_logo.png') {
-                  processedValue = {
-                    name: 'company_logo.png',
-                    type: 'image/png',
-                    size: 0,
-                    data: 'existing-file',
-                  } as FileUpload;
-                }
-
-                existingAnswers[field] = {
-                  field,
-                  value: processedValue,
-                  questionNumber: parseInt(questionNumber),
-                };
-              }
-            });
-
-            // Update state with existing answers
-            setState((prev) => ({
-              ...prev,
-              answers: existingAnswers,
-            }));
-          }
+          // Update state with existing answers
+          setState((prev) => ({
+            ...prev,
+            answers: existingAnswers,
+          }));
         }
-      } catch {
-        console.log('No existing answers found or failed to load, starting fresh');
+      } catch (error) {
+        console.log('Failed to load existing answers from localStorage:', error);
       }
     };
 
@@ -103,13 +75,24 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
   }, [state.currentQuestionIndex, questions.length, onProgressUpdate]);
 
   const handleAnswer = useCallback((answer: QuestionnaireAnswer) => {
-    setState((prev) => ({
-      ...prev,
-      answers: {
+    setState((prev) => {
+      const newAnswers = {
         ...prev.answers,
         [answer.field]: answer,
-      },
-    }));
+      };
+
+      // Save to localStorage immediately
+      try {
+        localStorage.setItem(QUESTIONNAIRE_STORAGE_KEY, JSON.stringify(newAnswers));
+      } catch (error) {
+        console.error('Failed to save answers to localStorage:', error);
+      }
+
+      return {
+        ...prev,
+        answers: newAnswers,
+      };
+    });
   }, []);
 
   const handleNext = useCallback(() => {
