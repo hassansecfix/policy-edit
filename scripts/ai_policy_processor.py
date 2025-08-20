@@ -39,14 +39,21 @@ def load_file_content(file_path):
     if not file_path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
     
-    if file_path.suffix.lower() == '.csv':
-        # Read CSV as formatted text, but filter out base64 image data for API efficiency
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Filter out base64 logo data to save API tokens
-        lines = content.split('\n')
-        filtered_lines = []
+    # Handle DOCX files first
+    if file_path.suffix.lower() == '.docx':
+        try:
+            import docx
+            doc = docx.Document(file_path)
+            content = []
+            for paragraph in doc.paragraphs:
+                content.append(paragraph.text)
+            return '\n'.join(content)
+        except ImportError:
+            return f"[DOCX FILE: {file_path.name} - Install python-docx to read content]"
+        except Exception as e:
+            raise Exception(f"Error reading DOCX file {file_path}: {e}")
+    
+    # Handle JSON files (questionnaire responses)
     elif file_path.suffix.lower() == '.json':
         # Read JSON questionnaire answers and convert to CSV-like format for AI processing
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -77,13 +84,13 @@ def load_file_content(file_path):
         
         # No need to filter base64 data from JSON (it's already structured)
         return content
-    else:
-        # For other file types, read as text
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
     
-    # Continue with CSV filtering logic
-    if file_path.suffix.lower() == '.csv':
+    # Handle CSV files with base64 filtering
+    elif file_path.suffix.lower() == '.csv':
+        # Read CSV as formatted text, but filter out base64 image data for API efficiency
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
         # Filter out base64 logo data to save API tokens
         lines = content.split('\n')
         filtered_lines = []
@@ -119,24 +126,13 @@ def load_file_content(file_path):
         
         return '\n'.join(filtered_lines)
     
+    # Handle Markdown files
     elif file_path.suffix.lower() == '.md':
-        # Read markdown
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
     
-    elif file_path.suffix.lower() == '.docx':
-        try:
-            import docx
-            doc = docx.Document(file_path)
-            content = []
-            for paragraph in doc.paragraphs:
-                content.append(paragraph.text)
-            return '\n'.join(content)
-        except ImportError:
-            return f"[DOCX FILE: {file_path.name} - Install python-docx to read content]"
-    
+    # Default text reading for other file types
     else:
-        # Default text reading
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
 
@@ -304,7 +300,8 @@ CRITICAL: Your response must include a properly formatted JSON structure that fo
 def main():
     parser = argparse.ArgumentParser(description='AI Policy Processor - Generate JSON instructions with Claude Sonnet 4')
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
-    parser.add_argument('--questionnaire', required=True, help='Path to questionnaire CSV file')
+    parser.add_argument('--questionnaire', help='Path to questionnaire CSV file (legacy mode)')
+    parser.add_argument('--questionnaire-json', help='JSON string with questionnaire answers (direct mode)')
     parser.add_argument('--prompt', required=True, help='Path to AI prompt markdown file (prompt.md)')
     parser.add_argument('--policy-instructions', required=True, help='Path to policy processing instructions (updated_policy_instructions_v4.0.md)')
     parser.add_argument('--output', required=True, help='Output path for generated JSON file')
@@ -312,6 +309,15 @@ def main():
     parser.add_argument('--skip-api', action='store_true', help='Skip API call and use existing JSON file (for testing/development)')
     
     args = parser.parse_args()
+    
+    # Validate questionnaire input - either file or JSON, but not both
+    if not args.questionnaire and not args.questionnaire_json:
+        print("❌ Error: Either --questionnaire (file path) or --questionnaire-json (JSON string) must be provided!")
+        sys.exit(1)
+    
+    if args.questionnaire and args.questionnaire_json:
+        print("❌ Error: Cannot use both --questionnaire and --questionnaire-json at the same time!")
+        sys.exit(1)
     
     # Check for skip API configuration
     skip_api_env = os.environ.get('SKIP_API_CALL', '').lower()
@@ -369,7 +375,15 @@ def main():
     
     print("🤖 AI Policy Processor Starting (JSON Mode)...")
     print(f"📋 Policy: {args.policy}")
-    print(f"📊 Questionnaire: {args.questionnaire}")
+    
+    # Show questionnaire source
+    if args.questionnaire:
+        print(f"📊 Questionnaire: {args.questionnaire} (file mode)")
+        questionnaire_mode = "file"
+    else:
+        print(f"📊 Questionnaire: Direct JSON input (localStorage mode)")
+        questionnaire_mode = "json"
+    
     print(f"📝 Main Prompt: {args.prompt}")
     print(f"📜 Policy Instructions: {args.policy_instructions}")
     print(f"💾 Output: {args.output}")
@@ -378,8 +392,42 @@ def main():
         # Load input files
         print("\n📂 Loading input files...")
         policy_content = load_file_content(args.policy)
-        print("📊 Loading and filtering questionnaire CSV...")
-        questionnaire_content = load_file_content(args.questionnaire)
+        
+        # Load questionnaire content based on input method
+        if questionnaire_mode == "file":
+            print("📊 Loading and filtering questionnaire CSV...")
+            questionnaire_content = load_file_content(args.questionnaire)
+        else:
+            print("📊 Processing questionnaire JSON data...")
+            try:
+                # Parse and convert JSON to CSV-like format
+                json_data = json.loads(args.questionnaire_json)
+                csv_lines = ['Question Number;Question Text;field;Response Type;User Response']
+                
+                for field, answer_data in json_data.items():
+                    if isinstance(answer_data, dict):
+                        question_number = answer_data.get('questionNumber', 0)
+                        question_text = answer_data.get('questionText', field)
+                        response_type = answer_data.get('responseType', 'text')
+                        value = answer_data.get('value', '')
+                        
+                        # Handle different value types
+                        if isinstance(value, dict) and 'data' in value:
+                            # File upload - use filename or placeholder
+                            value = value.get('name', 'uploaded_file')
+                        elif isinstance(value, (list, dict)):
+                            value = str(value)
+                        
+                        csv_line = f"{question_number};{question_text};{field};{response_type};{value}"
+                        csv_lines.append(csv_line)
+                
+                questionnaire_content = '\n'.join(csv_lines)
+                print(f"📊 Converted {len(json_data)} JSON answers to CSV format for AI processing")
+                
+            except json.JSONDecodeError as e:
+                print(f"❌ Error: Invalid JSON in questionnaire data: {e}")
+                sys.exit(1)
+        
         prompt_content = load_file_content(args.prompt)
         policy_instructions_content = load_file_content(args.policy_instructions)
         

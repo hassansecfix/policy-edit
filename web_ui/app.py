@@ -252,9 +252,12 @@ class AutomationRunner:
                 questionnaire_file = None  # No file needed
                 questionnaire_path = None
                 questionnaire_source = "direct_api"
+                # Convert questionnaire answers to JSON string for the script
+                questionnaire_json_str = json.dumps(questionnaire_answers)
             else:
                 # Fallback to file-based approach
                 questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
+                questionnaire_json_str = None
             
             if questionnaire_source == "user_timestamped":
                 self.emit_log("📊 Using user-provided timestamped questionnaire responses", "success")

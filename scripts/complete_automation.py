@@ -72,23 +72,33 @@ def convert_xlsx_to_csv(xlsx_path, csv_path):
     cmd = f"python3 scripts/xlsx_to_csv_converter.py '{xlsx_path}' '{csv_path}'"
     return run_command(cmd, "Converting Excel to CSV")
 
-def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, api_key, skip_api=False):
+def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, api_key, skip_api=False, questionnaire_json=None):
     """Generate JSON instructions using AI or use existing file."""
     
+    # Determine questionnaire parameter based on input type
+    if questionnaire_json:
+        # Use JSON data directly (new localStorage approach)
+        questionnaire_param = f"--questionnaire-json '{questionnaire_json}'"
+        print("🧠 Step 2: Using direct JSON questionnaire data (localStorage mode)...")
+    else:
+        # Use file path (legacy approach)
+        questionnaire_param = f"--questionnaire '{questionnaire_csv}'"
+        print("🧠 Step 2: Using questionnaire file (legacy mode)...")
+    
     if skip_api:
-        print("🔄 Step 2: Using existing JSON file (API call skipped for testing/development)...")
+        print("🔄 API call skipped for testing/development...")
         cmd = f"""python3 scripts/ai_policy_processor.py \
             --policy '{policy_path}' \
-            --questionnaire '{questionnaire_csv}' \
+            {questionnaire_param} \
             --prompt '{prompt_path}' \
             --policy-instructions '{policy_instructions_path}' \
             --output '{output_json}' \
             --skip-api"""
     else:
-        print("🧠 Step 2: Generating JSON instructions with Claude Sonnet 4...")
+        print("🧠 Generating JSON instructions with Claude Sonnet 4...")
         cmd = f"""python3 scripts/ai_policy_processor.py \
             --policy '{policy_path}' \
-            --questionnaire '{questionnaire_csv}' \
+            {questionnaire_param} \
             --prompt '{prompt_path}' \
             --policy-instructions '{policy_instructions_path}' \
             --output '{output_json}' \
@@ -712,8 +722,17 @@ def main():
         # Track created logo file for git commit
         created_logo_file = None
         
-        # Step 1: Convert Excel to CSV (if needed)
-        if args.questionnaire.endswith(('.xlsx', '.xls')):
+        # Step 1: Handle questionnaire input (Excel/CSV/JSON)
+        questionnaire_json_data = None
+        
+        if args.questionnaire.endswith('.json'):
+            # Direct JSON input from localStorage approach
+            print("\n📊 STEP 1: Using Direct JSON Questionnaire Data (localStorage mode)")
+            with open(args.questionnaire, 'r', encoding='utf-8') as f:
+                questionnaire_json_data = json.dumps(json.load(f))
+            questionnaire_csv = None  # Not needed for JSON approach
+            print(f"✅ Loaded questionnaire JSON from: {args.questionnaire}")
+        elif args.questionnaire.endswith(('.xlsx', '.xls')):
             print("\n📊 STEP 1: Converting Excel to CSV")
             success, output = convert_xlsx_to_csv(args.questionnaire, questionnaire_csv)
             if not success:
@@ -731,7 +750,7 @@ def main():
             print("\n🧠 STEP 2: Generating Edits with Claude Sonnet 4")
         success, output = generate_edits_with_ai(
             args.policy, questionnaire_csv, prompt_path, policy_instructions_path, 
-            edits_json, api_key, skip_api
+            edits_json, api_key, skip_api, questionnaire_json_data
         )
         if not success:
             print(f"❌ AI generation failed: {output}")
