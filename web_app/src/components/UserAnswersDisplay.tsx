@@ -10,7 +10,7 @@ interface ServerAnswersResponse {
   filePath?: string;
   lineCount?: number;
   searchedPaths?: string[];
-  error?: any;
+  error?: string | object;
 }
 
 interface UserAnswersDisplayProps {
