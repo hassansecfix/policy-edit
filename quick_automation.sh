@@ -43,17 +43,31 @@ echo ""
 source "$(dirname "$0")/config.sh"
 
 # ONLY support localStorage/direct API questionnaire data - NO CSV file fallbacks
-if [[ "$QUESTIONNAIRE_SOURCE" == "direct_api" && -n "$QUESTIONNAIRE_ANSWERS_JSON" ]]; then
-    # Use direct API answers (JSON file from localStorage)
-    echo "📊 Using localStorage questionnaire answers: $QUESTIONNAIRE_ANSWERS_JSON"
-    QUESTIONNAIRE_JSON_FILE="$QUESTIONNAIRE_ANSWERS_JSON"
+if [[ "$QUESTIONNAIRE_SOURCE" == "direct_api" ]]; then
+    if [[ -n "$QUESTIONNAIRE_ANSWERS_DATA" ]]; then
+        # Use environment variable approach (production-friendly, no temp files)
+        echo "📊 Using localStorage questionnaire answers via environment variable"
+        echo "📏 Data size: ${#QUESTIONNAIRE_ANSWERS_DATA} characters"
+        QUESTIONNAIRE_INPUT_METHOD="env_var"
+    elif [[ -n "$QUESTIONNAIRE_ANSWERS_JSON" ]]; then
+        # Fallback to temp file approach (legacy)
+        echo "📊 Using localStorage questionnaire answers: $QUESTIONNAIRE_ANSWERS_JSON"
+        QUESTIONNAIRE_JSON_FILE="$QUESTIONNAIRE_ANSWERS_JSON"
+        QUESTIONNAIRE_INPUT_METHOD="temp_file"
+    else
+        echo "❌ ERROR: No localStorage questionnaire data found!"
+        echo "   QUESTIONNAIRE_SOURCE: ${QUESTIONNAIRE_SOURCE:-not set}"
+        echo "   QUESTIONNAIRE_ANSWERS_DATA: ${QUESTIONNAIRE_ANSWERS_DATA:+SET (${#QUESTIONNAIRE_ANSWERS_DATA} chars)}"
+        echo "   QUESTIONNAIRE_ANSWERS_JSON: ${QUESTIONNAIRE_ANSWERS_JSON:-not set}"
+        echo ""
+        echo "📝 Please complete the questionnaire in the web interface first."
+        echo "   The system now ONLY supports localStorage data - no CSV file fallbacks."
+        exit 1
+    fi
 else
-    echo "❌ ERROR: No localStorage questionnaire data found!"
+    echo "❌ ERROR: Invalid questionnaire source!"
     echo "   QUESTIONNAIRE_SOURCE: ${QUESTIONNAIRE_SOURCE:-not set}"
-    echo "   QUESTIONNAIRE_ANSWERS_JSON: ${QUESTIONNAIRE_ANSWERS_JSON:-not set}"
-    echo ""
-    echo "📝 Please complete the questionnaire in the web interface first."
-    echo "   The system now ONLY supports localStorage data - no CSV file fallbacks."
+    echo "   Expected: direct_api"
     exit 1
 fi
 
@@ -90,9 +104,23 @@ echo "🔑 User ID: $USER_ID (for multi-user isolation)"
 # Pass questionnaire source to Python script
 export QUESTIONNAIRE_SOURCE="${QUESTIONNAIRE_SOURCE:-file}"
 
+# Build questionnaire argument based on input method
+if [[ "$QUESTIONNAIRE_INPUT_METHOD" == "env_var" ]]; then
+    # Pass environment variable data directly to the automation script
+    QUESTIONNAIRE_ARG="--questionnaire-env-data"
+    echo "🔧 Using environment variable data approach (production-friendly)"
+elif [[ "$QUESTIONNAIRE_INPUT_METHOD" == "temp_file" ]]; then
+    # Use temp file approach (legacy)
+    QUESTIONNAIRE_ARG="--questionnaire \"$QUESTIONNAIRE_JSON_FILE\""
+    echo "🔧 Using temp file approach (legacy)"
+else
+    echo "❌ ERROR: Unknown questionnaire input method: $QUESTIONNAIRE_INPUT_METHOD"
+    exit 1
+fi
+
 eval "python3 scripts/complete_automation.py \
   --policy \"$POLICY_FILE\" \
-  --questionnaire \"$QUESTIONNAIRE_JSON_FILE\" \
+  $QUESTIONNAIRE_ARG \
   --output-name \"$OUTPUT_NAME\" \
   --user-id \"$USER_ID\" \
   --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}${SKIP_API_ARG}"

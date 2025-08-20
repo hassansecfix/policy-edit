@@ -250,38 +250,20 @@ class AutomationRunner:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
             
-            # Create a temporary JSON file with the answers for the automation script
-            import tempfile
-            
-            # Debug temp directory and permissions
-            temp_dir = tempfile.gettempdir()
-            self.emit_log(f"🔍 DEBUG: Temp directory: {temp_dir}", "info")
-            self.emit_log(f"🔍 DEBUG: Temp dir exists: {os.path.exists(temp_dir)}", "info")
-            self.emit_log(f"🔍 DEBUG: Temp dir writable: {os.access(temp_dir, os.W_OK)}", "info")
-            
-            temp_answers_file = os.path.join(temp_dir, f"questionnaire_answers_{timestamp}.json")
-            self.emit_log(f"🔍 DEBUG: Will create temp file: {temp_answers_file}", "info")
-            
+            # Pass questionnaire data via environment variable (no temp files needed)
+            # This avoids production file system permission issues
             try:
-                with open(temp_answers_file, 'w', encoding='utf-8') as f:
-                    json.dump(questionnaire_answers, f, indent=2)
+                questionnaire_json_str = json.dumps(questionnaire_answers)
+                env['QUESTIONNAIRE_ANSWERS_DATA'] = questionnaire_json_str
+                env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
                 
-                # Verify file was created successfully
-                if os.path.exists(temp_answers_file):
-                    file_size = os.path.getsize(temp_answers_file)
-                    self.emit_log(f"✅ Temp file created successfully: {file_size} bytes", "info")
-                else:
-                    self.emit_log(f"❌ Temp file was not created!", "error")
-                    return False
-                    
+                self.emit_log(f"📊 Questionnaire data passed via environment variable", "info")
+                self.emit_log(f"📂 Source: localStorage ({len(questionnaire_answers)} fields)", "info")
+                self.emit_log(f"📏 Data size: {len(questionnaire_json_str)} characters", "info")
+                
             except Exception as e:
-                self.emit_log(f"❌ Failed to create temp file: {str(e)}", "error")
+                self.emit_log(f"❌ Failed to serialize questionnaire data: {str(e)}", "error")
                 return False
-            
-            env['QUESTIONNAIRE_ANSWERS_JSON'] = temp_answers_file
-            env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
-            self.emit_log(f"📊 Direct answers saved to: {temp_answers_file}", "info")
-            self.emit_log(f"📂 Source: localStorage ({len(questionnaire_answers)} fields)", "info")
                 
             self.update_progress(2, "completed")
             

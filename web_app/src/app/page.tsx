@@ -56,9 +56,39 @@ export default function Dashboard() {
         console.log('🔍 DEBUG: Answer count:', Object.keys(questionnaireAnswers).length);
         console.log('🔍 DEBUG: Answer keys:', Object.keys(questionnaireAnswers));
 
+        // Strip out base64 image data to avoid request size limits in production
+        const filteredAnswers = Object.fromEntries(
+          Object.entries(questionnaireAnswers).map(([key, answer]: [string, any]) => {
+            if (
+              answer &&
+              typeof answer === 'object' &&
+              answer.value &&
+              typeof answer.value === 'object' &&
+              answer.value.data
+            ) {
+              // This is a file upload - keep metadata but remove base64 data
+              const filteredAnswer = {
+                ...answer,
+                value: {
+                  ...answer.value,
+                  data: '[BASE64_DATA_REMOVED_FOR_PRODUCTION_COMPATIBILITY]',
+                  size: answer.value.data ? answer.value.data.length : 0,
+                  originalDataLength: answer.value.data ? answer.value.data.length : 0,
+                },
+              };
+              console.log(
+                `🖼️  Filtered base64 data from ${key} (${filteredAnswer.value.originalDataLength} chars)`,
+              );
+              return [key, filteredAnswer];
+            }
+            return [key, answer];
+          }),
+        );
+
+        console.log('🔍 DEBUG: Filtered answers (no base64):', Object.keys(filteredAnswers).length);
         console.log(
           '🚀 Starting automation with answers:',
-          Object.keys(questionnaireAnswers).length,
+          Object.keys(filteredAnswers).length,
           'fields',
         );
 
@@ -69,7 +99,7 @@ export default function Dashboard() {
           },
           body: JSON.stringify({
             skip_api: skipApi,
-            questionnaire_answers: questionnaireAnswers,
+            questionnaire_answers: filteredAnswers,
             timestamp: Date.now(),
           }),
         });
@@ -79,7 +109,7 @@ export default function Dashboard() {
           addLog({
             timestamp: formatTime(new Date()),
             message: `🚀 Automation started successfully with ${
-              Object.keys(questionnaireAnswers).length
+              Object.keys(filteredAnswers).length
             } questionnaire answers`,
             level: 'success',
           });

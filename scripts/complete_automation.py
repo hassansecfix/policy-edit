@@ -80,18 +80,24 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
     try:
         # Determine questionnaire parameter based on input type
         if questionnaire_json:
-            # Use JSON data directly (new localStorage approach)
-            # Write JSON to temp file to avoid "argument list too long" error
-            import tempfile
-            import json
-            
-            temp_json_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-            json.dump(json.loads(questionnaire_json), temp_json_file, indent=2)
-            temp_json_file.close()
-            
-            questionnaire_param = f"--questionnaire '{temp_json_file.name}'"
-            print("🧠 Step 2: Using direct JSON questionnaire data (localStorage mode)...")
-            print(f"📁 Temp JSON file: {temp_json_file.name}")
+            # Check if we can use environment variable approach (production-friendly)
+            env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+            if env_data and len(questionnaire_json) == len(env_data):
+                # Use environment variable approach - no temp files needed!
+                questionnaire_param = f"--questionnaire-env-data"
+                print("🧠 Step 2: Using environment variable questionnaire data (production mode)...")
+            else:
+                # Fallback to temp file approach 
+                import tempfile
+                import json
+                
+                temp_json_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+                json.dump(json.loads(questionnaire_json), temp_json_file, indent=2)
+                temp_json_file.close()
+                
+                questionnaire_param = f"--questionnaire '{temp_json_file.name}'"
+                print("🧠 Step 2: Using temp file questionnaire data (fallback mode)...")
+                print(f"📁 Temp JSON file: {temp_json_file.name}")
         else:
             # Use file path (legacy approach)
             questionnaire_param = f"--questionnaire '{questionnaire_csv}'"
@@ -684,7 +690,8 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
 def main():
     parser = argparse.ArgumentParser(description='Complete Policy Automation - End-to-End Flow')
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
-    parser.add_argument('--questionnaire', required=True, help='Path to questionnaire Excel/CSV file')
+    parser.add_argument('--questionnaire', help='Path to questionnaire Excel/CSV/JSON file')
+    parser.add_argument('--questionnaire-env-data', action='store_true', help='Read questionnaire data from QUESTIONNAIRE_ANSWERS_DATA environment variable')
     parser.add_argument('--output-name', required=True, help='Base name for output files (e.g., "acme_policy")')
     parser.add_argument('--api-key', help='Claude API key (or set CLAUDE_API_KEY env var)')
     parser.add_argument('--github-token', help='GitHub token for auto-triggering (optional)')
@@ -745,26 +752,42 @@ def main():
         # Track created logo file for git commit
         created_logo_file = None
         
-        # Step 1: Handle questionnaire input (Excel/CSV/JSON)
+        # Step 1: Handle questionnaire input (Excel/CSV/JSON/Environment)
         questionnaire_json_data = None
         
-        if args.questionnaire.endswith('.json'):
-            # Direct JSON input from localStorage approach
-            print("\n📊 STEP 1: Using Direct JSON Questionnaire Data (localStorage mode)")
-            with open(args.questionnaire, 'r', encoding='utf-8') as f:
-                questionnaire_json_data = json.dumps(json.load(f))
-            questionnaire_csv = None  # Not needed for JSON approach
-            print(f"✅ Loaded questionnaire JSON from: {args.questionnaire}")
-        elif args.questionnaire.endswith(('.xlsx', '.xls')):
-            print("\n📊 STEP 1: Converting Excel to CSV")
-            success, output = convert_xlsx_to_csv(args.questionnaire, questionnaire_csv)
-            if not success:
-                print(f"❌ Excel conversion failed: {output}")
+        if args.questionnaire_env_data:
+            # Use environment variable data (production-friendly approach)
+            print("\n📊 STEP 1: Using Environment Variable Questionnaire Data (production mode)")
+            env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+            if not env_data:
+                print("❌ Error: QUESTIONNAIRE_ANSWERS_DATA environment variable not set!")
                 sys.exit(1)
+            
+            questionnaire_json_data = env_data
+            questionnaire_csv = None  # Not needed for environment approach
+            print(f"✅ Loaded questionnaire data from environment variable ({len(env_data)} characters)")
+            
+        elif args.questionnaire:
+            if args.questionnaire.endswith('.json'):
+                # Direct JSON input from localStorage approach
+                print("\n📊 STEP 1: Using Direct JSON Questionnaire Data (localStorage mode)")
+                with open(args.questionnaire, 'r', encoding='utf-8') as f:
+                    questionnaire_json_data = json.dumps(json.load(f))
+                questionnaire_csv = None  # Not needed for JSON approach
+                print(f"✅ Loaded questionnaire JSON from: {args.questionnaire}")
+            elif args.questionnaire.endswith(('.xlsx', '.xls')):
+                print("\n📊 STEP 1: Converting Excel to CSV")
+                success, output = convert_xlsx_to_csv(args.questionnaire, questionnaire_csv)
+                if not success:
+                    print(f"❌ Excel conversion failed: {output}")
+                    sys.exit(1)
+            else:
+                # Already CSV, just copy/link it
+                questionnaire_csv = args.questionnaire
+                print(f"\n📊 STEP 1: Using existing CSV: {questionnaire_csv}")
         else:
-            # Already CSV, just copy/link it
-            questionnaire_csv = args.questionnaire
-            print(f"\n📊 STEP 1: Using existing CSV: {questionnaire_csv}")
+            print("❌ Error: Either --questionnaire (file path) or --questionnaire-env-data must be provided!")
+            sys.exit(1)
         
         # Step 2: Generate edits with AI (JSON only)
         if skip_api:
