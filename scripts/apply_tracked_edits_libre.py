@@ -389,12 +389,18 @@ def main():
                 for op in operations:
                     if (op.get('action') == 'replace' and 
                         op.get('target_text', '').strip() == '<Company name, address>'):
+                        target_text_op = op.get('target_text', '').strip()
                         replacement_text = op.get('replacement', '')
                         if replacement_text:
+                            target_length = len(target_text_op)
                             replacement_length = len(replacement_text)
-                            dynamic_spaces_to_remove = replacement_length + MAX_LOGO_SPACES_TO_REMOVE
-                            print(f"📏 Found company name replacement: '{replacement_text}' ({replacement_length} chars)")
-                            print(f"📏 Dynamic spaces to remove: {replacement_length} + {MAX_LOGO_SPACES_TO_REMOVE} = {dynamic_spaces_to_remove}")
+                            length_difference = replacement_length - target_length
+                            dynamic_spaces_to_remove = length_difference + MAX_LOGO_SPACES_TO_REMOVE
+                            print(f"📏 Found company name replacement:")
+                            print(f"📏   Target: '{target_text_op}' ({target_length} chars)")
+                            print(f"📏   Replacement: '{replacement_text}' ({replacement_length} chars)")
+                            print(f"📏   Difference: {replacement_length} - {target_length} = {length_difference}")
+                            print(f"📏   Dynamic spaces to remove: {length_difference} + {MAX_LOGO_SPACES_TO_REMOVE} = {dynamic_spaces_to_remove}")
                             break
                 
                 for logo_op in logo_operations:
