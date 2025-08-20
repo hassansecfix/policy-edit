@@ -507,6 +507,32 @@ def main():
                                         
                                         # Insert the graphic
                                         found_range.getText().insertTextContent(found_range, graphic, False)
+                                        
+                                        # Now remove 20 spaces before the logo
+                                        try:
+                                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                                            cursor.collapseToStart()
+                                            
+                                            # Move left and select up to 20 spaces
+                                            spaces_removed = 0
+                                            for i in range(20):
+                                                if cursor.goLeft(1, True):
+                                                    char = cursor.getString()[-1:]
+                                                    if char == ' ':
+                                                        spaces_removed += 1
+                                                    else:
+                                                        cursor.goRight(1, False)  # Move back if not space
+                                                        break
+                                                else:
+                                                    break
+                                            
+                                            # Remove the selected spaces
+                                            if spaces_removed > 0:
+                                                cursor.setString("")
+                                                print(f"✅ Removed {spaces_removed} spaces before logo")
+                                        except Exception as e:
+                                            print(f"⚠️  Could not remove spaces: {e}")
+                                        
                                         replaced_count += 1
                                         print(f"✅ User's logo inserted successfully!")
                                         
