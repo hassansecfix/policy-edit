@@ -210,10 +210,22 @@ class AutomationRunner:
             # Check if files exist (paths relative to parent directory)
             base_path = Path(__file__).parent.parent
             policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
-            questionnaire_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+            
+            # Check for user-provided questionnaire responses first, fallback to default
+            user_questionnaire_file = 'data/user_questionnaire_responses.csv'
+            default_questionnaire_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+            
+            user_questionnaire_path = base_path / user_questionnaire_file
+            if user_questionnaire_path.exists():
+                questionnaire_file = user_questionnaire_file
+                questionnaire_path = user_questionnaire_path
+                self.emit_log("📊 Using user-provided questionnaire responses", "success")
+            else:
+                questionnaire_file = default_questionnaire_file
+                questionnaire_path = base_path / questionnaire_file
+                self.emit_log("📊 Using default questionnaire responses", "info")
             
             policy_path = base_path / policy_file
-            questionnaire_path = base_path / questionnaire_file
             
             if not policy_path.exists():
                 self.emit_log(f"❌ Policy file not found: {policy_file}", "error")
@@ -241,6 +253,10 @@ class AutomationRunner:
             if skip_api:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
+            
+            # Pass the questionnaire file to the automation script
+            env['QUESTIONNAIRE_FILE'] = questionnaire_file
+            self.emit_log(f"📋 Questionnaire file: {questionnaire_file}", "info")
                 
             self.update_progress(2, "completed")
             
@@ -494,13 +510,26 @@ def get_status():
     # Check file existence - paths are relative to the parent directory
     base_path = Path(__file__).parent.parent
     policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
-    questionnaire_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+    
+    # Check for user-provided questionnaire responses first, fallback to default
+    user_questionnaire_file = 'data/user_questionnaire_responses.csv'
+    default_questionnaire_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+    
+    user_questionnaire_path = base_path / user_questionnaire_file
+    if user_questionnaire_path.exists():
+        questionnaire_file = user_questionnaire_file
+        questionnaire_path = user_questionnaire_path
+        questionnaire_source = "user_provided"
+    else:
+        questionnaire_file = default_questionnaire_file
+        questionnaire_path = base_path / questionnaire_file
+        questionnaire_source = "default"
+    
     api_key = os.environ.get('CLAUDE_API_KEY', '')
     skip_api = os.environ.get('SKIP_API_CALL', '').lower() in ['true', '1', 'yes', 'on']
     
     # Resolve paths relative to project root
     policy_path = base_path / policy_file
-    questionnaire_path = base_path / questionnaire_file
     
     # Debug: Check environment variables
     env_vars_debug = {
@@ -520,6 +549,8 @@ def get_status():
         'automation_running': runner.running,
         'policy_file': policy_file,
         'questionnaire_file': questionnaire_file,
+        'questionnaire_source': questionnaire_source,
+        'user_questionnaire_available': user_questionnaire_path.exists(),
         'env_vars_debug': env_vars_debug
     })
     

@@ -26,6 +26,7 @@ import argparse
 import subprocess
 import time
 import json
+import base64
 from pathlib import Path
 import requests
 
@@ -304,13 +305,46 @@ def main():
                 has_logo_operations = any(op.get('action') == 'replace_with_logo' for op in operations)
                 
                 if has_logo_operations and not data['metadata'].get('logo_path'):
-                    # Fallback to local logo file if it exists
+                    # First, try local logo file
                     local_logo_path = "data/company_logo.png"
+                    
                     if os.path.exists(local_logo_path):
                         data['metadata']['logo_path'] = local_logo_path
                         print(f"🖼️  Fallback: Using local logo file {local_logo_path}")
                     else:
-                        print("⚠️  Logo operation generated but no local logo file found at data/company_logo.png")
+                        # Try to extract logo base64 data from questionnaire CSV
+                        try:
+                            logo_created = False
+                            # Check if we have the questionnaire CSV with embedded logo data
+                            if os.path.exists(questionnaire_csv):
+                                with open(questionnaire_csv, 'r', encoding='utf-8') as f:
+                                    csv_content = f.read()
+                                
+                                # Look for the special logo base64 entry
+                                for line in csv_content.split('\n'):
+                                    if line.startswith('99;Logo Base64 Data;_logo_base64_data;'):
+                                        parts = line.split(';', 4)
+                                        if len(parts) >= 5:
+                                            base64_data = parts[4]
+                                            # Remove data URL prefix if present
+                                            if ',' in base64_data:
+                                                base64_data = base64_data.split(',')[1]
+                                            
+                                            # Create logo file from base64 data
+                                            logo_buffer = base64.b64decode(base64_data)
+                                            with open(local_logo_path, 'wb') as f:
+                                                f.write(logo_buffer)
+                                            
+                                            data['metadata']['logo_path'] = local_logo_path
+                                            print(f"🖼️  Created logo file from questionnaire base64 data")
+                                            logo_created = True
+                                            break
+                            
+                            if not logo_created:
+                                print("⚠️  Logo operation generated but no logo file or base64 data found")
+                                
+                        except Exception as e:
+                            print(f"⚠️  Failed to process logo from questionnaire data: {e}")
             
             with open(edits_json, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)

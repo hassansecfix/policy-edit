@@ -6,14 +6,39 @@ import { DownloadSection } from '@/components/DownloadSection';
 import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
 import { ProgressTracker } from '@/components/ProgressTracker';
+import { Questionnaire } from '@/components/Questionnaire';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
 import { formatTime } from '@/lib/utils';
+import { QuestionnaireAnswer } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function Dashboard() {
   const [automationRunning, setAutomationRunning] = useState(false);
+  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
+  const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
+  const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
+  const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
   const { socket, isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
+
+  // Check if questionnaire is already completed
+  useEffect(() => {
+    const checkQuestionnaireStatus = async () => {
+      try {
+        const response = await fetch('/api/answers');
+        if (response.ok) {
+          const result = await response.json();
+          setQuestionnaireCompleted(result.exists);
+        }
+      } catch (error) {
+        console.error('Failed to check questionnaire status:', error);
+      } finally {
+        setCheckingQuestionnaire(false);
+      }
+    };
+
+    checkQuestionnaireStatus();
+  }, []);
 
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
@@ -81,15 +106,147 @@ export default function Dashboard() {
     clearLogs();
   }, [clearLogs]);
 
+  const handleQuestionnaireComplete = useCallback(
+    async (answers: Record<string, QuestionnaireAnswer>) => {
+      try {
+        const response = await fetch('/api/answers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ answers }),
+        });
+
+        if (response.ok) {
+          setQuestionnaireCompleted(true);
+          setEditingQuestionnaire(false); // Exit editing mode
+          const message = editingQuestionnaire
+            ? '✅ Questionnaire updated successfully'
+            : '✅ Questionnaire completed successfully';
+          addLog({
+            timestamp: formatTime(new Date()),
+            message,
+            level: 'success',
+          });
+        } else {
+          const error = await response.json();
+          addLog({
+            timestamp: formatTime(new Date()),
+            message: `❌ Failed to save questionnaire: ${error.error}`,
+            level: 'error',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to save questionnaire:', error);
+        addLog({
+          timestamp: formatTime(new Date()),
+          message: '❌ Failed to save questionnaire: Network error',
+          level: 'error',
+        });
+      }
+    },
+    [addLog, editingQuestionnaire],
+  );
+
+  const handleEditQuestionnaire = useCallback(() => {
+    setEditingQuestionnaire(true);
+    addLog({
+      timestamp: formatTime(new Date()),
+      message: '📝 Editing questionnaire responses...',
+      level: 'info',
+    });
+  }, [addLog]);
+
   // Update automation running state based on progress
   if (progress?.step === 5 && progress?.status === 'completed' && automationRunning) {
     setAutomationRunning(false);
   }
 
+  // Show loading state while checking questionnaire status
+  if (checkingQuestionnaire) {
+    return (
+      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+        <div className='text-center'>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4'></div>
+          <p className='text-gray-600'>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show questionnaire if not completed OR if user wants to edit
+  if (!questionnaireCompleted || editingQuestionnaire) {
+    return (
+      <div className='min-h-screen bg-gray-50'>
+        <div className='container mx-auto px-4 py-6 max-w-7xl'>
+          <Header />
+
+          <div className='mt-8'>
+            <div className='text-center mb-8'>
+              <h1 className='text-3xl font-bold text-gray-900 mb-4'>
+                {editingQuestionnaire
+                  ? 'Edit Questionnaire Responses'
+                  : 'Policy Configuration Questionnaire'}
+              </h1>
+              <p className='text-lg text-gray-600 max-w-2xl mx-auto'>
+                {editingQuestionnaire
+                  ? 'Update your responses below. Your previous answers have been pre-filled for easy editing.'
+                  : 'Please answer the following questions to configure your access control policy. This information will be used to generate a customized policy document for your organization.'}
+              </p>
+              {editingQuestionnaire && (
+                <div className='mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto'>
+                  <p className='text-blue-800 text-sm'>
+                    💡 You are editing your questionnaire responses. Your previous answers are
+                    loaded and can be modified.
+                  </p>
+                </div>
+              )}
+              {questionnaireProgress.total > 0 && (
+                <div className='mt-4 text-sm text-gray-500'>
+                  Progress: {questionnaireProgress.current} of {questionnaireProgress.total}{' '}
+                  questions
+                </div>
+              )}
+            </div>
+
+            <Questionnaire
+              onComplete={handleQuestionnaireComplete}
+              onProgressUpdate={setQuestionnaireProgress}
+            />
+          </div>
+        </div>
+
+        <ConnectionStatus isConnected={isConnected} />
+      </div>
+    );
+  }
+
+  // Show main dashboard after questionnaire is completed
   return (
     <div className='min-h-screen bg-gray-50'>
       <div className='container mx-auto px-4 py-6 max-w-7xl'>
         <Header />
+
+        {/* Questionnaire completion banner */}
+        <div className='mb-6 bg-green-50 border border-green-200 rounded-lg p-4'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center'>
+              <div className='text-green-600 mr-3'>✅</div>
+              <div>
+                <h3 className='text-green-900 font-medium'>Questionnaire Completed</h3>
+                <p className='text-green-700 text-sm'>
+                  Your responses have been saved. You can now start the policy automation.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleEditQuestionnaire}
+              className='ml-4 px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium'
+            >
+              📝 Edit Questionnaire
+            </button>
+          </div>
+        </div>
 
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Left Column - Control Panel & Progress */}

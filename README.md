@@ -38,6 +38,44 @@ Flow at a glance:
 - **Comments on replacements** are attached to the deletion half for better Google Docs threading.
 - **Logo placeholders** are automatically detected by AI and replaced with your company logo.
 
+## Interactive Questionnaire Flow
+
+The system now includes an interactive web-based questionnaire that collects user responses before automation:
+
+### New Flow:
+
+1. **User accesses the web interface**
+2. **Interactive questionnaire appears** - 20 questions asked one by one
+3. **User answers are collected and validated**
+4. **Responses are saved** as `data/user_questionnaire_responses.csv`
+5. **Automation proceeds** using the user's responses instead of pre-filled data
+
+### Question Types Supported:
+
+- **Text input** - Company name, address, etc.
+- **Radio buttons** - Yes/No questions, policy choices
+- **Dropdown menus** - Tool selections, timeframes, approvers
+- **Number input** - Employee count, contractor count
+- **Email/User selector** - Policy owners, approvers
+- **Date picker** - Effective dates
+- **File upload** - Company logos
+
+### Key Features:
+
+- **Progress tracking** with visual progress bar
+- **Validation** - ensures all questions are answered before proceeding
+- **Navigation** - Previous/Next buttons for easy movement
+- **Auto-save** - Responses are saved when questionnaire is completed
+- **Smart fallback** - System uses user responses if available, falls back to default questionnaire if not
+
+### Files Added:
+
+- `data/questions.csv` - Question definitions extracted from original questionnaire
+- `web_app/src/components/Questionnaire.tsx` - Main questionnaire component
+- `web_app/src/components/QuestionInput.tsx` - Individual question input handlers
+- `web_app/src/app/api/questions/route.ts` - API endpoint to serve questions
+- `web_app/src/app/api/answers/route.ts` - API endpoint to save user responses
+
 ## Quick start
 
 1. Set up your environment variables by copying the template:
