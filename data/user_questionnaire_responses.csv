@@ -1,5 +1,5 @@
 Question Number;Question Text;field;Response Type;User Response
-1;Company legal name;onboarding.company_legal_name;Text input;Hassan
+1;Company legal name;onboarding.company_legal_name;Text input;Test
 2;What's the company's main address?;onboarding.company_address;Text input;Address Hassan
 3;Do you have an office?;onboarding.has_office;Radio buttons;Yes
 4;Do you provide your own company devices to your employees?;onboarding.provides_company_devices;Radio buttons;No
