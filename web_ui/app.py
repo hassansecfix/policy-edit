@@ -13,6 +13,7 @@ import json
 import requests
 import signal
 import re
+import glob
 from datetime import datetime, timedelta
 from pathlib import Path
 from flask import Flask, request, jsonify, send_file
@@ -43,6 +44,40 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 automation_process = None
 automation_thread = None
 automation_running = False
+
+def find_latest_questionnaire_file(base_path):
+    """Find the most recent questionnaire responses file"""
+    data_dir = Path(base_path) / "data"
+    
+    # Look for user-specific timestamped files first
+    user_files_pattern = str(data_dir / "user_questionnaire_responses_*.csv")
+    user_files = glob.glob(user_files_pattern)
+    
+    if user_files:
+        # Sort by timestamp in filename (newest first)
+        user_files.sort(key=lambda x: int(x.split('_')[-1].replace('.csv', '')), reverse=True)
+        latest_file = user_files[0]
+        relative_path = Path(latest_file).relative_to(base_path)
+        print(f"📊 Found timestamped questionnaire file: {relative_path}")
+        return str(relative_path), Path(latest_file), "user_timestamped"
+    
+    # Fall back to main user questionnaire file
+    main_user_file = data_dir / "user_questionnaire_responses.csv"
+    if main_user_file.exists():
+        relative_path = Path("data/user_questionnaire_responses.csv")
+        print(f"📊 Found main user questionnaire file: {relative_path}")
+        return str(relative_path), main_user_file, "user_main"
+    
+    # Fall back to default questionnaire file
+    default_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+    default_path = Path(base_path) / default_file
+    if default_path.exists():
+        print(f"📊 Using default questionnaire file: {default_file}")
+        return default_file, default_path, "default"
+    
+    # No questionnaire file found
+    print("❌ No questionnaire file found")
+    return None, None, "none"
 
 class GitHubActionsMonitor:
     def __init__(self):
@@ -211,19 +246,17 @@ class AutomationRunner:
             base_path = Path(__file__).parent.parent
             policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
             
-            # Check for user-provided questionnaire responses first, fallback to default
-            user_questionnaire_file = 'data/user_questionnaire_responses.csv'
-            default_questionnaire_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
+            # Find the latest questionnaire file
+            questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
             
-            user_questionnaire_path = base_path / user_questionnaire_file
-            if user_questionnaire_path.exists():
-                questionnaire_file = user_questionnaire_file
-                questionnaire_path = user_questionnaire_path
-                self.emit_log("📊 Using user-provided questionnaire responses", "success")
-            else:
-                questionnaire_file = default_questionnaire_file
-                questionnaire_path = base_path / questionnaire_file
+            if questionnaire_source == "user_timestamped":
+                self.emit_log("📊 Using user-provided timestamped questionnaire responses", "success")
+            elif questionnaire_source == "user_main":
+                self.emit_log("📊 Using user-provided main questionnaire responses", "success")
+            elif questionnaire_source == "default":
                 self.emit_log("📊 Using default questionnaire responses", "info")
+            else:
+                self.emit_log("❌ No questionnaire file found", "error")
             
             policy_path = base_path / policy_file
             
@@ -232,8 +265,8 @@ class AutomationRunner:
                 self.update_progress(1, "error")
                 return False
                 
-            if not questionnaire_path.exists():
-                self.emit_log(f"❌ Questionnaire file not found: {questionnaire_file}", "error")
+            if not questionnaire_file or not questionnaire_path or not questionnaire_path.exists():
+                self.emit_log(f"❌ Questionnaire file not found: {questionnaire_file or 'No file detected'}", "error")
                 self.update_progress(1, "error")
                 return False
                 
@@ -511,25 +544,20 @@ def get_status():
     base_path = Path(__file__).parent.parent
     policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
     
-    # Check for user-provided questionnaire responses first, fallback to default
-    user_questionnaire_file = 'data/user_questionnaire_responses.csv'
-    default_questionnaire_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
-    
-    user_questionnaire_path = base_path / user_questionnaire_file
-    if user_questionnaire_path.exists():
-        questionnaire_file = user_questionnaire_file
-        questionnaire_path = user_questionnaire_path
-        questionnaire_source = "user_provided"
-    else:
-        questionnaire_file = default_questionnaire_file
-        questionnaire_path = base_path / questionnaire_file
-        questionnaire_source = "default"
+    # Find the latest questionnaire file
+    questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
     
     api_key = os.environ.get('CLAUDE_API_KEY', '')
     skip_api = os.environ.get('SKIP_API_CALL', '').lower() in ['true', '1', 'yes', 'on']
     
     # Resolve paths relative to project root
     policy_path = base_path / policy_file
+    
+    # Check if we have user questionnaire files available
+    user_files_pattern = str(base_path / "data" / "user_questionnaire_responses_*.csv")
+    user_files = glob.glob(user_files_pattern)
+    main_user_file = base_path / "data" / "user_questionnaire_responses.csv"
+    user_questionnaire_available = len(user_files) > 0 or main_user_file.exists()
     
     # Debug: Check environment variables
     env_vars_debug = {
@@ -543,14 +571,15 @@ def get_status():
     
     response = jsonify({
         'policy_exists': policy_path.exists(),
-        'questionnaire_exists': questionnaire_path.exists(),
+        'questionnaire_exists': questionnaire_path is not None and questionnaire_path.exists(),
         'api_key_configured': bool(api_key) or skip_api,
         'skip_api': skip_api,
         'automation_running': runner.running,
         'policy_file': policy_file,
-        'questionnaire_file': questionnaire_file,
+        'questionnaire_file': questionnaire_file or 'No questionnaire file found',
         'questionnaire_source': questionnaire_source,
-        'user_questionnaire_available': user_questionnaire_path.exists(),
+        'user_questionnaire_available': user_questionnaire_available,
+        'user_timestamped_files': len(user_files),
         'env_vars_debug': env_vars_debug
     })
     

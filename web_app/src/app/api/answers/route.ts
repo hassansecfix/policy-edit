@@ -152,31 +152,126 @@ export async function POST(request: NextRequest) {
     const dataDir = path.dirname(questionsPath);
     const answersPath = path.join(dataDir, 'user_questionnaire_responses.csv');
 
-    console.log('💾 Saving answers to:', answersPath);
+    // Generate a unique filename with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const userSpecificFilename = `user_questionnaire_responses_${timestamp}.csv`;
+    const userSpecificPath = path.join(dataDir, userSpecificFilename);
+
+    console.log('💾 Saving answers to main file:', answersPath);
+    console.log('💾 Saving answers to user-specific file:', userSpecificPath);
     console.log('📊 CSV content preview:', csvContent.split('\n').slice(0, 3).join('\n'));
+    console.log('📁 Data directory permissions check...');
 
+    // Check directory permissions and existence
     try {
-      fs.writeFileSync(answersPath, csvContent, 'utf-8');
-      console.log('✅ Successfully saved answers to file');
+      const dirStats = fs.statSync(dataDir);
+      console.log('📁 Data directory exists:', true);
+      console.log('📁 Data directory stats:', {
+        isDirectory: dirStats.isDirectory(),
+        mode: dirStats.mode.toString(8),
+        uid: dirStats.uid,
+        gid: dirStats.gid,
+      });
 
-      // Verify the file was written
-      if (fs.existsSync(answersPath)) {
-        const savedContent = fs.readFileSync(answersPath, 'utf-8');
-        console.log(
-          '✅ File verification: File exists and contains',
-          savedContent.split('\n').length,
-          'lines',
-        );
-      } else {
-        console.error('❌ File verification failed: File does not exist after write');
+      // Test if we can create a temporary file in the directory
+      const testFilePath = path.join(dataDir, `test_write_${timestamp}.tmp`);
+      fs.writeFileSync(testFilePath, 'test', 'utf-8');
+      console.log('✅ Directory write test successful');
+      fs.unlinkSync(testFilePath); // Clean up test file
+    } catch (dirError) {
+      console.error('❌ Directory permission check failed:', dirError);
+    }
+
+    let writeSuccess = false;
+    let actualFilePath = '';
+
+    // Try to write to both main file and user-specific file
+    const filesToTry = [
+      { path: answersPath, type: 'main' },
+      { path: userSpecificPath, type: 'user-specific' },
+    ];
+
+    for (const fileInfo of filesToTry) {
+      try {
+        console.log(`🔄 Attempting to write ${fileInfo.type} file:`, fileInfo.path);
+
+        // Check if file already exists and its current state
+        if (fs.existsSync(fileInfo.path)) {
+          const existingStats = fs.statSync(fileInfo.path);
+          console.log(`📄 Existing ${fileInfo.type} file stats:`, {
+            size: existingStats.size,
+            mtime: existingStats.mtime,
+            mode: existingStats.mode.toString(8),
+          });
+        }
+
+        // Write the file
+        fs.writeFileSync(fileInfo.path, csvContent, 'utf-8');
+        console.log(`✅ Successfully wrote ${fileInfo.type} file`);
+
+        // Immediate verification
+        if (fs.existsSync(fileInfo.path)) {
+          const savedContent = fs.readFileSync(fileInfo.path, 'utf-8');
+          const lineCount = savedContent.split('\n').length;
+          const fileSize = savedContent.length;
+
+          console.log(
+            `✅ ${
+              fileInfo.type
+            } file verification: exists=${true}, lines=${lineCount}, size=${fileSize}`,
+          );
+
+          // Verify content matches what we wrote
+          if (savedContent === csvContent) {
+            console.log(`✅ ${fileInfo.type} file content matches exactly`);
+            writeSuccess = true;
+            actualFilePath = fileInfo.path;
+          } else {
+            console.log(`⚠️ ${fileInfo.type} file content differs from what we wrote`);
+            console.log(
+              'Expected length:',
+              csvContent.length,
+              'Actual length:',
+              savedContent.length,
+            );
+          }
+        } else {
+          console.error(
+            `❌ ${fileInfo.type} file verification failed: File does not exist after write`,
+          );
+        }
+
+        // Additional check - read the file again after a small delay to test persistence
+        setTimeout(() => {
+          if (fs.existsSync(fileInfo.path)) {
+            const delayedContent = fs.readFileSync(fileInfo.path, 'utf-8');
+            if (delayedContent === csvContent) {
+              console.log(`✅ ${fileInfo.type} file persisted correctly after delay`);
+            } else {
+              console.log(`❌ ${fileInfo.type} file content changed after delay!`);
+            }
+          } else {
+            console.log(`❌ ${fileInfo.type} file disappeared after delay!`);
+          }
+        }, 100);
+      } catch (writeError) {
+        console.error(`❌ Failed to write ${fileInfo.type} file:`, {
+          path: fileInfo.path,
+          error: writeError instanceof Error ? writeError.message : String(writeError),
+          code: (writeError as any)?.code,
+          errno: (writeError as any)?.errno,
+          syscall: (writeError as any)?.syscall,
+        });
       }
-    } catch (writeError) {
-      console.error('❌ Failed to write answers file:', writeError);
+    }
+
+    if (!writeSuccess) {
       return NextResponse.json(
         {
-          error: 'Failed to write answers file',
-          details: writeError instanceof Error ? writeError.message : String(writeError),
-          path: answersPath,
+          error: 'Failed to write answers file to any location',
+          attemptedPaths: filesToTry.map((f) => f.path),
+          dataDir: dataDir,
+          cwd: process.cwd(),
         },
         { status: 500 },
       );
@@ -186,8 +281,11 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Answers saved successfully',
       answerCount: Object.keys(answers).length,
-      filePath: answersPath,
+      filePath: actualFilePath,
+      userSpecificPath: userSpecificPath,
+      mainFilePath: answersPath,
       dataDir: dataDir,
+      timestamp: timestamp,
       answers: sortedAnswers.map((a) => ({ field: a.field, value: a.value })), // Include answers for debugging
     });
   } catch (error) {
@@ -198,30 +296,107 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    // Try multiple possible paths for the data directory
-    const possibleAnswersPaths = [
-      path.join(process.cwd(), '../data/user_questionnaire_responses.csv'), // Original path
-      path.join(process.cwd(), '../../data/user_questionnaire_responses.csv'), // One more level up
-      path.join(process.cwd(), 'data/user_questionnaire_responses.csv'), // Same level
-      path.join(process.cwd(), './data/user_questionnaire_responses.csv'), // Explicit same level
+    // Find the data directory first by looking for questions.csv
+    const possibleQuestionsPaths = [
+      path.join(process.cwd(), '../data/questions.csv'),
+      path.join(process.cwd(), '../../data/questions.csv'),
+      path.join(process.cwd(), 'data/questions.csv'),
+      path.join(process.cwd(), './data/questions.csv'),
     ];
 
-    let answersPath = '';
-    for (const testPath of possibleAnswersPaths) {
+    let dataDir = '';
+    for (const testPath of possibleQuestionsPaths) {
       if (fs.existsSync(testPath)) {
-        answersPath = testPath;
-        console.log('✅ Found answers file at:', answersPath);
+        dataDir = path.dirname(testPath);
+        console.log('✅ Found data directory at:', dataDir);
         break;
       }
     }
 
+    if (!dataDir) {
+      console.log('📁 Data directory not found, using fallback paths');
+      // Fallback to original behavior
+      const possibleAnswersPaths = [
+        path.join(process.cwd(), '../data/user_questionnaire_responses.csv'),
+        path.join(process.cwd(), '../../data/user_questionnaire_responses.csv'),
+        path.join(process.cwd(), 'data/user_questionnaire_responses.csv'),
+        path.join(process.cwd(), './data/user_questionnaire_responses.csv'),
+      ];
+
+      let answersPath = '';
+      for (const testPath of possibleAnswersPaths) {
+        if (fs.existsSync(testPath)) {
+          answersPath = testPath;
+          console.log('✅ Found answers file at:', answersPath);
+          break;
+        }
+      }
+
+      if (!answersPath) {
+        console.log('📄 No answers file found at any of these paths:', possibleAnswersPaths);
+        return NextResponse.json(
+          {
+            exists: false,
+            message: 'No answers file found',
+            searchedPaths: possibleAnswersPaths,
+          },
+          { status: 404 },
+        );
+      }
+
+      const csvContent = fs.readFileSync(answersPath, 'utf-8');
+      const lineCount = csvContent.split('\n').length;
+
+      return NextResponse.json({
+        exists: true,
+        content: csvContent,
+        message: 'Answers file found',
+        filePath: answersPath,
+        lineCount: lineCount,
+      });
+    }
+
+    // Look for both main file and user-specific files in the data directory
+    const mainAnswersPath = path.join(dataDir, 'user_questionnaire_responses.csv');
+    const allFiles = fs.readdirSync(dataDir);
+    const userSpecificFiles = allFiles.filter(
+      (file) => file.startsWith('user_questionnaire_responses_') && file.endsWith('.csv'),
+    );
+
+    console.log('📁 Found user-specific files:', userSpecificFiles);
+
+    // Prefer the most recent user-specific file, then fall back to main file
+    let answersPath = '';
+    let isUserSpecific = false;
+
+    if (userSpecificFiles.length > 0) {
+      // Sort by timestamp (filename contains timestamp)
+      userSpecificFiles.sort((a, b) => {
+        const timestampA = parseInt(
+          a.replace('user_questionnaire_responses_', '').replace('.csv', ''),
+        );
+        const timestampB = parseInt(
+          b.replace('user_questionnaire_responses_', '').replace('.csv', ''),
+        );
+        return timestampB - timestampA; // Most recent first
+      });
+
+      answersPath = path.join(dataDir, userSpecificFiles[0]);
+      isUserSpecific = true;
+      console.log('✅ Using most recent user-specific file:', userSpecificFiles[0]);
+    } else if (fs.existsSync(mainAnswersPath)) {
+      answersPath = mainAnswersPath;
+      console.log('✅ Using main answers file:', mainAnswersPath);
+    }
+
     if (!answersPath) {
-      console.log('📄 No answers file found at any of these paths:', possibleAnswersPaths);
+      console.log('📄 No answers file found in data directory');
       return NextResponse.json(
         {
           exists: false,
-          message: 'No answers file found',
-          searchedPaths: possibleAnswersPaths,
+          message: 'No answers file found in data directory',
+          dataDir: dataDir,
+          availableFiles: allFiles,
         },
         { status: 404 },
       );
@@ -237,6 +412,9 @@ export async function GET() {
       message: 'Answers file found',
       filePath: answersPath,
       lineCount: lineCount,
+      isUserSpecific: isUserSpecific,
+      dataDir: dataDir,
+      availableUserFiles: userSpecificFiles,
     });
   } catch (error) {
     console.error('Error checking answers:', error);

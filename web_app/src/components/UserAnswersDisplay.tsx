@@ -9,6 +9,9 @@ interface ServerAnswersResponse {
   message?: string;
   filePath?: string;
   lineCount?: number;
+  isUserSpecific?: boolean;
+  dataDir?: string;
+  availableUserFiles?: string[];
   searchedPaths?: string[];
   error?: string | object;
 }
@@ -233,8 +236,29 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                   <>
                     <p className='text-sm text-green-600'>
                       ✅ File exists: {serverAnswers.lineCount} lines
+                      {serverAnswers.isUserSpecific && ' (User-specific timestamped file)'}
                     </p>
                     <p className='text-xs text-gray-600'>📁 Path: {serverAnswers.filePath}</p>
+                    {serverAnswers.dataDir && (
+                      <p className='text-xs text-gray-600'>
+                        📂 Data directory: {serverAnswers.dataDir}
+                      </p>
+                    )}
+                    {serverAnswers.availableUserFiles &&
+                      serverAnswers.availableUserFiles.length > 0 && (
+                        <details className='text-xs mt-1'>
+                          <summary className='cursor-pointer text-blue-600 hover:text-blue-800'>
+                            📋 Available user files ({serverAnswers.availableUserFiles.length})
+                          </summary>
+                          <ul className='mt-1 ml-4 space-y-1'>
+                            {serverAnswers.availableUserFiles.map((file, index) => (
+                              <li key={index} className='text-gray-600'>
+                                • {file}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
 
                     {/* Parsed Server Answers */}
                     {serverAnswers.content &&
