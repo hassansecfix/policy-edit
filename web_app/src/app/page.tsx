@@ -20,8 +20,6 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
-  const [showAutomationHighlight, setShowAutomationHighlight] = useState(false);
-  const [justCompleted, setJustCompleted] = useState(false);
   const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
@@ -259,8 +257,8 @@ export default function Dashboard() {
                   Questionnaire Completed Successfully!
                 </h3>
                 <p className='text-green-700 text-sm mt-1'>
-                  Your responses have been saved. <strong>Next step:</strong> Click "Start
-                  Automation" below to generate your custom policy document.
+                  Your responses have been saved. <strong>Next step:</strong> Click &quot;Start
+                  Automation&quot; below to generate your custom policy document.
                 </p>
                 <div className='flex items-center mt-2 text-blue-700 text-sm'>
                   <span className='mr-2'>👇</span>
