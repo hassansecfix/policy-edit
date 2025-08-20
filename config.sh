@@ -4,7 +4,7 @@
 
 # Default file paths
 DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-DEFAULT_QUESTIONNAIRE_FILE="data/questionnaire_responses.csv"
+DEFAULT_QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
 DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments"
 
 # Function to show configuration being used
