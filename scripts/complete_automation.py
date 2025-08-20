@@ -36,19 +36,36 @@ sys.path.append(str(Path(__file__).parent))
 def run_command(cmd, description):
     """Run a shell command and handle errors."""
     print(f"🔄 {description}...")
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     
-    if result.returncode != 0:
-        print(f"❌ {description} failed!")
-        error_msg = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()
-        if not error_msg:
-            error_msg = f"Command failed with exit code {result.returncode} but no error message"
-        print(f"Error: {error_msg}")
-        print(f"Command was: {cmd}")
-        return False, error_msg
-    
-    print(f"✅ {description} completed")
-    return True, result.stdout
+    # For AI processing commands, show real-time output to see base64 filtering logs
+    if 'ai_policy_processor.py' in cmd:
+        try:
+            # Use real-time output for AI processing to show filtering logs
+            result = subprocess.run(cmd, shell=True, text=True)
+            if result.returncode != 0:
+                print(f"❌ {description} failed with exit code {result.returncode}!")
+                print(f"Command was: {cmd}")
+                return False, f"Command failed with exit code {result.returncode}"
+            print(f"✅ {description} completed")
+            return True, ""
+        except Exception as e:
+            print(f"❌ {description} failed with exception: {e}")
+            return False, str(e)
+    else:
+        # Use captured output for other commands
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            print(f"❌ {description} failed!")
+            error_msg = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()
+            if not error_msg:
+                error_msg = f"Command failed with exit code {result.returncode} but no error message"
+            print(f"Error: {error_msg}")
+            print(f"Command was: {cmd}")
+            return False, error_msg
+        
+        print(f"✅ {description} completed")
+        return True, result.stdout
 
 def convert_xlsx_to_csv(xlsx_path, csv_path):
     """Convert Excel questionnaire to CSV."""

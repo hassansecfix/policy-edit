@@ -51,15 +51,29 @@ def load_file_content(file_path):
         for line in lines:
             # Check if this line contains base64 logo data
             if ';Logo Base64 Data;_logo_base64_data;' in line:
-                # Replace the large base64 data with a placeholder
-                parts = line.split(';', 4)
-                if len(parts) >= 5:
-                    # Keep the structure but replace data with placeholder
-                    filtered_line = ';'.join(parts[:4]) + ';[BASE64_LOGO_DATA_REMOVED_FOR_API_EFFICIENCY]'
-                    filtered_lines.append(filtered_line)
-                    print(f"🖼️  Filtered out base64 logo data ({len(parts[4])} chars) to save API tokens")
+                # Find where the actual base64 data starts (after "data:image/")
+                if 'data:image/' in line and 'base64,' in line:
+                    # Split at base64, and keep everything before it + placeholder
+                    base64_start = line.find('base64,') + 7  # +7 for "base64,"
+                    if base64_start > 6:  # Valid base64 start found
+                        before_base64 = line[:base64_start]
+                        base64_data = line[base64_start:]
+                        filtered_line = before_base64 + '[BASE64_DATA_REMOVED_FOR_API_EFFICIENCY]'
+                        filtered_lines.append(filtered_line)
+                        print(f"🖼️  FILTERED: Removed {len(base64_data):,} chars of base64 logo data to save API tokens!")
+                        print(f"💰 API Cost Savings: ~${len(base64_data) * 0.000003:.2f} per request")
+                    else:
+                        filtered_lines.append(line)
                 else:
-                    filtered_lines.append(line)
+                    # Fallback: try the old method with semicolon splitting
+                    parts = line.split(';', 4)
+                    if len(parts) >= 5:
+                        # Keep the structure but replace data with placeholder
+                        filtered_line = ';'.join(parts[:4]) + ';[BASE64_LOGO_DATA_REMOVED_FOR_API_EFFICIENCY]'
+                        filtered_lines.append(filtered_line)
+                        print(f"🖼️  Filtered out base64 logo data ({len(parts[4])} chars) to save API tokens")
+                    else:
+                        filtered_lines.append(line)
             else:
                 filtered_lines.append(line)
         
@@ -324,6 +338,7 @@ def main():
         # Load input files
         print("\n📂 Loading input files...")
         policy_content = load_file_content(args.policy)
+        print("📊 Loading and filtering questionnaire CSV...")
         questionnaire_content = load_file_content(args.questionnaire)
         prompt_content = load_file_content(args.prompt)
         policy_instructions_content = load_file_content(args.policy_instructions)
