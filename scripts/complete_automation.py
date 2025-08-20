@@ -124,10 +124,23 @@ def commit_and_push_json(edits_json, logo_file=None):
                 return True, "No changes to commit"
             return False, f"Failed to commit files: {result.stderr}"
         
-        # Push to GitHub
-        result = subprocess.run(['git', 'push'], capture_output=True, text=True)
+        # Push to GitHub with explicit remote and branch
+        # First, try to get the current branch name
+        branch_result = subprocess.run(['git', 'branch', '--show-current'], capture_output=True, text=True)
+        current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else 'main'
+        
+        # Try pushing with explicit origin and branch
+        result = subprocess.run(['git', 'push', 'origin', current_branch], capture_output=True, text=True)
         if result.returncode != 0:
-            return False, f"Failed to push files: {result.stderr}"
+            # Fallback: try setting upstream and pushing
+            print(f"⚠️  Initial push failed, trying to set upstream...")
+            upstream_result = subprocess.run(['git', 'push', '--set-upstream', 'origin', current_branch], capture_output=True, text=True)
+            if upstream_result.returncode != 0:
+                return False, f"Failed to push JSON: {result.stderr}"
+            else:
+                print(f"✅ Set upstream branch and pushed to origin/{current_branch}")
+        else:
+            print(f"✅ Pushed to origin/{current_branch}")
         
         committed_files = "JSON and logo files" if logo_file else "JSON file"
         print(f"✅ {committed_files} committed and pushed to GitHub")
