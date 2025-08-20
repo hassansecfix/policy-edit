@@ -194,9 +194,38 @@ def commit_and_push_json(edits_json, logo_file=None):
         
         print(f"🔄 Pushing to branch: {current_branch}")
         
+        # First, try to pull latest changes to avoid conflicts
+        print("⬇️  Pulling latest changes from remote...")
+        pull_result = subprocess.run(['git', 'pull', 'origin', current_branch], capture_output=True, text=True)
+        if pull_result.returncode != 0:
+            print(f"⚠️  Pull failed or not needed: {pull_result.stderr.strip()}")
+            # Continue anyway - might be first push or empty repo
+        else:
+            print("✅ Successfully pulled latest changes")
+        
         # Try pushing with explicit origin and branch
         result = subprocess.run(['git', 'push', 'origin', current_branch], capture_output=True, text=True)
         if result.returncode != 0:
+            # Check if it's the "fetch first" error - try pulling and pushing again
+            if 'fetch first' in result.stderr or 'rejected' in result.stderr:
+                print(f"🔄 Push rejected, trying pull with rebase...")
+                
+                # Try pull with rebase to handle conflicts
+                rebase_result = subprocess.run(['git', 'pull', '--rebase', 'origin', current_branch], capture_output=True, text=True)
+                if rebase_result.returncode == 0:
+                    print("✅ Successfully rebased local changes")
+                    # Try push again
+                    retry_result = subprocess.run(['git', 'push', 'origin', current_branch], capture_output=True, text=True)
+                    if retry_result.returncode == 0:
+                        print(f"✅ Successfully pushed after rebase to origin/{current_branch}")
+                        committed_files = "JSON and logo files" if logo_file else "JSON file"
+                        print(f"✅ {committed_files} committed and pushed to GitHub")
+                        return True, f"{committed_files} pushed successfully"
+                    else:
+                        print(f"❌ Push still failed after rebase: {retry_result.stderr.strip()}")
+                else:
+                    print(f"❌ Rebase failed: {rebase_result.stderr.strip()}")
+            
             # Fallback: try setting upstream and pushing
             print(f"⚠️  Initial push failed, trying to set upstream...")
             print(f"    Error: {result.stderr.strip()}")
@@ -212,7 +241,13 @@ def commit_and_push_json(edits_json, logo_file=None):
                 print(f"   Error: {error_msg}")
                 
                 # Suggest solutions based on error type
-                if 'does not appear to be a git repository' in error_msg.lower():
+                if 'fetch first' in error_msg.lower() or 'rejected' in error_msg.lower():
+                    print(f"\n💡 Solutions for git sync issues:")
+                    print(f"   1. Repository is out of sync - run: git pull origin main")
+                    print(f"   2. Force sync: git fetch origin && git reset --hard origin/main")
+                    print(f"   3. Manual commit: git add . && git commit -m 'Manual sync' && git push")
+                    print(f"   4. Check for multiple processes modifying the repo simultaneously")
+                elif 'does not appear to be a git repository' in error_msg.lower():
                     print(f"\n💡 Solutions:")
                     print(f"   1. Set GITHUB_TOKEN environment variable")
                     print(f"   2. Verify remote URL: git remote get-url origin")
