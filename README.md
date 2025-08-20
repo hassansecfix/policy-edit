@@ -307,7 +307,22 @@ This ensures that multiple users can run the automation simultaneously without o
    - **Manual Override**: Set `USER_ID` environment variable for custom identification
    - **Tracking**: Each run displays its User ID for easy identification of results
 
-6. **"Failed to fetch" errors**
+6. **Git sync issues and "CSV/JSON missing" workflow errors** _(Fixed in latest version)_
+
+   - **Issue**: Production environments experienced git push failures and workflow failures due to timing/sync issues
+   - **Root Cause**:
+     - Git repository becoming out of sync with remote (causing push failures)
+     - Files not immediately available on GitHub after push (causing workflow failures)
+   - **Fix**: Enhanced git synchronization and file verification
+   - **Features**:
+     - **Automatic Sync**: Pulls latest changes before pushing to prevent conflicts
+     - **Rebase Recovery**: Automatically attempts `git pull --rebase` if standard push fails
+     - **File Verification**: Waits up to 30 seconds to verify files exist on GitHub before triggering workflow
+     - **Detailed Error Messages**: Specific troubleshooting steps for different git failure scenarios
+   - **Manual Recovery**: Use `fix_git_sync.sh` script for manual intervention when needed
+   - **Prevention**: Ensures single automation process per repository to avoid conflicts
+
+7. **"Failed to fetch" errors**
    - Ensure Flask backend is running: `curl http://localhost:5001/api/status`
    - Check that virtual environment is activated in Flask terminal
 

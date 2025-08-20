@@ -150,32 +150,79 @@ def commit_and_push_json(edits_json, logo_file=None):
             subprocess.run(['git', 'config', 'user.email', git_user_email], capture_output=True)
             print(f"✅ Git identity configured: {git_user_name} <{git_user_email}>")
         
+        # Verify JSON file exists before adding
+        if not os.path.exists(edits_json):
+            return False, f"JSON file does not exist: {edits_json}"
+        
+        print(f"📁 Verified JSON file exists: {edits_json}")
+        print(f"📊 File size: {os.path.getsize(edits_json)} bytes")
+        
         # Add the JSON file
+        print(f"📝 Adding JSON file to git: {edits_json}")
         result = subprocess.run(['git', 'add', edits_json], capture_output=True, text=True)
         if result.returncode != 0:
             return False, f"Failed to add JSON: {result.stderr}"
         
+        # Verify the file was actually added to git
+        status_result = subprocess.run(['git', 'status', '--porcelain', edits_json], capture_output=True, text=True)
+        if status_result.returncode == 0 and status_result.stdout.strip():
+            print(f"✅ JSON file staged for commit: {edits_json}")
+        else:
+            return False, f"JSON file was not properly staged. Git status: {status_result.stdout}"
+        
         # Add the logo file if it exists and was created
+        files_to_commit = [edits_json]
         if logo_file and os.path.exists(logo_file):
+            print(f"🖼️  Adding logo file to git: {logo_file}")
             result = subprocess.run(['git', 'add', logo_file], capture_output=True, text=True)
             if result.returncode != 0:
                 print(f"⚠️  Warning: Failed to add logo file {logo_file}: {result.stderr}")
             else:
-                print(f"✅ Added logo file to git: {logo_file}")
+                # Verify logo file was staged
+                logo_status = subprocess.run(['git', 'status', '--porcelain', logo_file], capture_output=True, text=True)
+                if logo_status.returncode == 0 and logo_status.stdout.strip():
+                    print(f"✅ Logo file staged for commit: {logo_file}")
+                    files_to_commit.append(logo_file)
+                else:
+                    print(f"⚠️  Logo file was not properly staged")
+        
+        # Check if there are actually files to commit
+        staged_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True)
+        if staged_files.returncode == 0:
+            staged_list = staged_files.stdout.strip().split('\n') if staged_files.stdout.strip() else []
+            print(f"📋 Files staged for commit: {staged_list}")
+            
+            if not staged_list:
+                print("⚠️  No files are staged for commit")
+                # Check if files are already committed
+                for file_path in files_to_commit:
+                    untracked = subprocess.run(['git', 'ls-files', '--error-unmatch', file_path], capture_output=True, text=True)
+                    if untracked.returncode == 0:
+                        print(f"✅ File already tracked in git: {file_path}")
+                    else:
+                        return False, f"File not staged and not tracked: {file_path}"
+                return True, "Files already committed to git"
         
         # Commit the files
-        files_to_commit = [edits_json]
-        if logo_file and os.path.exists(logo_file):
-            files_to_commit.append(logo_file)
-        
         commit_msg = f"Add AI-generated files: {', '.join(files_to_commit)}"
+        print(f"💾 Committing files with message: {commit_msg}")
         result = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
         if result.returncode != 0:
-            # Check if it's because there are no changes
-            if "nothing to commit" in result.stdout:
-                print("✅ Files already committed")
+            # Check both stdout and stderr for "nothing to commit"
+            output = result.stdout + result.stderr
+            if "nothing to commit" in output.lower():
+                print("✅ No changes to commit (files already committed)")
                 return True, "No changes to commit"
-            return False, f"Failed to commit files: {result.stderr}"
+            return False, f"Failed to commit files. Stdout: {result.stdout}. Stderr: {result.stderr}"
+        
+        print(f"✅ Successfully committed files")
+        
+        # Verify the commit was successful
+        verify_commit = subprocess.run(['git', 'log', '--oneline', '-1'], capture_output=True, text=True)
+        if verify_commit.returncode == 0:
+            print(f"🔍 Latest commit: {verify_commit.stdout.strip()}")
+        else:
+            print("⚠️  Could not verify latest commit")
         
         # Push to GitHub with explicit remote and branch
         # First, try to get the current branch name
@@ -336,6 +383,58 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
             else:
                 return False, "Not a GitHub repository"
         
+        # Verify files exist on GitHub before triggering workflow
+        print("🔍 Verifying files are available on GitHub...")
+        
+        def verify_file_on_github(file_path, max_retries=6, delay=5):
+            """Verify a file exists on GitHub with retries."""
+            for attempt in range(max_retries):
+                try:
+                    api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/{file_path}"
+                    headers = {
+                        'Authorization': f'token {github_token}',
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                    
+                    response = requests.get(api_url, headers=headers)
+                    if response.status_code == 200:
+                        print(f"✅ File verified on GitHub: {file_path}")
+                        return True
+                    elif response.status_code == 404:
+                        print(f"⏳ File not yet available on GitHub (attempt {attempt + 1}/{max_retries}): {file_path}")
+                        if attempt < max_retries - 1:
+                            print(f"   Waiting {delay} seconds before retry...")
+                            time.sleep(delay)
+                    else:
+                        print(f"⚠️  Unexpected response {response.status_code} for {file_path}")
+                        if attempt < max_retries - 1:
+                            time.sleep(delay)
+                        
+                except Exception as e:
+                    print(f"⚠️  Error checking file {file_path} (attempt {attempt + 1}): {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(delay)
+                    
+            return False
+        
+        # Check both required files
+        files_to_verify = [policy_path, edits_json]
+        all_files_verified = True
+        
+        for file_path in files_to_verify:
+            if not verify_file_on_github(file_path):
+                print(f"❌ File verification failed: {file_path}")
+                all_files_verified = False
+        
+        if not all_files_verified:
+            return False, "One or more files not available on GitHub after multiple retries. Please check your git push and try again."
+        
+        print("✅ All files verified on GitHub - proceeding with workflow trigger")
+        
+        # Additional small delay to ensure GitHub is fully ready
+        print("⏳ Final 3-second delay for GitHub processing...")
+        time.sleep(3)
+        
         # Trigger workflow
         api_url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/redline-docx.yml/dispatches"
         
@@ -355,6 +454,11 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
                 'output_docx': f'build/{output_prefix}_{output_name}.docx'
             }
         }
+        
+        print(f"🚀 Triggering workflow with parameters:")
+        print(f"   - DOCX: {policy_path}")
+        print(f"   - JSON: {edits_json}")
+        print(f"   - Output: build/{output_prefix}_{output_name}.docx")
         
         response = requests.post(api_url, headers=headers, json=data)
         
