@@ -91,12 +91,15 @@ cp env.example .env
 
 **Required for production deployment (Render, Railway, etc.):**
 
+- `GITHUB_TOKEN` - Your GitHub personal access token (for git push)
 - `GITHUB_REPO_OWNER` - Your GitHub username
 - `GITHUB_REPO_NAME` - Your repository name
 - `GIT_USER_NAME` - Your full name for git commits
 - `GIT_USER_EMAIL` - Your email for git commits
 
 See `env.example` for complete details and optional configuration.
+
+📋 **For detailed production setup instructions, see [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md)**
 
 2. Run the default automation:
 

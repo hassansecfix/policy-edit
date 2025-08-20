@@ -99,11 +99,29 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
 def commit_and_push_json(edits_json, logo_file=None):
     """Commit and push the generated JSON file and optional logo file to GitHub."""
     try:
-        # Check if we're in a production environment (no git repo)
+        # Ensure we have a git repository
         if not os.path.exists('.git'):
-            print("ℹ️  Production environment detected - skipping git operations")
-            print("💡 JSON file generated successfully, manual git operations may be needed")
-            return True, "Git operations skipped in production"
+            return False, "No git repository found - .git directory missing"
+        
+        # Ensure git remote origin exists and get the URL
+        remote_check = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
+                                    capture_output=True, text=True)
+        if remote_check.returncode != 0:
+            return False, "Git remote 'origin' not configured. Run: git remote add origin <your-repo-url>"
+        
+        remote_url = remote_check.stdout.strip()
+        print(f"🔗 Git remote URL: {remote_url}")
+        
+        # Set up authentication for production environments
+        github_token = os.environ.get('GITHUB_TOKEN')
+        if github_token and 'https://github.com/' in remote_url:
+            # Configure git to use token authentication for HTTPS
+            repo_url_with_token = remote_url.replace('https://github.com/', f'https://{github_token}@github.com/')
+            subprocess.run(['git', 'remote', 'set-url', 'origin', repo_url_with_token], capture_output=True)
+            print("🔐 Configured git authentication using GITHUB_TOKEN")
+        elif not github_token and 'https://github.com/' in remote_url:
+            print("⚠️  GITHUB_TOKEN not set - authentication may fail in production")
+            print("💡 Set GITHUB_TOKEN environment variable for production git push")
         
         # Configure git identity if environment variables are set
         git_user_name = os.environ.get('GIT_USER_NAME')
@@ -164,10 +182,33 @@ def commit_and_push_json(edits_json, logo_file=None):
             # Fallback: try setting upstream and pushing
             print(f"⚠️  Initial push failed, trying to set upstream...")
             print(f"    Error: {result.stderr.strip()}")
+            
+            # Try with upstream flag
             upstream_result = subprocess.run(['git', 'push', '--set-upstream', 'origin', current_branch], capture_output=True, text=True)
             if upstream_result.returncode != 0:
+                # Provide detailed error information for troubleshooting
                 error_msg = upstream_result.stderr.strip() or result.stderr.strip()
-                return False, f"Failed to push JSON: {error_msg}"
+                print(f"\n🔴 Git Push Failed - Troubleshooting Info:")
+                print(f"   Remote URL: {remote_url}")
+                print(f"   Branch: {current_branch}")
+                print(f"   Error: {error_msg}")
+                
+                # Suggest solutions based on error type
+                if 'does not appear to be a git repository' in error_msg.lower():
+                    print(f"\n💡 Solutions:")
+                    print(f"   1. Set GITHUB_TOKEN environment variable")
+                    print(f"   2. Verify remote URL: git remote get-url origin")
+                    print(f"   3. Check repository permissions")
+                elif 'authentication failed' in error_msg.lower():
+                    print(f"\n💡 Solutions:")
+                    print(f"   1. Set GITHUB_TOKEN environment variable")
+                    print(f"   2. Verify token has push permissions")
+                elif 'permission denied' in error_msg.lower():
+                    print(f"\n💡 Solutions:")
+                    print(f"   1. Verify GITHUB_TOKEN has push access")
+                    print(f"   2. Check repository permissions")
+                
+                return False, f"Failed to push to git: {error_msg}"
             else:
                 print(f"✅ Set upstream branch and pushed to origin/{current_branch}")
         else:
