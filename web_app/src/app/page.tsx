@@ -58,13 +58,15 @@ export default function Dashboard() {
 
         // Strip out base64 image data to avoid request size limits in production
         const filteredAnswers = Object.fromEntries(
-          Object.entries(questionnaireAnswers).map(([key, answer]: [string, any]) => {
+          Object.entries(questionnaireAnswers).map(([key, answer]) => {
             if (
               answer &&
               typeof answer === 'object' &&
+              'value' in answer &&
               answer.value &&
               typeof answer.value === 'object' &&
-              answer.value.data
+              'data' in answer.value &&
+              typeof answer.value.data === 'string'
             ) {
               // This is a file upload - keep metadata but remove base64 data
               const filteredAnswer = {
