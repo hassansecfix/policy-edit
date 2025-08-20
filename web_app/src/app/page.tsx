@@ -20,7 +20,7 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
-  const { socket, isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
+  const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
   useEffect(() => {

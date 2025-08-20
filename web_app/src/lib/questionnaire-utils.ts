@@ -2,6 +2,8 @@
  * Utility functions for managing questionnaire data in localStorage
  */
 
+import { QuestionnaireAnswer } from '@/types';
+
 export const QUESTIONNAIRE_STORAGE_KEY = 'questionnaire_answers';
 
 /**
@@ -19,7 +21,7 @@ export function clearQuestionnaireAnswers(): void {
 /**
  * Get questionnaire answers from localStorage
  */
-export function getQuestionnaireAnswers(): Record<string, any> | null {
+export function getQuestionnaireAnswers(): Record<string, QuestionnaireAnswer> | null {
   try {
     const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
     return savedAnswers ? JSON.parse(savedAnswers) : null;
@@ -46,8 +48,19 @@ export function exportQuestionnaireAnswers(): string {
 }
 
 // Make functions available globally for debugging
+declare global {
+  interface Window {
+    questionnaireUtils?: {
+      clear: typeof clearQuestionnaireAnswers;
+      get: typeof getQuestionnaireAnswers;
+      has: typeof hasQuestionnaireAnswers;
+      export: typeof exportQuestionnaireAnswers;
+    };
+  }
+}
+
 if (typeof window !== 'undefined') {
-  (window as any).questionnaireUtils = {
+  window.questionnaireUtils = {
     clear: clearQuestionnaireAnswers,
     get: getQuestionnaireAnswers,
     has: hasQuestionnaireAnswers,
