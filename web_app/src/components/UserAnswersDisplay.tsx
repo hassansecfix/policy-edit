@@ -31,16 +31,33 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
       // Load from localStorage
       const savedAnswers = localStorage.getItem('questionnaire_answers');
       if (savedAnswers) {
-        setAnswers(JSON.parse(savedAnswers));
+        const parsedAnswers = JSON.parse(savedAnswers);
+        setAnswers(parsedAnswers);
+        console.log(
+          '📱 Local storage answers loaded:',
+          Object.keys(parsedAnswers).length,
+          'answers',
+        );
+      } else {
+        console.log('📱 No answers found in local storage');
       }
 
       // Check server-side answers
-      const response = await fetch('/api/answers');
+      console.log('🗄️ Fetching server answers...');
+      const response = await fetch('/api/answers', {
+        cache: 'no-store', // Always get fresh data
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+
       if (response.ok) {
         const data = await response.json();
+        console.log('🗄️ Server response:', data);
         setServerAnswers(data);
       } else {
         const errorData = await response.json();
+        console.error('🗄️ Server error response:', errorData);
         setServerAnswers({ error: errorData });
       }
     } catch (err) {
@@ -57,6 +74,52 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
     }
   }, [visible]);
 
+  // Parse CSV content to extract answers
+  const parseServerAnswers = (csvContent: string) => {
+    try {
+      const lines = csvContent.trim().split('\n');
+      if (lines.length <= 1) return {};
+
+      const parsedAnswers: Record<
+        string,
+        {
+          field: string;
+          questionNumber: number;
+          questionText: string;
+          responseType: string;
+          value: string;
+        }
+      > = {};
+
+      // Skip header line
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+
+        const parts = line.split(';');
+        if (parts.length >= 5) {
+          const [questionNumber, questionText, field, responseType, userResponse] = parts;
+
+          // Skip special entries like logo base64 data
+          if (field === '_logo_base64_data') continue;
+
+          parsedAnswers[field] = {
+            field,
+            questionNumber: parseInt(questionNumber),
+            questionText,
+            responseType,
+            value: userResponse,
+          };
+        }
+      }
+
+      return parsedAnswers;
+    } catch (error) {
+      console.error('Error parsing CSV:', error);
+      return {};
+    }
+  };
+
   if (!visible) {
     return null;
   }
@@ -67,17 +130,59 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
         <h3 className='text-lg font-semibold text-gray-900'>
           🔍 Debug: Your Questionnaire Answers
         </h3>
-        <button
-          onClick={loadAnswers}
-          disabled={loading}
-          className={`px-3 py-1 text-sm rounded ${
-            loading
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
+        <div className='flex gap-2'>
+          <button
+            onClick={loadAnswers}
+            disabled={loading}
+            className={`px-3 py-1 text-sm rounded ${
+              loading
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+          <button
+            onClick={async () => {
+              if (!answers) {
+                alert('No local answers to test save with');
+                return;
+              }
+
+              try {
+                console.log('🧪 Testing save with current local answers...');
+                const response = await fetch('/api/answers', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ answers }),
+                });
+
+                const result = await response.json();
+                console.log('🧪 Test save result:', result);
+
+                if (response.ok) {
+                  alert(
+                    `Test save successful! Saved ${result.answerCount} answers to ${result.filePath}`,
+                  );
+                  loadAnswers(); // Refresh to see the updated server data
+                } else {
+                  alert(`Test save failed: ${result.error}`);
+                }
+              } catch (error) {
+                console.error('🧪 Test save error:', error);
+                alert(`Test save error: ${error}`);
+              }
+            }}
+            disabled={!answers || loading}
+            className={`px-3 py-1 text-sm rounded ${
+              !answers || loading
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            🧪 Test Save
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -130,15 +235,53 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                       ✅ File exists: {serverAnswers.lineCount} lines
                     </p>
                     <p className='text-xs text-gray-600'>📁 Path: {serverAnswers.filePath}</p>
-                    <div className='text-xs bg-white p-2 rounded border'>
-                      <strong>Preview:</strong>
-                      <pre className='mt-1 whitespace-pre-wrap'>
-                        {serverAnswers.content?.split('\n').slice(0, 5).join('\n')}
-                        {serverAnswers.content &&
-                          serverAnswers.content.split('\n').length > 5 &&
-                          '\n...'}
-                      </pre>
-                    </div>
+
+                    {/* Parsed Server Answers */}
+                    {serverAnswers.content &&
+                      (() => {
+                        const parsedServerAnswers = parseServerAnswers(serverAnswers.content);
+                        const serverAnswerCount = Object.keys(parsedServerAnswers).length;
+
+                        return (
+                          <div className='space-y-2'>
+                            <p className='text-sm text-blue-600'>
+                              📊 Parsed {serverAnswerCount} answers from server
+                            </p>
+                            {serverAnswerCount > 0 ? (
+                              <div className='space-y-1 max-h-32 overflow-y-auto'>
+                                {Object.entries(parsedServerAnswers).map(([field, answer]) => (
+                                  <div key={field} className='text-xs bg-white p-2 rounded border'>
+                                    <div className='font-semibold text-gray-700 mb-1'>
+                                      Q{answer.questionNumber}: {answer.questionText}
+                                    </div>
+                                    <div className='text-blue-600'>
+                                      <span className='font-mono'>{field}:</span> {answer.value}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className='text-sm text-orange-600'>
+                                ⚠️ No answers found in server file
+                              </p>
+                            )}
+
+                            {/* Raw CSV Preview */}
+                            <details className='text-xs'>
+                              <summary className='cursor-pointer text-gray-600 hover:text-gray-800'>
+                                📄 Raw CSV Content (click to expand)
+                              </summary>
+                              <div className='mt-2 bg-white p-2 rounded border'>
+                                <pre className='whitespace-pre-wrap text-xs'>
+                                  {serverAnswers.content.split('\n').slice(0, 10).join('\n')}
+                                  {serverAnswers.content.split('\n').length > 10 &&
+                                    '\n... (truncated)'}
+                                </pre>
+                              </div>
+                            </details>
+                          </div>
+                        );
+                      })()}
                   </>
                 ) : (
                   <>
@@ -170,11 +313,31 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
       </div>
 
       <div className='mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
-        <p className='text-sm text-yellow-800'>
-          <strong>💡 Debug Info:</strong> This panel helps diagnose questionnaire saving issues. If
-          your answers appear in &quot;Local Storage&quot; but not &quot;Server&quot;, there&apos;s
-          a file path or permission issue in production.
+        <p className='text-sm text-yellow-800 mb-2'>
+          <strong>💡 Debug Instructions:</strong>
         </p>
+        <ul className='text-sm text-yellow-800 space-y-1 ml-4'>
+          <li>
+            •{' '}
+            <strong>
+              If Local Storage shows answers but Server shows &quot;No file found&quot;
+            </strong>
+            : File path issue in production
+          </li>
+          <li>
+            • <strong>If Server shows file but 0 parsed answers</strong>: CSV format issue
+          </li>
+          <li>
+            • <strong>Use &quot;Test Save&quot; button</strong>: Manually test if saving works right
+            now
+          </li>
+          <li>
+            • <strong>Check browser console</strong>: Look for detailed error logs and paths
+          </li>
+          <li>
+            • <strong>Both panels empty</strong>: Questions not submitted yet
+          </li>
+        </ul>
       </div>
     </div>
   );
