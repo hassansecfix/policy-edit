@@ -459,6 +459,10 @@ def main():
                                 replaced_count = 0
                                 while found_range:
                                     try:
+                                        # Check tracking status
+                                        tracking_status = doc.RecordChanges
+                                        print(f"🔍 Tracking status during logo processing: {tracking_status}")
+                                        
                                         # First, remove 20 spaces before the placeholder
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
                                         cursor.collapseToStart()
@@ -470,18 +474,22 @@ def main():
                                             temp_cursor = found_range.getText().createTextCursorByRange(cursor)
                                             if temp_cursor.goLeft(1, True):
                                                 char = temp_cursor.getString()
+                                                print(f"🔍 Character {i}: '{char}' (ord: {ord(char) if char else 'None'})")
                                                 if char == ' ':
                                                     # Remove this space
                                                     temp_cursor.setString("")
                                                     spaces_removed += 1
+                                                    print(f"🧹 Removed space #{spaces_removed}")
                                                 else:
                                                     # Not a space, stop
+                                                    print(f"🛑 Hit non-space character: '{char}', stopping")
                                                     break
                                             else:
                                                 # Can't go left anymore
+                                                print(f"🛑 Can't move left anymore")
                                                 break
                                         
-                                        print(f"🧹 Removed {spaces_removed} spaces before placeholder")
+                                        print(f"🧹 Total removed {spaces_removed} spaces before placeholder")
                                         
                                         # Clear the placeholder text
                                         found_range.setString("")
