@@ -32,7 +32,7 @@ import subprocess
 from pathlib import Path
 
 # Configuration constants
-MAX_LOGO_SPACES_TO_REMOVE = 4  # Maximum number of leading spaces to remove before logo placeholder
+MAX_LOGO_SPACES_TO_REMOVE = 0  # Maximum number of leading spaces to remove before logo placeholder
 
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
