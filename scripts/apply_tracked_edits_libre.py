@@ -32,7 +32,7 @@ import subprocess
 from pathlib import Path
 
 # Configuration constants
-MAX_LOGO_SPACES_TO_REMOVE = 3  # Maximum number of leading spaces to remove before logo placeholder
+MAX_LOGO_SPACES_TO_REMOVE = 0  # Additional spaces to remove on top of replacement text length for logo positioning
 
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
@@ -382,6 +382,21 @@ def main():
                 # DISABLE TRACKING COMPLETELY
                 doc.RecordChanges = False
                 
+                # Calculate dynamic space removal based on company name replacement length
+                dynamic_spaces_to_remove = MAX_LOGO_SPACES_TO_REMOVE  # Default fallback
+                
+                # Look for company name replacement to calculate dynamic spacing
+                for op in operations:
+                    if (op.get('action') == 'replace' and 
+                        op.get('target_text', '').strip() == '<Company name, address>'):
+                        replacement_text = op.get('replacement', '')
+                        if replacement_text:
+                            replacement_length = len(replacement_text)
+                            dynamic_spaces_to_remove = replacement_length + MAX_LOGO_SPACES_TO_REMOVE
+                            print(f"📏 Found company name replacement: '{replacement_text}' ({replacement_length} chars)")
+                            print(f"📏 Dynamic spaces to remove: {replacement_length} + {MAX_LOGO_SPACES_TO_REMOVE} = {dynamic_spaces_to_remove}")
+                            break
+                
                 for logo_op in logo_operations:
                     target_text = logo_op.get('target_text', '')
                     print(f"🔍 Looking for logo placeholder: '{target_text}'")
@@ -453,7 +468,7 @@ def main():
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
                                 # DIRECT REPLACEMENT WITHOUT TRACKING using multiple strategies to remove spaces + placeholder
-                                print(f"🔄 Attempting to remove up to {MAX_LOGO_SPACES_TO_REMOVE} spaces before '{target_text}' using multiple strategies")
+                                print(f"🔄 Attempting to remove up to {dynamic_spaces_to_remove} spaces before '{target_text}' using multiple strategies")
                                 
                                 import re
                                 escaped_target = re.escape(target_text)
@@ -470,7 +485,7 @@ def main():
                                     if found_range:
                                         # Get surrounding text to see what's actually there
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        cursor.goLeft(MAX_LOGO_SPACES_TO_REMOVE + 5, True)  # Expand left to capture preceding chars
+                                        cursor.goLeft(dynamic_spaces_to_remove + 5, True)  # Expand left to capture preceding chars
                                         cursor.gotoRange(found_range.getEnd(), True)  # Extend to end of original range
                                         surrounding_text = cursor.getString()
                                         
@@ -485,8 +500,8 @@ def main():
                                 
                                 # Strategy 1: Try comprehensive whitespace regex (spaces, tabs, non-breaking spaces)
                                 try:
-                                    # Pattern: up to MAX_LOGO_SPACES_TO_REMOVE whitespace chars (spaces, tabs, non-breaking spaces) followed by target
-                                    regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,{MAX_LOGO_SPACES_TO_REMOVE}}}{escaped_target}"
+                                    # Pattern: up to dynamic_spaces_to_remove whitespace chars (spaces, tabs, non-breaking spaces) followed by target
+                                    regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,{dynamic_spaces_to_remove}}}{escaped_target}"
                                     
                                     rd1 = doc.createReplaceDescriptor()
                                     rd1.SearchString = regex_pattern
@@ -500,7 +515,7 @@ def main():
                                     
                                     if replaced_count == 0:
                                         # Strategy 2: Try simpler space-only regex
-                                        regex_pattern2 = f" {{0,{MAX_LOGO_SPACES_TO_REMOVE}}}{escaped_target}"
+                                        regex_pattern2 = f" {{0,{dynamic_spaces_to_remove}}}{escaped_target}"
                                         rd2 = doc.createReplaceDescriptor()
                                         rd2.SearchString = regex_pattern2
                                         rd2.ReplaceString = "__LOGO_PLACEHOLDER__"
@@ -516,32 +531,32 @@ def main():
                                     replaced_count = 0
                                 
                                 # Strategy 3: Try tab characters and mixed whitespace if regex failed AND spaces are allowed
-                                if replaced_count == 0 and MAX_LOGO_SPACES_TO_REMOVE > 0:
-                                    print(f"🔄 Strategy 3: Trying tabs and mixed whitespace patterns (since MAX_LOGO_SPACES_TO_REMOVE = {MAX_LOGO_SPACES_TO_REMOVE})")
+                                if replaced_count == 0 and dynamic_spaces_to_remove > 0:
+                                    print(f"🔄 Strategy 3: Trying tabs and mixed whitespace patterns (since dynamic_spaces_to_remove = {dynamic_spaces_to_remove})")
                                     
-                                    # Generate whitespace patterns dynamically based on MAX_LOGO_SPACES_TO_REMOVE
+                                    # Generate whitespace patterns dynamically based on dynamic_spaces_to_remove
                                     whitespace_patterns = []
                                     
                                     # Add tab patterns only if we allow space removal
-                                    max_tabs = min(5, MAX_LOGO_SPACES_TO_REMOVE)  # Limit tabs to reasonable number
+                                    max_tabs = min(5, dynamic_spaces_to_remove)  # Limit tabs to reasonable number
                                     for num_tabs in range(max_tabs, 0, -1):
                                         tabs = "\t" * num_tabs
                                         whitespace_patterns.append(f"{tabs}{target_text}")
                                     
                                     # Add mixed tab/space patterns
-                                    if MAX_LOGO_SPACES_TO_REMOVE >= 2:
+                                    if dynamic_spaces_to_remove >= 2:
                                         whitespace_patterns.extend([
                                             f"\t {target_text}",           # Tab + space
                                             f" \t{target_text}",           # Space + tab
                                         ])
                                     
                                     # Add non-breaking space patterns
-                                    max_nbsp = min(4, MAX_LOGO_SPACES_TO_REMOVE)
+                                    max_nbsp = min(4, dynamic_spaces_to_remove)
                                     for num_nbsp in range(max_nbsp, 0, -1):
                                         nbsp = "\u00A0" * num_nbsp
                                         whitespace_patterns.append(f"{nbsp}{target_text}")
                                     
-                                    print(f"🔍 Generated {len(whitespace_patterns)} whitespace patterns for MAX_LOGO_SPACES_TO_REMOVE={MAX_LOGO_SPACES_TO_REMOVE}")
+                                    print(f"🔍 Generated {len(whitespace_patterns)} whitespace patterns for dynamic_spaces_to_remove={dynamic_spaces_to_remove}")
                                     
                                     for pattern in whitespace_patterns:
                                         rd_ws = doc.createReplaceDescriptor()
@@ -555,20 +570,20 @@ def main():
                                             replaced_count += count
                                             print(f"🎯 Found and replaced {count} instance(s) with special whitespace")
                                             break
-                                elif replaced_count == 0 and MAX_LOGO_SPACES_TO_REMOVE == 0:
-                                    print(f"🔄 Strategy 3: SKIPPED (MAX_LOGO_SPACES_TO_REMOVE = 0, no whitespace removal allowed)")
+                                elif replaced_count == 0 and dynamic_spaces_to_remove == 0:
+                                    print(f"🔄 Strategy 3: SKIPPED (dynamic_spaces_to_remove = 0, no whitespace removal allowed)")
                                 
                                 # Strategy 4: Manual space removal if all other strategies failed
                                 if replaced_count == 0:
                                     print(f"🔄 Strategy 4: Manual space removal approach")
                                     
-                                    # Try different space combinations manually - generate dynamically based on MAX_LOGO_SPACES_TO_REMOVE
+                                    # Try different space combinations manually - generate dynamically based on dynamic_spaces_to_remove
                                     space_patterns = []
-                                    for num_spaces in range(MAX_LOGO_SPACES_TO_REMOVE, -1, -1):  # From MAX_LOGO_SPACES_TO_REMOVE down to 0
+                                    for num_spaces in range(dynamic_spaces_to_remove, -1, -1):  # From dynamic_spaces_to_remove down to 0
                                         spaces = " " * num_spaces
                                         space_patterns.append(f"{spaces}{target_text}")
                                     
-                                    print(f"🔍 Trying {len(space_patterns)} different space combinations (from {MAX_LOGO_SPACES_TO_REMOVE} down to 0 spaces)")
+                                    print(f"🔍 Trying {len(space_patterns)} different space combinations (from {dynamic_spaces_to_remove} down to 0 spaces)")
                                     
                                     for pattern in space_patterns:
                                         rd3 = doc.createReplaceDescriptor()
