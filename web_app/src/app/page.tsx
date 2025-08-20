@@ -48,7 +48,7 @@ export default function Dashboard() {
     async (skipApi: boolean) => {
       try {
         // Get questionnaire answers from localStorage
-        const savedAnswers = localStorage.getItem('questionnaireAnswers');
+        const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
         const questionnaireAnswers = savedAnswers ? JSON.parse(savedAnswers) : {};
         
         console.log('🚀 Starting automation with answers:', Object.keys(questionnaireAnswers).length, 'fields');

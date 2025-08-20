@@ -30,26 +30,20 @@ fi
 
 # Use environment variables with fallback to defaults (single source of truth)
 POLICY_FILE="${POLICY_FILE:-$DEFAULT_POLICY_FILE}"
-QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
 OUTPUT_NAME="${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}"
+# NOTE: Questionnaire file removed - system now uses localStorage data via web UI only
 
-echo "🚀 Complete AI Automation Starting..."
+echo "❌ DEPRECATED: Direct shell script automation is no longer supported"
 echo "=" * 50
-show_config
-echo "🤖 AI: Claude Sonnet 4"
-echo "⚙️  Processing: GitHub Actions"
+echo "🌐 Please use the web UI for automation:"
+echo "   1. Start the web app: cd web_app && npm run dev"
+echo "   2. Complete the questionnaire in the browser"
+echo "   3. Run automation from the web interface"
+echo ""
+echo "📱 The system now uses localStorage for questionnaire data"
+echo "   This script cannot access browser localStorage"
 echo "=" * 50
-
-# Check if input files exist
-if [ ! -f "$POLICY_FILE" ]; then
-    echo "❌ Error: Policy file not found: $POLICY_FILE"
-    exit 1
-fi
-
-if [ ! -f "$QUESTIONNAIRE_FILE" ]; then
-    echo "❌ Error: Questionnaire file not found: $QUESTIONNAIRE_FILE"
-    exit 1
-fi
+exit 1
 
 echo "🤖 Starting AI-powered policy automation..."
 echo ""

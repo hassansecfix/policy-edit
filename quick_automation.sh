@@ -42,39 +42,23 @@ echo ""
 # Load shared configuration (single source of truth)
 source "$(dirname "$0")/config.sh"
 
-# Smart questionnaire data detection (JSON API or CSV files)
+# ONLY support localStorage/direct API questionnaire data - NO CSV file fallbacks
 if [[ "$QUESTIONNAIRE_SOURCE" == "direct_api" && -n "$QUESTIONNAIRE_ANSWERS_JSON" ]]; then
-    # Use direct API answers (JSON file)
-    echo "📊 Using direct API questionnaire answers: $QUESTIONNAIRE_ANSWERS_JSON"
-    QUESTIONNAIRE_FILE="$QUESTIONNAIRE_ANSWERS_JSON"
-elif [[ -n "$QUESTIONNAIRE_FILE" ]]; then
-    # Use the file specified by the environment (from Flask app)
-    echo "📊 Using questionnaire file from environment: $QUESTIONNAIRE_FILE"
-elif [[ -f "/tmp/user_questionnaire_responses.csv" ]]; then
-    # Check for main file in /tmp (serverless environments)
-    QUESTIONNAIRE_FILE="/tmp/user_questionnaire_responses.csv"
-    echo "📊 Using main questionnaire file from /tmp"
-elif [[ $(ls /tmp/user_questionnaire_responses_*.csv 2>/dev/null | wc -l) -gt 0 ]]; then
-    # Find the most recent timestamped file in /tmp
-    QUESTIONNAIRE_FILE=$(ls -t /tmp/user_questionnaire_responses_*.csv 2>/dev/null | head -1)
-    echo "📊 Using latest timestamped questionnaire file: $QUESTIONNAIRE_FILE"
-elif [[ -f "data/user_questionnaire_responses.csv" ]]; then
-    # Fallback to main file in data directory
-    QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
-    echo "📊 Using main user questionnaire file"
-elif [[ $(ls data/user_questionnaire_responses_*.csv 2>/dev/null | wc -l) -gt 0 ]]; then
-    # Find the most recent timestamped file in data directory
-    QUESTIONNAIRE_FILE=$(ls -t data/user_questionnaire_responses_*.csv 2>/dev/null | head -1)
-    echo "📊 Using latest timestamped questionnaire file: $QUESTIONNAIRE_FILE"
+    # Use direct API answers (JSON file from localStorage)
+    echo "📊 Using localStorage questionnaire answers: $QUESTIONNAIRE_ANSWERS_JSON"
+    QUESTIONNAIRE_JSON_FILE="$QUESTIONNAIRE_ANSWERS_JSON"
 else
-    # Use default questionnaire file
-    QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
-    echo "📊 Using default questionnaire responses: $QUESTIONNAIRE_FILE"
+    echo "❌ ERROR: No localStorage questionnaire data found!"
+    echo "   QUESTIONNAIRE_SOURCE: ${QUESTIONNAIRE_SOURCE:-not set}"
+    echo "   QUESTIONNAIRE_ANSWERS_JSON: ${QUESTIONNAIRE_ANSWERS_JSON:-not set}"
+    echo ""
+    echo "📝 Please complete the questionnaire in the web interface first."
+    echo "   The system now ONLY supports localStorage data - no CSV file fallbacks."
+    exit 1
 fi
 
 # Configuration (single source of truth) - use env vars with fallbacks
 POLICY_FILE="${POLICY_FILE:-$DEFAULT_POLICY_FILE}"
-# QUESTIONNAIRE_FILE already set above based on user file availability
 OUTPUT_NAME="${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}"
 
 show_config
@@ -108,7 +92,7 @@ export QUESTIONNAIRE_SOURCE="${QUESTIONNAIRE_SOURCE:-file}"
 
 eval "python3 scripts/complete_automation.py \
   --policy \"$POLICY_FILE\" \
-  --questionnaire \"$QUESTIONNAIRE_FILE\" \
+  --questionnaire \"$QUESTIONNAIRE_JSON_FILE\" \
   --output-name \"$OUTPUT_NAME\" \
   --user-id \"$USER_ID\" \
   --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}${SKIP_API_ARG}"

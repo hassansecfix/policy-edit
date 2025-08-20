@@ -45,39 +45,7 @@ automation_process = None
 automation_thread = None
 automation_running = False
 
-def find_latest_questionnaire_file(base_path):
-    """Find the most recent questionnaire responses file"""
-    data_dir = Path(base_path) / "data"
-    
-    # Look for user-specific timestamped files first
-    user_files_pattern = str(data_dir / "user_questionnaire_responses_*.csv")
-    user_files = glob.glob(user_files_pattern)
-    
-    if user_files:
-        # Sort by timestamp in filename (newest first)
-        user_files.sort(key=lambda x: int(x.split('_')[-1].replace('.csv', '')), reverse=True)
-        latest_file = user_files[0]
-        relative_path = Path(latest_file).relative_to(base_path)
-        print(f"📊 Found timestamped questionnaire file: {relative_path}")
-        return str(relative_path), Path(latest_file), "user_timestamped"
-    
-    # Fall back to main user questionnaire file
-    main_user_file = data_dir / "user_questionnaire_responses.csv"
-    if main_user_file.exists():
-        relative_path = Path("data/user_questionnaire_responses.csv")
-        print(f"📊 Found main user questionnaire file: {relative_path}")
-        return str(relative_path), main_user_file, "user_main"
-    
-    # Fall back to default questionnaire file
-    default_file = os.environ.get('QUESTIONNAIRE_FILE', 'data/secfix_questionnaire_responses_consulting.csv')
-    default_path = Path(base_path) / default_file
-    if default_path.exists():
-        print(f"📊 Using default questionnaire file: {default_file}")
-        return default_file, default_path, "default"
-    
-    # No questionnaire file found
-    print("❌ No questionnaire file found")
-    return None, None, "none"
+# CSV file detection removed - system now ONLY uses localStorage data
 
 class GitHubActionsMonitor:
     def __init__(self):
@@ -233,6 +201,7 @@ class AutomationRunner:
         
     def run_automation(self, skip_api=False, questionnaire_answers=None, timestamp=None):
         """Run the automation process"""
+        temp_answers_file = None  # Track temp file for cleanup
         try:
             self.running = True
             self.emit_log("🚀 Starting Policy Automation...", "success")
@@ -246,27 +215,15 @@ class AutomationRunner:
             base_path = Path(__file__).parent.parent
             policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
             
-            # Use direct answers if provided, otherwise fall back to file-based approach
-            if questionnaire_answers:
+            # ONLY use direct answers from localStorage - no CSV file fallbacks
+            if questionnaire_answers and len(questionnaire_answers) > 0:
                 self.emit_log(f"📊 Using direct questionnaire answers ({len(questionnaire_answers)} fields)", "success")
-                questionnaire_file = None  # No file needed
-                questionnaire_path = None
                 questionnaire_source = "direct_api"
-                # Convert questionnaire answers to JSON string for the script
-                questionnaire_json_str = json.dumps(questionnaire_answers)
             else:
-                # Fallback to file-based approach
-                questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
-                questionnaire_json_str = None
-            
-            if questionnaire_source == "user_timestamped":
-                self.emit_log("📊 Using user-provided timestamped questionnaire responses", "success")
-            elif questionnaire_source == "user_main":
-                self.emit_log("📊 Using user-provided main questionnaire responses", "success")
-            elif questionnaire_source == "default":
-                self.emit_log("📊 Using default questionnaire responses", "info")
-            else:
-                self.emit_log("❌ No questionnaire file found", "error")
+                # No localStorage data - FAIL instead of falling back to CSV
+                self.emit_log("❌ No questionnaire answers provided from localStorage! Please complete the questionnaire first.", "error")
+                self.update_progress(1, "error")
+                return False
             
             policy_path = base_path / policy_file
             
@@ -275,19 +232,8 @@ class AutomationRunner:
                 self.update_progress(1, "error")
                 return False
                 
-            # Validate questionnaire source (either direct answers or file)
-            if questionnaire_source == "direct_api":
-                if not questionnaire_answers or len(questionnaire_answers) == 0:
-                    self.emit_log("❌ No questionnaire answers provided via API", "error")
-                    self.update_progress(1, "error")
-                    return False
-                self.emit_log("✅ Policy file and direct answers ready", "success")
-            else:
-                if not questionnaire_file or not questionnaire_path or not questionnaire_path.exists():
-                    self.emit_log(f"❌ Questionnaire file not found: {questionnaire_file or 'No file detected'}", "error")
-                    self.update_progress(1, "error")
-                    return False
-                self.emit_log("✅ All required files found", "success")
+            # We now ONLY support localStorage data - validation already done above
+            self.emit_log("✅ Policy file and localStorage questionnaire answers ready", "success")
             self.update_progress(1, "completed")
             
             # Step 2: Build command
@@ -304,26 +250,17 @@ class AutomationRunner:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
             
-            # Pass questionnaire data to the automation script
-            if questionnaire_source == "direct_api":
-                # Create a temporary JSON file with the answers for the automation script
-                import tempfile
-                import json
-                
-                temp_answers_file = os.path.join(tempfile.gettempdir(), f"questionnaire_answers_{timestamp}.json")
-                with open(temp_answers_file, 'w', encoding='utf-8') as f:
-                    json.dump(questionnaire_answers, f, indent=2)
-                
-                env['QUESTIONNAIRE_ANSWERS_JSON'] = temp_answers_file
-                env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
-                self.emit_log(f"📊 Direct answers saved to: {temp_answers_file}", "info")
-                self.emit_log(f"📂 Source: Direct API ({len(questionnaire_answers)} fields)", "info")
-            else:
-                # Use file-based approach
-                env['QUESTIONNAIRE_FILE'] = questionnaire_file
-                env['QUESTIONNAIRE_SOURCE'] = 'file'
-                self.emit_log(f"📋 Questionnaire file: {questionnaire_file}", "info")
-                self.emit_log(f"📂 File source: {questionnaire_source}", "info")
+            # Create a temporary JSON file with the answers for the automation script
+            import tempfile
+            
+            temp_answers_file = os.path.join(tempfile.gettempdir(), f"questionnaire_answers_{timestamp}.json")
+            with open(temp_answers_file, 'w', encoding='utf-8') as f:
+                json.dump(questionnaire_answers, f, indent=2)
+            
+            env['QUESTIONNAIRE_ANSWERS_JSON'] = temp_answers_file
+            env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+            self.emit_log(f"📊 Direct answers saved to: {temp_answers_file}", "info")
+            self.emit_log(f"📂 Source: localStorage ({len(questionnaire_answers)} fields)", "info")
                 
             self.update_progress(2, "completed")
             
@@ -402,6 +339,14 @@ class AutomationRunner:
             return False
         finally:
             self.running = False
+            
+            # Clean up temporary JSON file
+            if temp_answers_file and os.path.exists(temp_answers_file):
+                try:
+                    os.unlink(temp_answers_file)
+                    self.emit_log(f"🗑️  Cleaned up temp file: {temp_answers_file}", "info")
+                except Exception as e:
+                    self.emit_log(f"⚠️  Warning: Could not clean up temp file {temp_answers_file}: {e}", "warning")
             
     def start_github_monitoring(self):
         """Start monitoring the latest GitHub Actions workflow with retry logic"""
@@ -578,20 +523,14 @@ def get_status():
     base_path = Path(__file__).parent.parent
     policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
     
-    # Find the latest questionnaire file
-    questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
-    
+    # System now ONLY uses localStorage data - no CSV file detection
     api_key = os.environ.get('CLAUDE_API_KEY', '')
     skip_api = os.environ.get('SKIP_API_CALL', '').lower() in ['true', '1', 'yes', 'on']
     
     # Resolve paths relative to project root
     policy_path = base_path / policy_file
     
-    # Check if we have user questionnaire files available
-    user_files_pattern = str(base_path / "data" / "user_questionnaire_responses_*.csv")
-    user_files = glob.glob(user_files_pattern)
-    main_user_file = base_path / "data" / "user_questionnaire_responses.csv"
-    user_questionnaire_available = len(user_files) > 0 or main_user_file.exists()
+    # localStorage-based system - questionnaire data comes from frontend
     
     # Debug: Check environment variables
     env_vars_debug = {
@@ -605,15 +544,13 @@ def get_status():
     
     response = jsonify({
         'policy_exists': policy_path.exists(),
-        'questionnaire_exists': True,  # Always true now - we use direct API or files
+        'questionnaire_exists': True,  # Always true - we only use localStorage data
         'api_key_configured': bool(api_key) or skip_api,
         'skip_api': skip_api,
         'automation_running': runner.running,
         'policy_file': policy_file,
-        'questionnaire_file': questionnaire_file or 'Direct API (no file needed)',
-        'questionnaire_source': questionnaire_source,
-        'user_questionnaire_available': user_questionnaire_available,
-        'user_timestamped_files': len(user_files),
+        'questionnaire_mode': 'localStorage_only',
+        'questionnaire_note': 'System only uses localStorage data - no CSV file dependencies',
         'supports_direct_api': True,
         'env_vars_debug': env_vars_debug
     })

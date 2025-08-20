@@ -4,14 +4,14 @@
 
 # Default file paths
 DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-DEFAULT_QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
 DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments"
+# NOTE: Questionnaire data now comes from localStorage only - no file needed
 
 # Function to show configuration being used
 show_config() {
     echo "📋 Using configuration:"
     echo "  Policy: $POLICY_FILE"
-    echo "  Questionnaire: $QUESTIONNAIRE_FILE"
+    echo "  Questionnaire: localStorage data only (no file)"
     echo "  Output: $OUTPUT_NAME"
     echo ""
 }

@@ -75,36 +75,59 @@ def convert_xlsx_to_csv(xlsx_path, csv_path):
 def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_instructions_path, output_json, api_key, skip_api=False, questionnaire_json=None):
     """Generate JSON instructions using AI or use existing file."""
     
-    # Determine questionnaire parameter based on input type
-    if questionnaire_json:
-        # Use JSON data directly (new localStorage approach)
-        questionnaire_param = f"--questionnaire-json '{questionnaire_json}'"
-        print("🧠 Step 2: Using direct JSON questionnaire data (localStorage mode)...")
-    else:
-        # Use file path (legacy approach)
-        questionnaire_param = f"--questionnaire '{questionnaire_csv}'"
-        print("🧠 Step 2: Using questionnaire file (legacy mode)...")
+    temp_json_file = None
     
-    if skip_api:
-        print("🔄 API call skipped for testing/development...")
-        cmd = f"""python3 scripts/ai_policy_processor.py \
-            --policy '{policy_path}' \
-            {questionnaire_param} \
-            --prompt '{prompt_path}' \
-            --policy-instructions '{policy_instructions_path}' \
-            --output '{output_json}' \
-            --skip-api"""
-    else:
-        print("🧠 Generating JSON instructions with Claude Sonnet 4...")
-        cmd = f"""python3 scripts/ai_policy_processor.py \
-            --policy '{policy_path}' \
-            {questionnaire_param} \
-            --prompt '{prompt_path}' \
-            --policy-instructions '{policy_instructions_path}' \
-            --output '{output_json}' \
-            --api-key '{api_key}'"""
-    
-    return run_command(cmd, "Processing JSON instructions")
+    try:
+        # Determine questionnaire parameter based on input type
+        if questionnaire_json:
+            # Use JSON data directly (new localStorage approach)
+            # Write JSON to temp file to avoid "argument list too long" error
+            import tempfile
+            import json
+            
+            temp_json_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            json.dump(json.loads(questionnaire_json), temp_json_file, indent=2)
+            temp_json_file.close()
+            
+            questionnaire_param = f"--questionnaire '{temp_json_file.name}'"
+            print("🧠 Step 2: Using direct JSON questionnaire data (localStorage mode)...")
+            print(f"📁 Temp JSON file: {temp_json_file.name}")
+        else:
+            # Use file path (legacy approach)
+            questionnaire_param = f"--questionnaire '{questionnaire_csv}'"
+            print("🧠 Step 2: Using questionnaire file (legacy mode)...")
+        
+        if skip_api:
+            print("🔄 API call skipped for testing/development...")
+            cmd = f"""python3 scripts/ai_policy_processor.py \
+                --policy '{policy_path}' \
+                {questionnaire_param} \
+                --prompt '{prompt_path}' \
+                --policy-instructions '{policy_instructions_path}' \
+                --output '{output_json}' \
+                --skip-api"""
+        else:
+            print("🧠 Generating JSON instructions with Claude Sonnet 4...")
+            cmd = f"""python3 scripts/ai_policy_processor.py \
+                --policy '{policy_path}' \
+                {questionnaire_param} \
+                --prompt '{prompt_path}' \
+                --policy-instructions '{policy_instructions_path}' \
+                --output '{output_json}' \
+                --api-key '{api_key}'"""
+        
+        result = run_command(cmd, "Processing JSON instructions")
+        
+        return result
+        
+    finally:
+        # Clean up temporary file
+        if temp_json_file and os.path.exists(temp_json_file.name):
+            try:
+                os.unlink(temp_json_file.name)
+                print(f"🗑️  Cleaned up temp file: {temp_json_file.name}")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not clean up temp file {temp_json_file.name}: {e}")
 
 def commit_and_push_json(edits_json, logo_file=None):
     """Commit and push the generated JSON file and optional logo file to GitHub."""

@@ -128,8 +128,8 @@ Set these in your `.env` file to customize defaults:
 ```bash
 # File paths
 POLICY_FILE=data/your_policy.docx
-QUESTIONNAIRE_FILE=data/your_responses.csv
 OUTPUT_NAME=custom_output_name
+# NOTE: QUESTIONNAIRE_FILE removed - system now uses localStorage data only
 
 # Logo settings
 LOGO_PATH=data/company_logo.png
@@ -154,8 +154,8 @@ LOGO_HEIGHT_MM=0
 - Mix approaches (CLI args override env vars):
 
 ```bash
-# Set QUESTIONNAIRE_FILE in .env, but override policy via CLI
-./run_custom_automation.sh data/different_policy.docx
+# Use web UI for questionnaire data (localStorage approach)
+# Shell scripts are now deprecated - use web interface
 ```
 
 ## What the automation does

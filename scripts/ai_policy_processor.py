@@ -300,8 +300,7 @@ CRITICAL: Your response must include a properly formatted JSON structure that fo
 def main():
     parser = argparse.ArgumentParser(description='AI Policy Processor - Generate JSON instructions with Claude Sonnet 4')
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
-    parser.add_argument('--questionnaire', help='Path to questionnaire CSV file (legacy mode)')
-    parser.add_argument('--questionnaire-json', help='JSON string with questionnaire answers (direct mode)')
+    parser.add_argument('--questionnaire', required=True, help='Path to questionnaire CSV/JSON file')
     parser.add_argument('--prompt', required=True, help='Path to AI prompt markdown file (prompt.md)')
     parser.add_argument('--policy-instructions', required=True, help='Path to policy processing instructions (updated_policy_instructions_v4.0.md)')
     parser.add_argument('--output', required=True, help='Output path for generated JSON file')
@@ -309,15 +308,6 @@ def main():
     parser.add_argument('--skip-api', action='store_true', help='Skip API call and use existing JSON file (for testing/development)')
     
     args = parser.parse_args()
-    
-    # Validate questionnaire input - either file or JSON, but not both
-    if not args.questionnaire and not args.questionnaire_json:
-        print("❌ Error: Either --questionnaire (file path) or --questionnaire-json (JSON string) must be provided!")
-        sys.exit(1)
-    
-    if args.questionnaire and args.questionnaire_json:
-        print("❌ Error: Cannot use both --questionnaire and --questionnaire-json at the same time!")
-        sys.exit(1)
     
     # Check for skip API configuration
     skip_api_env = os.environ.get('SKIP_API_CALL', '').lower()
@@ -375,15 +365,7 @@ def main():
     
     print("🤖 AI Policy Processor Starting (JSON Mode)...")
     print(f"📋 Policy: {args.policy}")
-    
-    # Show questionnaire source
-    if args.questionnaire:
-        print(f"📊 Questionnaire: {args.questionnaire} (file mode)")
-        questionnaire_mode = "file"
-    else:
-        print(f"📊 Questionnaire: Direct JSON input (localStorage mode)")
-        questionnaire_mode = "json"
-    
+    print(f"📊 Questionnaire: {args.questionnaire}")
     print(f"📝 Main Prompt: {args.prompt}")
     print(f"📜 Policy Instructions: {args.policy_instructions}")
     print(f"💾 Output: {args.output}")
@@ -392,42 +374,8 @@ def main():
         # Load input files
         print("\n📂 Loading input files...")
         policy_content = load_file_content(args.policy)
-        
-        # Load questionnaire content based on input method
-        if questionnaire_mode == "file":
-            print("📊 Loading and filtering questionnaire CSV...")
-            questionnaire_content = load_file_content(args.questionnaire)
-        else:
-            print("📊 Processing questionnaire JSON data...")
-            try:
-                # Parse and convert JSON to CSV-like format
-                json_data = json.loads(args.questionnaire_json)
-                csv_lines = ['Question Number;Question Text;field;Response Type;User Response']
-                
-                for field, answer_data in json_data.items():
-                    if isinstance(answer_data, dict):
-                        question_number = answer_data.get('questionNumber', 0)
-                        question_text = answer_data.get('questionText', field)
-                        response_type = answer_data.get('responseType', 'text')
-                        value = answer_data.get('value', '')
-                        
-                        # Handle different value types
-                        if isinstance(value, dict) and 'data' in value:
-                            # File upload - use filename or placeholder
-                            value = value.get('name', 'uploaded_file')
-                        elif isinstance(value, (list, dict)):
-                            value = str(value)
-                        
-                        csv_line = f"{question_number};{question_text};{field};{response_type};{value}"
-                        csv_lines.append(csv_line)
-                
-                questionnaire_content = '\n'.join(csv_lines)
-                print(f"📊 Converted {len(json_data)} JSON answers to CSV format for AI processing")
-                
-            except json.JSONDecodeError as e:
-                print(f"❌ Error: Invalid JSON in questionnaire data: {e}")
-                sys.exit(1)
-        
+        print("📊 Loading questionnaire data...")
+        questionnaire_content = load_file_content(args.questionnaire)
         prompt_content = load_file_content(args.prompt)
         policy_instructions_content = load_file_content(args.policy_instructions)
         

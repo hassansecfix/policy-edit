@@ -50,7 +50,7 @@ The API reads configuration from your main `.env` file:
 - `GITHUB_TOKEN` - GitHub token for monitoring workflows (optional)
 - `SKIP_API_CALL=true` - Skip API calls and use existing JSON files
 - `POLICY_FILE` - Path to policy document
-- `QUESTIONNAIRE_FILE` - Path to questionnaire CSV
+- NOTE: QUESTIONNAIRE_FILE removed - system now uses localStorage data only
 
 ## Architecture
 

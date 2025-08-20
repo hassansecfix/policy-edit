@@ -1,8 +1,9 @@
 #!/bin/bash
-# Customizable Complete AI Automation Script
-# Modify the variables below or pass arguments to customize the run
 
-set -e  # Exit on any error
+echo "❌ DEPRECATED: Direct shell script automation is no longer supported"
+echo "🌐 Please use the web UI for automation:"
+echo "   cd web_app && npm run dev"
+exit 1
 
 # Load shared configuration (single source of truth)
 source "$(dirname "$0")/config.sh"
@@ -14,15 +15,15 @@ DEFAULT_OUTPUT_NAME_WITH_TIMESTAMP="${DEFAULT_OUTPUT_NAME}_$(date +%Y%m%d_%H%M%S
 show_help() {
     echo "Usage: $0 [policy_file] [questionnaire_file] [output_name]"
     echo ""
-    echo "Configuration (single source of truth):"
-    echo "  1. Set in .env file: POLICY_FILE, QUESTIONNAIRE_FILE, OUTPUT_NAME"
-    echo "  2. Or pass as command line arguments (overrides .env)"
-    echo "  3. Or use defaults if neither is set"
+    echo "❌ DEPRECATED: Direct shell script automation is no longer supported"
     echo ""
-    echo "Arguments:"
-    echo "  policy_file        Path to policy DOCX (overrides POLICY_FILE in .env)"
-    echo "  questionnaire_file Path to questionnaire CSV (overrides QUESTIONNAIRE_FILE in .env)"
-    echo "  output_name        Output name prefix (overrides OUTPUT_NAME in .env)"
+    echo "🌐 Please use the web UI for automation:"
+    echo "   1. Start the web app: cd web_app && npm run dev"
+    echo "   2. Complete the questionnaire in the browser"  
+    echo "   3. Run automation from the web interface"
+    echo ""
+    echo "📱 The system now uses localStorage for questionnaire data"
+    echo "   Shell scripts cannot access browser localStorage"
     echo ""
     echo "Examples:"
     echo "  $0                                          # Use .env or defaults"

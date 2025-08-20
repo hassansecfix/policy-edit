@@ -80,8 +80,8 @@ PORT = 5001
 GITHUB_TOKEN = your_github_token_here
 SKIP_API_CALL = true
 POLICY_FILE = data/v5 Freya POL-11 Access Control.docx
-QUESTIONNAIRE_FILE = data/secfix_questionnaire_responses_consulting.csv
 OUTPUT_NAME = policy_tracked_changes_with_comments
+# NOTE: QUESTIONNAIRE_FILE removed - system now uses localStorage data only
 ```
 
 **How to add each variable:**
