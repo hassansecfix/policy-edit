@@ -23,8 +23,6 @@ import argparse
 import csv
 import re
 import warnings
-import time
-import random
 from pathlib import Path
 import json
 
@@ -33,10 +31,6 @@ anthropic = None
 
 # Suppress deprecation warnings for the Claude API
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-# Rate limiting globals
-_last_api_call_time = None
-_min_time_between_calls = 2.0  # Minimum 2 seconds between API calls
 
 def load_file_content(file_path):
     """Load content from various file types."""
@@ -172,21 +166,8 @@ def validate_json_content(content):
     
     return True
 
-def enforce_rate_limit():
-    """Enforce rate limiting to prevent hitting API limits."""
-    global _last_api_call_time, _min_time_between_calls
-    
-    if _last_api_call_time is not None:
-        time_since_last_call = time.time() - _last_api_call_time
-        if time_since_last_call < _min_time_between_calls:
-            sleep_time = _min_time_between_calls - time_since_last_call
-            print(f"⏱️  Rate limiting: waiting {sleep_time:.1f} seconds...")
-            time.sleep(sleep_time)
-    
-    _last_api_call_time = time.time()
-
-def call_claude_api(prompt_content, questionnaire_content, policy_instructions_content, policy_content, api_key, max_retries=5):
-    """Call Claude Sonnet 4 API to generate JSON instructions with rate limiting and retry logic."""
+def call_claude_api(prompt_content, questionnaire_content, policy_instructions_content, policy_content, api_key):
+    """Call Claude Sonnet 4 API to generate JSON instructions."""
     
     # Import anthropic here when actually needed
     global anthropic
@@ -229,74 +210,21 @@ Please analyze the questionnaire data and generate the complete JSON file for au
 CRITICAL: Your response must include a properly formatted JSON structure that follows the exact format specified in the processing instructions.
 """
 
-    # Retry logic with exponential backoff for rate limiting
-    for attempt in range(max_retries):
-        try:
-            print(f"🔄 API attempt {attempt + 1}/{max_retries}...")
-            
-            # Enforce rate limiting before each API call
-            enforce_rate_limit()
-            
-            message = client.messages.create(
-                model="claude-3-5-sonnet-20241022",  # Claude Sonnet model
-                max_tokens=4000,
-                temperature=0.1,  # Low temperature for consistent, accurate output
-                messages=[{
-                    "role": "user",
-                    "content": full_prompt
-                }]
-            )
-            
-            print("✅ API call successful!")
-            return message.content[0].text
+    try:
+        message = client.messages.create(
+            model="claude-3-5-sonnet-20241022",  # Claude Sonnet model
+            max_tokens=4000,
+            temperature=0.1,  # Low temperature for consistent, accurate output
+            messages=[{
+                "role": "user",
+                "content": full_prompt
+            }]
+        )
         
-        except Exception as e:
-            error_message = str(e)
-            print(f"⚠️  API attempt {attempt + 1} failed: {error_message}")
-            
-            # Check if it's a rate limit error (429)
-            if "429" in error_message or "rate_limit_error" in error_message:
-                if attempt < max_retries - 1:  # Don't wait on the last attempt
-                    # Exponential backoff with jitter
-                    base_delay = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
-                    jitter = random.uniform(0.5, 1.5)  # Add randomness to avoid thundering herd
-                    delay = base_delay * jitter
-                    
-                    print(f"⏱️  Rate limit exceeded. Waiting {delay:.1f} seconds before retry...")
-                    print("💡 Tip: Consider reducing the frequency of API calls or upgrading your Anthropic plan")
-                    time.sleep(delay)
-                    continue
-                else:
-                    print("❌ Maximum retries exceeded for rate limiting")
-                    raise Exception(f"Claude API rate limit exceeded after {max_retries} attempts. Please wait before trying again or upgrade your Anthropic plan. Original error: {e}")
-            
-            # Check if it's a different type of error
-            elif "400" in error_message or "invalid_request_error" in error_message:
-                print("❌ Invalid request - not retrying")
-                raise Exception(f"Claude API invalid request error: {e}")
-            
-            elif "401" in error_message or "authentication_error" in error_message:
-                print("❌ Authentication failed - check your API key")
-                raise Exception(f"Claude API authentication error: {e}")
-            
-            elif "500" in error_message or "internal_server_error" in error_message:
-                if attempt < max_retries - 1:
-                    # Brief wait for server errors
-                    delay = 1 + random.uniform(0, 1)
-                    print(f"⏱️  Server error. Waiting {delay:.1f} seconds before retry...")
-                    time.sleep(delay)
-                    continue
-                else:
-                    print("❌ Server error - maximum retries exceeded")
-                    raise Exception(f"Claude API server error after {max_retries} attempts: {e}")
-            
-            else:
-                # Unknown error - don't retry
-                print("❌ Unknown error - not retrying")
-                raise Exception(f"Claude API call failed: {e}")
+        return message.content[0].text
     
-    # This should never be reached, but just in case
-    raise Exception(f"Claude API call failed after {max_retries} attempts")
+    except Exception as e:
+        raise Exception(f"Claude API call failed: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description='AI Policy Processor - Generate JSON instructions with Claude Sonnet 4')
@@ -315,35 +243,19 @@ def main():
     skip_api = args.skip_api or skip_api_env in ['true', '1', 'yes', 'on']
     
     if skip_api:
-        # Look for existing JSON file - first check exact output path, then fallback to edits folder
-        json_file_to_use = None
-        
-        if Path(args.output).exists():
-            json_file_to_use = args.output
-            print("🔄 SKIP_API_CALL enabled - Using specified output JSON file")
-        else:
-            # Look for existing JSON files in edits folder
-            edits_dir = Path("edits")
-            if edits_dir.exists():
-                json_files = list(edits_dir.glob("*.json"))
-                if json_files:
-                    # Use the most recent JSON file or a specific one
-                    json_file_to_use = str(json_files[0])  # Use first available
-                    print("🔄 SKIP_API_CALL enabled - Using existing JSON file from edits folder")
-                    print(f"   Output file {args.output} doesn't exist, falling back to {json_file_to_use}")
-        
-        if not json_file_to_use:
-            print("❌ Error: --skip-api specified but no JSON file found!")
+        # Check if output file already exists
+        if not Path(args.output).exists():
+            print("❌ Error: --skip-api specified but output JSON file doesn't exist!")
             print(f"   Expected file: {args.output}")
-            print(f"   Or existing files in: edits/*.json")
             print("   Either run without --skip-api first, or provide an existing JSON file")
             sys.exit(1)
         
-        print(f"📁 Using existing file: {json_file_to_use}")
+        print("🔄 SKIP_API_CALL enabled - Using existing JSON file for testing/development")
+        print(f"📁 Using existing file: {args.output}")
         
         # Validate the existing JSON file
         try:
-            with open(json_file_to_use, 'r', encoding='utf-8') as f:
+            with open(args.output, 'r', encoding='utf-8') as f:
                 content = f.read()
             validate_json_content(content)
             
@@ -363,14 +275,6 @@ def main():
             print("\n📋 Operations Summary (from existing file):")
             for action, count in actions.items():
                 print(f"   {action}: {count} operations")
-            
-            # If using a fallback file, copy it to the expected output location
-            if json_file_to_use != args.output:
-                print(f"\n📋 Copying {json_file_to_use} to {args.output} for consistency...")
-                Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-                import shutil
-                shutil.copy2(json_file_to_use, args.output)
-                print(f"✅ Copied to {args.output}")
             
             print(f"\n💰 API call skipped - cost savings for testing/development!")
             return
