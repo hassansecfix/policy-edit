@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
+  const [showAutomationHighlight, setShowAutomationHighlight] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
   const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
@@ -124,12 +126,30 @@ export default function Dashboard() {
           setEditingQuestionnaire(false); // Exit editing mode
           const message = editingQuestionnaire
             ? '✅ Questionnaire updated successfully'
-            : '✅ Questionnaire completed successfully';
+            : '✅ Questionnaire completed successfully! Ready to start automation.';
           addLog({
             timestamp: formatTime(new Date()),
             message,
             level: 'success',
           });
+
+          // Auto-scroll to automation panel after a short delay for better UX
+          if (!editingQuestionnaire) {
+            setTimeout(() => {
+              const automationPanel = document.getElementById('automation-panel');
+              if (automationPanel) {
+                automationPanel.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+                // Add a subtle highlight effect
+                automationPanel.classList.add('highlight-automation');
+                setTimeout(() => {
+                  automationPanel.classList.remove('highlight-automation');
+                }, 3000);
+              }
+            }, 1000);
+          }
         } else {
           const error = await response.json();
           addLog({
@@ -230,15 +250,19 @@ export default function Dashboard() {
         <Header />
 
         {/* Questionnaire completion banner */}
-        <div className='mb-6 bg-green-50 border border-green-200 rounded-lg p-4'>
+        <div className='mb-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 shadow-sm'>
           <div className='flex items-center justify-between'>
             <div className='flex items-center'>
-              <div className='text-green-600 mr-3'>✅</div>
+              <div className='text-green-600 mr-4 text-2xl'>✅</div>
               <div>
-                <h3 className='text-green-900 font-medium'>Questionnaire Completed</h3>
-                <p className='text-green-700 text-sm'>
-                  Your responses have been saved. You can now start the policy automation.
+                <h3 className='text-green-900 font-semibold text-lg'>Questionnaire Completed Successfully!</h3>
+                <p className='text-green-700 text-sm mt-1'>
+                  Your responses have been saved. <strong>Next step:</strong> Click "Start Automation" below to generate your custom policy document.
                 </p>
+                <div className='flex items-center mt-2 text-blue-700 text-sm'>
+                  <span className='mr-2'>👇</span>
+                  <span className='font-medium'>Use the automation panel below to start processing</span>
+                </div>
               </div>
             </div>
             <button
@@ -253,12 +277,14 @@ export default function Dashboard() {
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Left Column - Control Panel & Progress */}
           <div className='lg:col-span-1 space-y-6'>
-            <ControlPanel
-              onStartAutomation={handleStartAutomation}
-              onStopAutomation={handleStopAutomation}
-              onClearLogs={handleClearLogs}
-              automationRunning={automationRunning}
-            />
+            <div id="automation-panel" className='automation-panel'>
+              <ControlPanel
+                onStartAutomation={handleStartAutomation}
+                onStopAutomation={handleStopAutomation}
+                onClearLogs={handleClearLogs}
+                automationRunning={automationRunning}
+              />
+            </div>
 
             <ProgressTracker progress={progress} />
 

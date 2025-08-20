@@ -161,8 +161,12 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
         <div className='text-green-600 text-2xl mb-4'>✅ Complete!</div>
         <p className='text-green-700 text-lg'>Thank you for completing the questionnaire.</p>
         <p className='text-green-600 mt-2'>
-          Your responses have been saved and the automation will now begin.
+          Your responses have been saved. Redirecting to automation panel...
         </p>
+        <div className='mt-4 flex items-center justify-center text-blue-600'>
+          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
+          <span className='text-sm'>Preparing automation controls</span>
+        </div>
       </div>
     );
   }

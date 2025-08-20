@@ -74,3 +74,30 @@ body {
 .animate-pulse-slow {
   animation: pulse 2s ease-in-out infinite;
 }
+
+/* Automation panel highlight effect */
+@keyframes highlightAutomation {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    transform: scale(1);
+  }
+}
+
+.automation-panel {
+  transition: all 0.3s ease-in-out;
+  border-radius: 0.5rem;
+}
+
+.automation-panel.highlight-automation {
+  animation: highlightAutomation 2s ease-in-out;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
+  border: 2px solid rgba(59, 130, 246, 0.3);
+}
