@@ -32,7 +32,7 @@ import subprocess
 from pathlib import Path
 
 # Configuration constants
-MAX_LOGO_SPACES_TO_REMOVE = 0  # Additional spaces to remove on top of replacement text length for logo positioning
+LOGO_SPACES_THRESHOLD = 20  # Additional spaces to remove on top of replacement text length for logo positioning
 
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
@@ -382,9 +382,6 @@ def main():
                 # DISABLE TRACKING COMPLETELY
                 doc.RecordChanges = False
                 
-                # Calculate dynamic space removal based on company name replacement length
-                dynamic_spaces_to_remove = MAX_LOGO_SPACES_TO_REMOVE  # Default fallback
-                
                 # Look for company name replacement to calculate dynamic spacing
                 for op in operations:
                     if (op.get('action') == 'replace' and 
@@ -395,12 +392,12 @@ def main():
                             target_length = len(target_text_op)
                             replacement_length = len(replacement_text)
                             length_difference = replacement_length - target_length
-                            dynamic_spaces_to_remove = length_difference + MAX_LOGO_SPACES_TO_REMOVE
+                            dynamic_spaces_to_remove = length_difference + LOGO_SPACES_THRESHOLD
                             print(f"📏 Found company name replacement:")
                             print(f"📏   Target: '{target_text_op}' ({target_length} chars)")
                             print(f"📏   Replacement: '{replacement_text}' ({replacement_length} chars)")
                             print(f"📏   Difference: {replacement_length} - {target_length} = {length_difference}")
-                            print(f"📏   Dynamic spaces to remove: {length_difference} + {MAX_LOGO_SPACES_TO_REMOVE} = {dynamic_spaces_to_remove}")
+                            print(f"📏   Dynamic spaces to remove: {length_difference} + {LOGO_SPACES_THRESHOLD} = {dynamic_spaces_to_remove}")
                             break
                 
                 for logo_op in logo_operations:
