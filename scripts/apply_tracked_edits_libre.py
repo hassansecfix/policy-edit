@@ -32,7 +32,7 @@ import subprocess
 from pathlib import Path
 
 # Configuration constants
-LOGO_SPACES_THRESHOLD = -20  # Additional spaces to remove on top of replacement text length for logo positioning
+LOGO_SPACES_THRESHOLD = -15  # Additional spaces to remove on top of replacement text length for logo positioning
 
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
