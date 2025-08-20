@@ -410,12 +410,12 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
           </li>
         </ul>
 
-        {serverAnswers && serverAnswers.exists && serverAnswers.isUserSpecific && (
-          <div className='mt-3 p-2 bg-blue-50 border border-blue-200 rounded'>
-            <p className='text-sm font-medium text-blue-800'>
-              🚀 <strong>Multi-User Ready:</strong> Your answers are saved to a unique timestamped
-              file ({serverAnswers.filePath?.split('/').pop()}). This allows multiple users to work
-              simultaneously without conflicts. The automation will use your specific file.
+        {serverAnswers && serverAnswers.exists && (
+          <div className='mt-3 p-2 bg-green-50 border border-green-200 rounded'>
+            <p className='text-sm font-medium text-green-800'>
+              ✨ <strong>Direct API Active:</strong> Your answers are processed directly via API -
+              no complex file storage needed! This is faster, more reliable, and works perfectly in
+              production environments. Multiple users can work simultaneously without conflicts.
             </p>
           </div>
         )}

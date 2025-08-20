@@ -47,6 +47,46 @@ def load_file_content(file_path):
         # Filter out base64 logo data to save API tokens
         lines = content.split('\n')
         filtered_lines = []
+    elif file_path.suffix.lower() == '.json':
+        # Read JSON questionnaire answers and convert to CSV-like format for AI processing
+        with open(file_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+        
+        # Convert JSON answers to CSV-like format for AI processing
+        csv_lines = ['Question Number;Question Text;field;Response Type;User Response']
+        
+        for field, answer_data in json_data.items():
+            if isinstance(answer_data, dict):
+                question_number = answer_data.get('questionNumber', 0)
+                question_text = answer_data.get('questionText', field)
+                response_type = answer_data.get('responseType', 'text')
+                value = answer_data.get('value', '')
+                
+                # Handle different value types
+                if isinstance(value, dict) and 'data' in value:
+                    # File upload - use filename or placeholder
+                    value = value.get('name', 'uploaded_file')
+                elif isinstance(value, (list, dict)):
+                    value = str(value)
+                
+                csv_line = f"{question_number};{question_text};{field};{response_type};{value}"
+                csv_lines.append(csv_line)
+        
+        content = '\n'.join(csv_lines)
+        print(f"📊 Converted {len(json_data)} JSON answers to CSV format for AI processing")
+        
+        # No need to filter base64 data from JSON (it's already structured)
+        return content
+    else:
+        # For other file types, read as text
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    
+    # Continue with CSV filtering logic
+    if file_path.suffix.lower() == '.csv':
+        # Filter out base64 logo data to save API tokens
+        lines = content.split('\n')
+        filtered_lines = []
         
         for line in lines:
             # Check if this line contains base64 logo data

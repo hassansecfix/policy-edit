@@ -47,19 +47,29 @@ export default function Dashboard() {
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
       try {
+        // Get questionnaire answers from localStorage
+        const savedAnswers = localStorage.getItem('questionnaireAnswers');
+        const questionnaireAnswers = savedAnswers ? JSON.parse(savedAnswers) : {};
+        
+        console.log('🚀 Starting automation with answers:', Object.keys(questionnaireAnswers).length, 'fields');
+        
         const response = await fetch(getApiUrl(API_CONFIG.endpoints.start), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ skip_api: skipApi }),
+          body: JSON.stringify({ 
+            skip_api: skipApi,
+            questionnaire_answers: questionnaireAnswers,
+            timestamp: Date.now()
+          }),
         });
 
         if (response.ok) {
           setAutomationRunning(true);
           addLog({
             timestamp: formatTime(new Date()),
-            message: '🚀 Automation started successfully',
+            message: `🚀 Automation started successfully with ${Object.keys(questionnaireAnswers).length} questionnaire answers`,
             level: 'success',
           });
         } else {

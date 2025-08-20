@@ -231,7 +231,7 @@ class AutomationRunner:
             'progress': (step / len(self.steps)) * 100
         })
         
-    def run_automation(self, skip_api=False):
+    def run_automation(self, skip_api=False, questionnaire_answers=None, timestamp=None):
         """Run the automation process"""
         try:
             self.running = True
@@ -246,8 +246,15 @@ class AutomationRunner:
             base_path = Path(__file__).parent.parent
             policy_file = os.environ.get('POLICY_FILE', 'data/v5 Freya POL-11 Access Control.docx')
             
-            # Find the latest questionnaire file
-            questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
+            # Use direct answers if provided, otherwise fall back to file-based approach
+            if questionnaire_answers:
+                self.emit_log(f"📊 Using direct questionnaire answers ({len(questionnaire_answers)} fields)", "success")
+                questionnaire_file = None  # No file needed
+                questionnaire_path = None
+                questionnaire_source = "direct_api"
+            else:
+                # Fallback to file-based approach
+                questionnaire_file, questionnaire_path, questionnaire_source = find_latest_questionnaire_file(base_path)
             
             if questionnaire_source == "user_timestamped":
                 self.emit_log("📊 Using user-provided timestamped questionnaire responses", "success")
@@ -265,12 +272,19 @@ class AutomationRunner:
                 self.update_progress(1, "error")
                 return False
                 
-            if not questionnaire_file or not questionnaire_path or not questionnaire_path.exists():
-                self.emit_log(f"❌ Questionnaire file not found: {questionnaire_file or 'No file detected'}", "error")
-                self.update_progress(1, "error")
-                return False
-                
-            self.emit_log("✅ All required files found", "success")
+            # Validate questionnaire source (either direct answers or file)
+            if questionnaire_source == "direct_api":
+                if not questionnaire_answers or len(questionnaire_answers) == 0:
+                    self.emit_log("❌ No questionnaire answers provided via API", "error")
+                    self.update_progress(1, "error")
+                    return False
+                self.emit_log("✅ Policy file and direct answers ready", "success")
+            else:
+                if not questionnaire_file or not questionnaire_path or not questionnaire_path.exists():
+                    self.emit_log(f"❌ Questionnaire file not found: {questionnaire_file or 'No file detected'}", "error")
+                    self.update_progress(1, "error")
+                    return False
+                self.emit_log("✅ All required files found", "success")
             self.update_progress(1, "completed")
             
             # Step 2: Build command
@@ -287,10 +301,26 @@ class AutomationRunner:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
             
-            # Pass the specific questionnaire file to the automation script
-            env['QUESTIONNAIRE_FILE'] = questionnaire_file
-            self.emit_log(f"📋 Questionnaire file: {questionnaire_file}", "info")
-            self.emit_log(f"📂 File source: {questionnaire_source}", "info")
+            # Pass questionnaire data to the automation script
+            if questionnaire_source == "direct_api":
+                # Create a temporary JSON file with the answers for the automation script
+                import tempfile
+                import json
+                
+                temp_answers_file = os.path.join(tempfile.gettempdir(), f"questionnaire_answers_{timestamp}.json")
+                with open(temp_answers_file, 'w', encoding='utf-8') as f:
+                    json.dump(questionnaire_answers, f, indent=2)
+                
+                env['QUESTIONNAIRE_ANSWERS_JSON'] = temp_answers_file
+                env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+                self.emit_log(f"📊 Direct answers saved to: {temp_answers_file}", "info")
+                self.emit_log(f"📂 Source: Direct API ({len(questionnaire_answers)} fields)", "info")
+            else:
+                # Use file-based approach
+                env['QUESTIONNAIRE_FILE'] = questionnaire_file
+                env['QUESTIONNAIRE_SOURCE'] = 'file'
+                self.emit_log(f"📋 Questionnaire file: {questionnaire_file}", "info")
+                self.emit_log(f"📂 File source: {questionnaire_source}", "info")
                 
             self.update_progress(2, "completed")
             
@@ -572,15 +602,16 @@ def get_status():
     
     response = jsonify({
         'policy_exists': policy_path.exists(),
-        'questionnaire_exists': questionnaire_path is not None and questionnaire_path.exists(),
+        'questionnaire_exists': True,  # Always true now - we use direct API or files
         'api_key_configured': bool(api_key) or skip_api,
         'skip_api': skip_api,
         'automation_running': runner.running,
         'policy_file': policy_file,
-        'questionnaire_file': questionnaire_file or 'No questionnaire file found',
+        'questionnaire_file': questionnaire_file or 'Direct API (no file needed)',
         'questionnaire_source': questionnaire_source,
         'user_questionnaire_available': user_questionnaire_available,
         'user_timestamped_files': len(user_files),
+        'supports_direct_api': True,
         'env_vars_debug': env_vars_debug
     })
     
@@ -599,13 +630,22 @@ def start_automation():
         
     data = request.get_json() or {}
     skip_api = data.get('skip_api', False)
+    questionnaire_answers = data.get('questionnaire_answers', {})
+    timestamp = data.get('timestamp', int(time.time() * 1000))
     
-    # Start automation in a separate thread
-    runner.thread = threading.Thread(target=runner.run_automation, args=(skip_api,))
+    print(f"🚀 Starting automation with {len(questionnaire_answers)} questionnaire answers")
+    print(f"📊 Answer fields: {list(questionnaire_answers.keys())}")
+    
+    # Start automation in a separate thread with answers
+    runner.thread = threading.Thread(target=runner.run_automation, args=(skip_api, questionnaire_answers, timestamp))
     runner.thread.daemon = True
     runner.thread.start()
     
-    return jsonify({'message': 'Automation started'})
+    return jsonify({
+        'message': 'Automation started',
+        'answerCount': len(questionnaire_answers),
+        'timestamp': timestamp
+    })
 
 @app.route('/api/stop', methods=['POST'])
 def stop_automation():

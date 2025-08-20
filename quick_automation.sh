@@ -42,8 +42,12 @@ echo ""
 # Load shared configuration (single source of truth)
 source "$(dirname "$0")/config.sh"
 
-# Smart questionnaire file detection
-if [[ -n "$QUESTIONNAIRE_FILE" ]]; then
+# Smart questionnaire data detection (JSON API or CSV files)
+if [[ "$QUESTIONNAIRE_SOURCE" == "direct_api" && -n "$QUESTIONNAIRE_ANSWERS_JSON" ]]; then
+    # Use direct API answers (JSON file)
+    echo "📊 Using direct API questionnaire answers: $QUESTIONNAIRE_ANSWERS_JSON"
+    QUESTIONNAIRE_FILE="$QUESTIONNAIRE_ANSWERS_JSON"
+elif [[ -n "$QUESTIONNAIRE_FILE" ]]; then
     # Use the file specified by the environment (from Flask app)
     echo "📊 Using questionnaire file from environment: $QUESTIONNAIRE_FILE"
 elif [[ -f "/tmp/user_questionnaire_responses.csv" ]]; then
@@ -98,6 +102,9 @@ fi
 # Generate unique user ID for multi-user isolation
 USER_ID="${USER_ID:-$(date +%s)-$$}"
 echo "🔑 User ID: $USER_ID (for multi-user isolation)"
+
+# Pass questionnaire source to Python script
+export QUESTIONNAIRE_SOURCE="${QUESTIONNAIRE_SOURCE:-file}"
 
 eval "python3 scripts/complete_automation.py \
   --policy \"$POLICY_FILE\" \
