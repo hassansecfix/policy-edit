@@ -255,12 +255,19 @@ export async function POST(request: NextRequest) {
           }
         }, 100);
       } catch (writeError) {
+        // Type assertion for Node.js filesystem errors which have these properties
+        const fsError = writeError as Error & {
+          code?: string;
+          errno?: number;
+          syscall?: string;
+        };
+        
         console.error(`❌ Failed to write ${fileInfo.type} file:`, {
           path: fileInfo.path,
           error: writeError instanceof Error ? writeError.message : String(writeError),
-          code: (writeError as any)?.code,
-          errno: (writeError as any)?.errno,
-          syscall: (writeError as any)?.syscall,
+          code: fsError.code,
+          errno: fsError.errno,
+          syscall: fsError.syscall,
         });
       }
     }
