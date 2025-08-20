@@ -107,9 +107,27 @@ def commit_and_push_json(edits_json, logo_file=None):
         remote_check = subprocess.run(['git', 'remote', 'get-url', 'origin'], 
                                     capture_output=True, text=True)
         if remote_check.returncode != 0:
-            return False, "Git remote 'origin' not configured. Run: git remote add origin <your-repo-url>"
+            # Try to auto-configure remote using environment variables
+            repo_owner = os.environ.get('GITHUB_REPO_OWNER')
+            repo_name = os.environ.get('GITHUB_REPO_NAME')
+            
+            if repo_owner and repo_name:
+                repo_url = f"https://github.com/{repo_owner}/{repo_name}.git"
+                print(f"🔧 Auto-configuring git remote: {repo_url}")
+                
+                # Add the remote
+                add_remote_result = subprocess.run(['git', 'remote', 'add', 'origin', repo_url], 
+                                                 capture_output=True, text=True)
+                if add_remote_result.returncode != 0:
+                    return False, f"Failed to add git remote: {add_remote_result.stderr}"
+                
+                print(f"✅ Git remote 'origin' configured automatically")
+                remote_url = repo_url
+            else:
+                return False, "Git remote 'origin' not configured and GITHUB_REPO_OWNER/GITHUB_REPO_NAME not set"
+        else:
+            remote_url = remote_check.stdout.strip()
         
-        remote_url = remote_check.stdout.strip()
         print(f"🔗 Git remote URL: {remote_url}")
         
         # Set up authentication for production environments
