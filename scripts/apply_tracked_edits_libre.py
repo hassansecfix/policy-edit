@@ -459,7 +459,31 @@ def main():
                                 replaced_count = 0
                                 while found_range:
                                     try:
-                                        # Clear the text first
+                                        # First, remove 20 spaces before the placeholder
+                                        cursor = found_range.getText().createTextCursorByRange(found_range)
+                                        cursor.collapseToStart()
+                                        
+                                        # Remove spaces before the placeholder
+                                        spaces_removed = 0
+                                        for i in range(20):
+                                            # Create a temp cursor to check one character back
+                                            temp_cursor = found_range.getText().createTextCursorByRange(cursor)
+                                            if temp_cursor.goLeft(1, True):
+                                                char = temp_cursor.getString()
+                                                if char == ' ':
+                                                    # Remove this space
+                                                    temp_cursor.setString("")
+                                                    spaces_removed += 1
+                                                else:
+                                                    # Not a space, stop
+                                                    break
+                                            else:
+                                                # Can't go left anymore
+                                                break
+                                        
+                                        print(f"🧹 Removed {spaces_removed} spaces before placeholder")
+                                        
+                                        # Clear the placeholder text
                                         found_range.setString("")
                                         
                                         # Create and insert graphic
@@ -505,52 +529,8 @@ def main():
                                                 except:
                                                     print(f"⚠️  All sizing methods failed - using default size")
                                         
-                                        # Insert the graphic first
+                                        # Insert the graphic
                                         found_range.getText().insertTextContent(found_range, graphic, False)
-                                        
-                                        # Now remove 20 spaces before the logo using a fresh search
-                                        try:
-                                            # Find where the graphic was inserted by searching for it
-                                            graphic_search = doc.createSearchDescriptor()
-                                            graphic_search.SearchString = ".*"  # Search for any content
-                                            graphic_search.setPropertyValue("RegularExpressions", True)
-                                            
-                                            # Get current position after graphic insertion
-                                            text = found_range.getText()
-                                            cursor = text.createTextCursor()
-                                            cursor.gotoRange(found_range.getStart(), False)
-                                            
-                                            # Move cursor to just before the inserted graphic
-                                            cursor.collapseToStart()
-                                            
-                                            # Select and remove up to 20 spaces going backwards
-                                            spaces_removed = 0
-                                            for i in range(20):
-                                                # Try to move left and select one character
-                                                temp_cursor = text.createTextCursorByRange(cursor)
-                                                if temp_cursor.goLeft(1, True):
-                                                    selected_char = temp_cursor.getString()
-                                                    if selected_char == ' ':
-                                                        # This is a space, actually remove it
-                                                        temp_cursor.setString("")
-                                                        spaces_removed += 1
-                                                        # Update our cursor position
-                                                        cursor.gotoRange(temp_cursor.getStart(), False)
-                                                    else:
-                                                        # Hit non-space, stop
-                                                        break
-                                                else:
-                                                    # Can't move left anymore
-                                                    break
-                                            
-                                            if spaces_removed > 0:
-                                                print(f"✅ Removed {spaces_removed} spaces before logo")
-                                            else:
-                                                print(f"ℹ️  No spaces found before logo to remove")
-                                                
-                                        except Exception as e:
-                                            print(f"⚠️  Could not remove spaces: {e}")
-                                        
                                         replaced_count += 1
                                         print(f"✅ User's logo inserted successfully!")
                                         
