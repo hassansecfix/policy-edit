@@ -287,9 +287,10 @@ class AutomationRunner:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
             
-            # Pass the questionnaire file to the automation script
+            # Pass the specific questionnaire file to the automation script
             env['QUESTIONNAIRE_FILE'] = questionnaire_file
             self.emit_log(f"📋 Questionnaire file: {questionnaire_file}", "info")
+            self.emit_log(f"📂 File source: {questionnaire_source}", "info")
                 
             self.update_progress(2, "completed")
             

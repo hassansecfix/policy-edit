@@ -152,11 +152,12 @@ export async function POST(request: NextRequest) {
     const originalDataDir = path.dirname(questionsPath);
 
     // In serverless environments, /var/task is read-only, so use /tmp for writing
-    const isServerless =
-      process.cwd().includes('/var/task') || process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
+    const isRender = process.cwd().includes('/var/task') || process.env.RENDER;
+    const isServerless = isRender || process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
     const writableDir = isServerless ? '/tmp' : originalDataDir;
 
     console.log('🌐 Environment check:', {
+      isRender: isRender,
       isServerless: isServerless,
       originalDataDir: originalDataDir,
       writableDir: writableDir,
@@ -210,10 +211,10 @@ export async function POST(request: NextRequest) {
     let writeSuccess = false;
     let actualFilePath = '';
 
-    // Try to write to both main file and user-specific file
+    // ALWAYS try to write to main file first (for automation compatibility), then timestamped backup
     const filesToTry = [
-      { path: answersPath, type: 'main' },
-      { path: userSpecificPath, type: 'user-specific' },
+      { path: answersPath, type: 'main', required: true },
+      { path: userSpecificPath, type: 'timestamped-backup', required: false },
     ];
 
     for (const fileInfo of filesToTry) {
@@ -249,8 +250,16 @@ export async function POST(request: NextRequest) {
           // Verify content matches what we wrote
           if (savedContent === csvContent) {
             console.log(`✅ ${fileInfo.type} file content matches exactly`);
-            writeSuccess = true;
-            actualFilePath = fileInfo.path;
+
+            // For main file, this is our primary success
+            if (fileInfo.type === 'main') {
+              writeSuccess = true;
+              actualFilePath = fileInfo.path;
+            }
+            // For backup files, just log success but don't change primary status
+            else {
+              console.log(`✅ ${fileInfo.type} file written as backup`);
+            }
           } else {
             console.log(`⚠️ ${fileInfo.type} file content differs from what we wrote`);
             console.log(
@@ -294,6 +303,21 @@ export async function POST(request: NextRequest) {
           errno: fsError.errno,
           syscall: fsError.syscall,
         });
+
+        // If main file fails, this is a critical error
+        if (fileInfo.type === 'main') {
+          return NextResponse.json(
+            {
+              error: 'Failed to write main answers file',
+              details: writeError instanceof Error ? writeError.message : String(writeError),
+              path: fileInfo.path,
+              isRender: isRender,
+              isServerless: isServerless,
+            },
+            { status: 500 },
+          );
+        }
+        // If backup file fails, continue (not critical)
       }
     }
 

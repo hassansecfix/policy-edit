@@ -402,6 +402,16 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
             • <strong>Both panels empty</strong>: Questions not submitted yet
           </li>
         </ul>
+
+        {serverAnswers && serverAnswers.exists && serverAnswers.isUserSpecific && (
+          <div className='mt-3 p-2 bg-blue-50 border border-blue-200 rounded'>
+            <p className='text-sm font-medium text-blue-800'>
+              🚀 <strong>Multi-User Ready:</strong> Your answers are saved to a unique timestamped
+              file ({serverAnswers.filePath?.split('/').pop()}). This allows multiple users to work
+              simultaneously without conflicts. The automation will use your specific file.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

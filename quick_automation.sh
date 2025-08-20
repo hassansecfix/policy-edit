@@ -42,13 +42,30 @@ echo ""
 # Load shared configuration (single source of truth)
 source "$(dirname "$0")/config.sh"
 
-# Prioritize user questionnaire file if it exists
-if [[ -f "data/user_questionnaire_responses.csv" ]]; then
+# Smart questionnaire file detection
+if [[ -n "$QUESTIONNAIRE_FILE" ]]; then
+    # Use the file specified by the environment (from Flask app)
+    echo "📊 Using questionnaire file from environment: $QUESTIONNAIRE_FILE"
+elif [[ -f "/tmp/user_questionnaire_responses.csv" ]]; then
+    # Check for main file in /tmp (serverless environments)
+    QUESTIONNAIRE_FILE="/tmp/user_questionnaire_responses.csv"
+    echo "📊 Using main questionnaire file from /tmp"
+elif [[ $(ls /tmp/user_questionnaire_responses_*.csv 2>/dev/null | wc -l) -gt 0 ]]; then
+    # Find the most recent timestamped file in /tmp
+    QUESTIONNAIRE_FILE=$(ls -t /tmp/user_questionnaire_responses_*.csv 2>/dev/null | head -1)
+    echo "📊 Using latest timestamped questionnaire file: $QUESTIONNAIRE_FILE"
+elif [[ -f "data/user_questionnaire_responses.csv" ]]; then
+    # Fallback to main file in data directory
     QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
-    echo "📊 Using user-provided questionnaire responses"
+    echo "📊 Using main user questionnaire file"
+elif [[ $(ls data/user_questionnaire_responses_*.csv 2>/dev/null | wc -l) -gt 0 ]]; then
+    # Find the most recent timestamped file in data directory
+    QUESTIONNAIRE_FILE=$(ls -t data/user_questionnaire_responses_*.csv 2>/dev/null | head -1)
+    echo "📊 Using latest timestamped questionnaire file: $QUESTIONNAIRE_FILE"
 else
+    # Use default questionnaire file
     QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
-    echo "📊 Using default questionnaire responses"
+    echo "📊 Using default questionnaire responses: $QUESTIONNAIRE_FILE"
 fi
 
 # Configuration (single source of truth) - use env vars with fallbacks
