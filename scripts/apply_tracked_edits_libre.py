@@ -450,99 +450,70 @@ def main():
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
                                 # DIRECT REPLACEMENT WITHOUT TRACKING
-                                # First, use a simple replace to put a temporary marker
-                                import uuid
-                                temp_marker = f"__LOGO_TEMP_{uuid.uuid4().hex[:8]}__"
+                                search_desc = doc.createSearchDescriptor()
+                                search_desc.SearchString = target_text
+                                search_desc.SearchCaseSensitive = False
+                                search_desc.SearchWords = False
                                 
-                                # Replace the target text with temporary marker
-                                rd = doc.createReplaceDescriptor()
-                                rd.SearchString = target_text
-                                rd.ReplaceString = temp_marker
-                                rd.SearchCaseSensitive = False
-                                rd.SearchWords = False
-                                
-                                replaced_count = doc.replaceAll(rd)
-                                print(f"🔄 Replaced {replaced_count} placeholder(s) with temporary marker")
-                                
-                                if replaced_count > 0:
-                                    # Now find the temporary marker and replace with logo, removing preceding spaces
-                                    search_desc = doc.createSearchDescriptor()
-                                    search_desc.SearchString = temp_marker
-                                    search_desc.SearchCaseSensitive = True
-                                    search_desc.SearchWords = False
-                                    
-                                    found_range = doc.findFirst(search_desc)
-                                    logo_inserted = 0
-                                    
-                                    while found_range:
-                                        try:
-                                            # Create cursor and expand backwards to include spaces
-                                            cursor = found_range.getText().createTextCursorByRange(found_range)
-                                            cursor.collapseToStart()
-                                            
-                                            # Count and select preceding spaces/tabs up to the length of original text
-                                            spaces_selected = 0
-                                            max_spaces = len(target_text)
-                                            
-                                            # Move cursor left to select preceding spaces
-                                            start_pos = cursor.getStart()
-                                            while spaces_selected < max_spaces:
-                                                if cursor.goLeft(1, True):
-                                                    selected_text = cursor.getString()
-                                                    last_char = selected_text[-1:] if selected_text else ''
-                                                    if last_char in [' ', '\t']:
-                                                        spaces_selected += 1
-                                                    else:
-                                                        # Hit non-space, move back one
-                                                        cursor.goRight(1, False)
-                                                        spaces_selected -= 1
-                                                        break
-                                                else:
-                                                    break
-                                            
-                                            # Extend selection to include the temp marker
-                                            cursor.gotoRange(found_range.getEnd(), True)
-                                            
-                                            # Clear the selected content (spaces + temp marker)
-                                            cursor.setString("")
-                                            
-                                            # Create and configure the logo graphic
-                                            graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                            logo_file_url = to_url(actual_logo_path)
-                                            graphic.setPropertyValue("GraphicURL", logo_file_url)
-                                            
-                                            # Set anchor type
-                                            try:
-                                                from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
-                                                graphic.setPropertyValue("AnchorType", AS_CHARACTER)
-                                            except:
-                                                pass
-                                            
-                                            # Set size - LibreOffice uses 1/100mm units
-                                            try:
-                                                width_100mm = 35 * 100  # 35mm
-                                                height_100mm = 10 * 100  # 10mm
-                                                graphic.setPropertyValue("Width", width_100mm)
-                                                graphic.setPropertyValue("Height", height_100mm)
-                                                graphic.setPropertyValue("SizeType", 1)
-                                                graphic.setPropertyValue("RelativeWidth", 0)
-                                                graphic.setPropertyValue("KeepRatio", False)
-                                                print(f"📏 Set logo size to 35mm width x 10mm height")
-                                            except Exception as e:
-                                                print(f"⚠️  Using default logo size: {e}")
-                                            
-                                            # Insert the graphic
-                                            cursor.getText().insertTextContent(cursor, graphic, False)
-                                            logo_inserted += 1
-                                            print(f"✅ Logo inserted! Removed {spaces_selected} spaces before placeholder")
-                                            
-                                        except Exception as e:
-                                            print(f"❌ Failed to insert logo: {e}")
+                                found_range = doc.findFirst(search_desc)
+                                replaced_count = 0
+                                while found_range:
+                                    try:
+                                        # Clear the text first
+                                        found_range.setString("")
                                         
-                                        # Find next occurrence
-                                        found_range = doc.findNext(found_range, search_desc)
+                                        # Create and insert graphic
+                                        graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                        logo_file_url = to_url(actual_logo_path)
+                                        graphic.setPropertyValue("GraphicURL", logo_file_url)
+                                        
+                                        # Set anchor type to ensure proper positioning
+                                        try:
+                                            from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                            graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                        except:
+                                            pass
+                                        
+                                        # Set size properly - LibreOffice uses 1/100mm units
+                                        try:
+                                            # Default to 35mm width, even smaller height for header
+                                            width_100mm = 35 * 100  # 35mm = 3500 units
+                                            height_100mm = 10 * 100  # 10mm = 1000 units
+                                            graphic.setPropertyValue("Width", width_100mm)
+                                            graphic.setPropertyValue("Height", height_100mm)
+                                            graphic.setPropertyValue("SizeType", 1)  # Fixed size
+                                            graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
+                                            graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
+                                            print(f"📏 Set logo size to 35mm width x 10mm height")
+                                        except Exception as e:
+                                            print(f"⚠️  Could not set logo size: {e}")
+                                            # Fallback: try different size approaches
+                                            try:
+                                                graphic.setPropertyValue("Width", 3500)  # 35mm
+                                                graphic.setPropertyValue("Height", 1000)  # 10mm
+                                                print(f"📏 Fallback: Set logo to 35x10mm")
+                                            except Exception as e2:
+                                                print(f"⚠️  Fallback sizing also failed: {e2}")
+                                                # Last resort: try with Size property
+                                                try:
+                                                    from com.sun.star.awt import Size
+                                                    size = Size()
+                                                    size.Width = 3500  # 35mm
+                                                    size.Height = 1000  # 10mm 
+                                                    graphic.setPropertyValue("Size", size)
+                                                    print(f"📏 Last resort: Set size to 35x10mm using Size object")
+                                                except:
+                                                    print(f"⚠️  All sizing methods failed - using default size")
+                                        
+                                        # Insert the graphic
+                                        found_range.getText().insertTextContent(found_range, graphic, False)
+                                        replaced_count += 1
+                                        print(f"✅ User's logo inserted successfully!")
+                                        
+                                    except Exception as e:
+                                        print(f"❌ Failed to insert user's logo: {e}")
                                     
-                                    replaced_count = logo_inserted
+                                    found_range = doc.findNext(found_range, search_desc)
                                 
                                 # Clean up temporary file if created
                                 if temp_file_to_cleanup:
