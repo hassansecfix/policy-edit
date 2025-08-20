@@ -53,6 +53,15 @@ show_config
 build_logo_args
 build_github_arg
 
+# Check for user uploaded company logo
+LOGO_ARGS=""
+if [[ -f "data/company_logo.png" ]]; then
+    LOGO_ARGS=" --logo data/company_logo.png"
+    echo "🖼️  Found user uploaded logo: data/company_logo.png"
+else
+    echo "📷 No user logo found - will use original logo from policy document"
+fi
+
 # Check for skip API configuration
 SKIP_API_ARG=""
 if [[ "${SKIP_API_CALL}" == "true" ]] || [[ "${SKIP_API_CALL}" == "TRUE" ]] || [[ "${SKIP_API_CALL}" == "True" ]]; then
