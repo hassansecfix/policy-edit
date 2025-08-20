@@ -449,103 +449,83 @@ def main():
                                 print(f"✅ Logo converted from base64 ({len(logo_binary)} bytes)")
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
-                                # DIRECT REPLACEMENT WITHOUT TRACKING
-                                search_desc = doc.createSearchDescriptor()
-                                search_desc.SearchString = target_text
-                                search_desc.SearchCaseSensitive = False
-                                search_desc.SearchWords = False
+                                # DIRECT REPLACEMENT WITHOUT TRACKING using regex to remove spaces + placeholder
+                                print(f"🔄 Using regex to remove up to 20 spaces before '{target_text}'")
                                 
-                                found_range = doc.findFirst(search_desc)
-                                replaced_count = 0
-                                while found_range:
-                                    try:
-                                        # Check tracking status
-                                        tracking_status = doc.RecordChanges
-                                        print(f"🔍 Tracking status during logo processing: {tracking_status}")
-                                        
-                                        # First, remove 20 spaces before the placeholder
-                                        cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        cursor.collapseToStart()
-                                        
-                                        # Remove spaces before the placeholder
-                                        spaces_removed = 0
-                                        for i in range(20):
-                                            # Create a temp cursor to check one character back
-                                            temp_cursor = found_range.getText().createTextCursorByRange(cursor)
-                                            if temp_cursor.goLeft(1, True):
-                                                char = temp_cursor.getString()
-                                                print(f"🔍 Character {i}: '{char}' (ord: {ord(char) if char else 'None'})")
-                                                if char == ' ':
-                                                    # Remove this space
-                                                    temp_cursor.setString("")
-                                                    spaces_removed += 1
-                                                    print(f"🧹 Removed space #{spaces_removed}")
-                                                else:
-                                                    # Not a space, stop
-                                                    print(f"🛑 Hit non-space character: '{char}', stopping")
-                                                    break
-                                            else:
-                                                # Can't go left anymore
-                                                print(f"🛑 Can't move left anymore")
-                                                break
-                                        
-                                        print(f"🧹 Total removed {spaces_removed} spaces before placeholder")
-                                        
-                                        # Clear the placeholder text
-                                        found_range.setString("")
-                                        
-                                        # Create and insert graphic
-                                        graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                        logo_file_url = to_url(actual_logo_path)
-                                        graphic.setPropertyValue("GraphicURL", logo_file_url)
-                                        
-                                        # Set anchor type to ensure proper positioning
+                                # Use regex to find up to 20 spaces followed by the target text
+                                import re
+                                escaped_target = re.escape(target_text)
+                                # Pattern: up to 20 spaces followed by the target text
+                                regex_pattern = f" {{0,20}}{escaped_target}"
+                                
+                                rd = doc.createReplaceDescriptor()
+                                rd.SearchString = regex_pattern
+                                rd.ReplaceString = "__LOGO_PLACEHOLDER__"  # Temporary replacement
+                                rd.SearchCaseSensitive = False
+                                rd.SearchWords = False
+                                # Enable regex
+                                try:
+                                    rd.setPropertyValue("RegularExpressions", True)
+                                    print(f"🔍 Using regex pattern: '{regex_pattern}'")
+                                except Exception as e:
+                                    print(f"⚠️  Could not enable regex: {e}")
+                                    # Fallback to simple replacement
+                                    rd.SearchString = target_text
+                                    rd.ReplaceString = "__LOGO_PLACEHOLDER__"
+                                
+                                # Replace with temporary placeholder
+                                replaced_count = doc.replaceAll(rd)
+                                print(f"🔄 Replaced {replaced_count} instances with temp placeholder")
+                                
+                                if replaced_count > 0:
+                                    # Now find and replace the temp placeholder with actual logo
+                                    search_desc = doc.createSearchDescriptor()
+                                    search_desc.SearchString = "__LOGO_PLACEHOLDER__"
+                                    search_desc.SearchCaseSensitive = True
+                                    search_desc.SearchWords = False
+                                    
+                                    found_range = doc.findFirst(search_desc)
+                                    logo_count = 0
+                                    
+                                    while found_range:
                                         try:
-                                            from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
-                                            graphic.setPropertyValue("AnchorType", AS_CHARACTER)
-                                        except:
-                                            pass
-                                        
-                                        # Set size properly - LibreOffice uses 1/100mm units
-                                        try:
-                                            # Default to 35mm width, even smaller height for header
-                                            width_100mm = 35 * 100  # 35mm = 3500 units
-                                            height_100mm = 10 * 100  # 10mm = 1000 units
-                                            graphic.setPropertyValue("Width", width_100mm)
-                                            graphic.setPropertyValue("Height", height_100mm)
-                                            graphic.setPropertyValue("SizeType", 1)  # Fixed size
-                                            graphic.setPropertyValue("RelativeWidth", 0)  # Disable relative sizing
-                                            graphic.setPropertyValue("KeepRatio", False)  # Allow custom aspect ratio for smaller height
-                                            print(f"📏 Set logo size to 35mm width x 10mm height")
-                                        except Exception as e:
-                                            print(f"⚠️  Could not set logo size: {e}")
-                                            # Fallback: try different size approaches
+                                            # Clear the temp placeholder
+                                            found_range.setString("")
+                                            
+                                            # Create and insert graphic
+                                            graphic = doc.createInstance("com.sun.star.text.GraphicObject")
+                                            logo_file_url = to_url(actual_logo_path)
+                                            graphic.setPropertyValue("GraphicURL", logo_file_url)
+                                            
+                                            # Set anchor type
+                                            try:
+                                                from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                                                graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                                            except:
+                                                pass
+                                            
+                                            # Set size - 35mm x 10mm
                                             try:
                                                 graphic.setPropertyValue("Width", 3500)  # 35mm
                                                 graphic.setPropertyValue("Height", 1000)  # 10mm
-                                                print(f"📏 Fallback: Set logo to 35x10mm")
-                                            except Exception as e2:
-                                                print(f"⚠️  Fallback sizing also failed: {e2}")
-                                                # Last resort: try with Size property
-                                                try:
-                                                    from com.sun.star.awt import Size
-                                                    size = Size()
-                                                    size.Width = 3500  # 35mm
-                                                    size.Height = 1000  # 10mm 
-                                                    graphic.setPropertyValue("Size", size)
-                                                    print(f"📏 Last resort: Set size to 35x10mm using Size object")
-                                                except:
-                                                    print(f"⚠️  All sizing methods failed - using default size")
+                                                graphic.setPropertyValue("SizeType", 1)
+                                                graphic.setPropertyValue("RelativeWidth", 0)
+                                                graphic.setPropertyValue("KeepRatio", False)
+                                                print(f"📏 Set logo size to 35mm x 10mm")
+                                            except Exception as e:
+                                                print(f"⚠️  Using default logo size: {e}")
+                                            
+                                            # Insert the graphic
+                                            found_range.getText().insertTextContent(found_range, graphic, False)
+                                            logo_count += 1
+                                            print(f"✅ Logo #{logo_count} inserted successfully!")
+                                            
+                                        except Exception as e:
+                                            print(f"❌ Failed to insert logo: {e}")
                                         
-                                        # Insert the graphic
-                                        found_range.getText().insertTextContent(found_range, graphic, False)
-                                        replaced_count += 1
-                                        print(f"✅ User's logo inserted successfully!")
-                                        
-                                    except Exception as e:
-                                        print(f"❌ Failed to insert user's logo: {e}")
+                                        found_range = doc.findNext(found_range, search_desc)
                                     
-                                    found_range = doc.findNext(found_range, search_desc)
+                                    replaced_count = logo_count
                                 
                                 # Clean up temporary file if created
                                 if temp_file_to_cleanup:
