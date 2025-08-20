@@ -505,31 +505,49 @@ def main():
                                                 except:
                                                     print(f"⚠️  All sizing methods failed - using default size")
                                         
-                                        # Insert the graphic
+                                        # Insert the graphic first
                                         found_range.getText().insertTextContent(found_range, graphic, False)
                                         
-                                        # Now remove 20 spaces before the logo
+                                        # Now remove 20 spaces before the logo using a fresh search
                                         try:
-                                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                                            # Find where the graphic was inserted by searching for it
+                                            graphic_search = doc.createSearchDescriptor()
+                                            graphic_search.SearchString = ".*"  # Search for any content
+                                            graphic_search.setPropertyValue("RegularExpressions", True)
+                                            
+                                            # Get current position after graphic insertion
+                                            text = found_range.getText()
+                                            cursor = text.createTextCursor()
+                                            cursor.gotoRange(found_range.getStart(), False)
+                                            
+                                            # Move cursor to just before the inserted graphic
                                             cursor.collapseToStart()
                                             
-                                            # Move left and select up to 20 spaces
+                                            # Select and remove up to 20 spaces going backwards
                                             spaces_removed = 0
                                             for i in range(20):
-                                                if cursor.goLeft(1, True):
-                                                    char = cursor.getString()[-1:]
-                                                    if char == ' ':
+                                                # Try to move left and select one character
+                                                temp_cursor = text.createTextCursorByRange(cursor)
+                                                if temp_cursor.goLeft(1, True):
+                                                    selected_char = temp_cursor.getString()
+                                                    if selected_char == ' ':
+                                                        # This is a space, actually remove it
+                                                        temp_cursor.setString("")
                                                         spaces_removed += 1
+                                                        # Update our cursor position
+                                                        cursor.gotoRange(temp_cursor.getStart(), False)
                                                     else:
-                                                        cursor.goRight(1, False)  # Move back if not space
+                                                        # Hit non-space, stop
                                                         break
                                                 else:
+                                                    # Can't move left anymore
                                                     break
                                             
-                                            # Remove the selected spaces
                                             if spaces_removed > 0:
-                                                cursor.setString("")
                                                 print(f"✅ Removed {spaces_removed} spaces before logo")
+                                            else:
+                                                print(f"ℹ️  No spaces found before logo to remove")
+                                                
                                         except Exception as e:
                                             print(f"⚠️  Could not remove spaces: {e}")
                                         
