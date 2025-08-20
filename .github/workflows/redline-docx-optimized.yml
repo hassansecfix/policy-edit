@@ -44,7 +44,7 @@ jobs:
           else
             echo "LibreOffice found in cache, skipping installation"
           fi
-          
+
       # OPTIMIZATION 3: Simplified Python UNO setup
       - name: Setup Python UNO (Fast)
         id: lo_py
@@ -74,24 +74,24 @@ jobs:
           DISPLAY: :99
         run: |
           mkdir -p build
-          
+
           # OPTIMIZATION: Start services in parallel
           (sudo apt-get install -y --no-install-recommends xvfb > /dev/null 2>&1 &)
-          
+
           # Kill existing processes quickly
           sudo pkill -f soffice || true
-          
+
           # Start virtual display (faster setup)
           Xvfb :99 -screen 0 800x600x16 > /dev/null 2>&1 &
-          
+
           # Wait for display
           sleep 1
-          
+
           # Run with optimized flags
           export PYTHONPATH="$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
           export DISPLAY=:99
-          
+
           # OPTIMIZATION: Add --fast flag to skip heavy operations
           "$LO_PY" scripts/apply_tracked_edits_libre.py \
             --in "${{ github.event.inputs.input_docx }}" \
@@ -103,5 +103,5 @@ jobs:
       - name: Upload output
         uses: actions/upload-artifact@v4
         with:
-          name: redlined-docx
+          name: redlined-docx-${{ github.run_id }}-${{ github.run_number }}
           path: ${{ github.event.inputs.output_docx }}

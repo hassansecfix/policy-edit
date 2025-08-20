@@ -65,11 +65,16 @@ if [[ "${SKIP_API_CALL}" == "true" ]] || [[ "${SKIP_API_CALL}" == "TRUE" ]] || [
     echo "💰 SKIP_API_CALL enabled - will use existing JSON file"
 fi
 
+# Generate unique user ID for multi-user isolation
+USER_ID="${USER_ID:-$(date +%s)-$$}"
+echo "🔑 User ID: $USER_ID (for multi-user isolation)"
+
 # Run the complete automation
 eval "python3 scripts/complete_automation.py \
     --policy \"$POLICY_FILE\" \
     --questionnaire \"$QUESTIONNAIRE_FILE\" \
     --output-name \"$OUTPUT_NAME\" \
+    --user-id \"$USER_ID\" \
     --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}${SKIP_API_ARG}"
 
 # Check if successful
@@ -87,7 +92,9 @@ if [ $? -eq 0 ]; then
     echo "  2. Download the result from GitHub Actions artifacts"
     echo "  3. Review tracked changes in LibreOffice Writer"
     echo ""
-    echo "📄 Expected output file: build/${OUTPUT_NAME}.docx"
+    echo "📄 Expected output file: build/${USER_ID}_${OUTPUT_NAME}.docx"
+    echo "🏷️  Artifact name: redlined-docx-<run_id>-<run_number>"
+    echo "🔑 Your User ID: $USER_ID (use this to track your specific run)"
     echo "🏆 Your customized policy is ready for review!"
 else
     echo ""

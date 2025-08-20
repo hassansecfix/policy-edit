@@ -19,7 +19,7 @@
       {
         "target_text": "<Company name, address>",
         "action": "replace",
-        "replacement": "Hassan's Company, Keuslinstraße 13, 80798, München",
+        "replacement": "Hassan's Company, München",
         "comment": "Replaced",
         "comment_author": "Secfix AI"
       },

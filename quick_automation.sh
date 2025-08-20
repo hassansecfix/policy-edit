@@ -78,10 +78,15 @@ if [[ "${SKIP_API_CALL}" == "true" ]] || [[ "${SKIP_API_CALL}" == "TRUE" ]] || [
     echo "💰 SKIP_API_CALL enabled - will use existing JSON file"
 fi
 
+# Generate unique user ID for multi-user isolation
+USER_ID="${USER_ID:-$(date +%s)-$$}"
+echo "🔑 User ID: $USER_ID (for multi-user isolation)"
+
 eval "python3 scripts/complete_automation.py \
   --policy \"$POLICY_FILE\" \
   --questionnaire \"$QUESTIONNAIRE_FILE\" \
   --output-name \"$OUTPUT_NAME\" \
+  --user-id \"$USER_ID\" \
   --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}${SKIP_API_ARG}"
 
 echo ""

@@ -196,6 +196,46 @@ This script automatically starts both the Flask API backend and Next.js frontend
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
 
+### 🔄 Multi-User Support
+
+The system now supports **multiple users running automation simultaneously** without conflicts:
+
+**🔑 Automatic User Isolation:**
+
+- Each automation run gets a unique user ID (e.g., `user-1703123456-7890`)
+- All generated files are prefixed with this ID to prevent conflicts
+- GitHub Actions artifacts are uniquely named per run
+
+**📋 User ID Examples:**
+
+```bash
+# Auto-generated ID (default)
+./quick_automation.sh
+# Output: User ID: user-1703123456-7890
+
+# Custom ID for easy tracking
+USER_ID="alice-policy-v1" ./quick_automation.sh
+# Output: User ID: alice-policy-v1
+```
+
+**📄 Generated Files with User Isolation:**
+
+```
+data/user-123_acme_questionnaire.csv
+data/user-123_company_logo.png
+edits/user-123_acme_edits.json
+build/user-123_acme.docx (via GitHub Actions)
+```
+
+**🏷️ GitHub Actions Artifacts:**
+
+```
+Artifact Name: redlined-docx-789123-45
+Contains: build/user-123_acme.docx
+```
+
+This ensures that multiple users can run the automation simultaneously without overwriting each other's work.
+
 **📖 Manual Way - Individual Services:**
 
 1. **Start the Flask API backend:**
@@ -245,7 +285,26 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
    - Make sure Flask backend is running on port 5001
    - Check that both services are running before accessing the dashboard
 
-4. **"Failed to fetch" errors**
+4. **Logo not appearing in GitHub Actions output** _(Fixed in latest version)_
+
+   - **Issue**: Previously, user-uploaded logos were created locally but not committed to git
+   - **Fix**: The automation now commits both JSON edits AND logo files together
+   - **What happens**: When you upload a logo via questionnaire, it's extracted from base64 data, saved as `data/{user-id}_company_logo.png`, and automatically committed with the JSON instructions
+   - **Verification**: Check your git history to see both files committed together after running automation
+
+5. **Multi-user conflicts in GitHub Actions** _(Fixed in latest version)_
+
+   - **Issue**: Multiple users running automation simultaneously could overwrite each other's files and artifacts
+   - **Fix**: Comprehensive user isolation system implemented
+   - **Features**:
+     - **Unique User IDs**: Auto-generated timestamp-based IDs (e.g., `user-1703123456-7890`)
+     - **Isolated File Names**: All files prefixed with user ID (e.g., `user-123_policy_edits.json`, `user-123_company_logo.png`)
+     - **Unique Artifacts**: GitHub Actions artifacts named `redlined-docx-{run_id}-{run_number}`
+     - **Isolated Output**: Final DOCX files named `build/{user_id}_{output_name}.docx`
+   - **Manual Override**: Set `USER_ID` environment variable for custom identification
+   - **Tracking**: Each run displays its User ID for easy identification of results
+
+6. **"Failed to fetch" errors**
    - Ensure Flask backend is running: `curl http://localhost:5001/api/status`
    - Check that virtual environment is activated in Flask terminal
 

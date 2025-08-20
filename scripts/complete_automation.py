@@ -79,8 +79,8 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
     
     return run_command(cmd, "Processing JSON instructions")
 
-def commit_and_push_json(edits_json):
-    """Commit and push the generated JSON file to GitHub."""
+def commit_and_push_json(edits_json, logo_file=None):
+    """Commit and push the generated JSON file and optional logo file to GitHub."""
     try:
         # Check if we're in a production environment (no git repo)
         if not os.path.exists('.git'):
@@ -102,36 +102,50 @@ def commit_and_push_json(edits_json):
         if result.returncode != 0:
             return False, f"Failed to add JSON: {result.stderr}"
         
-        # Commit the JSON file
-        commit_msg = f"Add AI-generated edits JSON: {edits_json}"
+        # Add the logo file if it exists and was created
+        if logo_file and os.path.exists(logo_file):
+            result = subprocess.run(['git', 'add', logo_file], capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"⚠️  Warning: Failed to add logo file {logo_file}: {result.stderr}")
+            else:
+                print(f"✅ Added logo file to git: {logo_file}")
+        
+        # Commit the files
+        files_to_commit = [edits_json]
+        if logo_file and os.path.exists(logo_file):
+            files_to_commit.append(logo_file)
+        
+        commit_msg = f"Add AI-generated files: {', '.join(files_to_commit)}"
         result = subprocess.run(['git', 'commit', '-m', commit_msg], capture_output=True, text=True)
         if result.returncode != 0:
             # Check if it's because there are no changes
             if "nothing to commit" in result.stdout:
-                print("✅ JSON file already committed")
+                print("✅ Files already committed")
                 return True, "No changes to commit"
-            return False, f"Failed to commit JSON: {result.stderr}"
+            return False, f"Failed to commit files: {result.stderr}"
         
         # Push to GitHub
         result = subprocess.run(['git', 'push'], capture_output=True, text=True)
         if result.returncode != 0:
-            return False, f"Failed to push JSON: {result.stderr}"
+            return False, f"Failed to push files: {result.stderr}"
         
-        print("✅ JSON file committed and pushed to GitHub")
-        return True, "JSON pushed successfully"
+        committed_files = "JSON and logo files" if logo_file else "JSON file"
+        print(f"✅ {committed_files} committed and pushed to GitHub")
+        return True, f"{committed_files} pushed successfully"
         
     except Exception as e:
         return False, f"Git operations failed: {e}"
 
-def trigger_github_actions(policy_path, edits_json, output_name, github_token=None):
+def trigger_github_actions(policy_path, edits_json, output_name, github_token=None, logo_file=None, user_id=None):
     """Trigger GitHub Actions workflow (manual instructions if no token)."""
+    import time
     
-    # First, commit and push the JSON file
-    print("📤 Committing and pushing JSON to GitHub...")
-    success, message = commit_and_push_json(edits_json)
+    # First, commit and push the JSON file and logo file (if created)
+    print("📤 Committing and pushing files to GitHub...")
+    success, message = commit_and_push_json(edits_json, logo_file)
     if not success:
-        print(f"❌ Failed to push JSON: {message}")
-        print("💡 You'll need to manually commit and push the JSON file")
+        print(f"❌ Failed to push files: {message}")
+        print("💡 You'll need to manually commit and push the files")
     else:
         print(f"✅ {message}")
     
@@ -145,7 +159,8 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
         print("5. Fill in these values:")
         print(f"   - Input DOCX path: {policy_path}")
         print(f"   - Edits CSV/JSON path: {edits_json}")
-        print(f"   - Output DOCX path: build/{output_name}.docx")
+        output_prefix = user_id if user_id else f"run-{int(time.time())}"
+        print(f"   - Output DOCX path: build/{output_prefix}_{output_name}.docx")
         print("6. Click 'Run workflow' button")
         print("7. Wait for completion and download from Artifacts")
         print("=" * 50)
@@ -191,12 +206,15 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
             'Accept': 'application/vnd.github.v3+json'
         }
         
+        # Use user_id for output isolation, fallback to timestamp if not provided
+        output_prefix = user_id if user_id else f"run-{int(time.time())}"
+        
         data = {
             'ref': 'main',
             'inputs': {
                 'input_docx': policy_path,
                 'edits_csv': edits_json,
-                'output_docx': f'build/{output_name}.docx'
+                'output_docx': f'build/{output_prefix}_{output_name}.docx'
             }
         }
         
@@ -224,6 +242,7 @@ def main():
     parser.add_argument('--logo', help='Optional path to company logo image (png/jpg) to insert in header')
     parser.add_argument('--logo-width-mm', type=int, help='Optional logo width in millimeters')
     parser.add_argument('--logo-height-mm', type=int, help='Optional logo height in millimeters')
+    parser.add_argument('--user-id', help='Unique user identifier for multi-user isolation (auto-generated if not provided)')
     
     args = parser.parse_args()
     
@@ -243,22 +262,38 @@ def main():
     # GitHub token (optional)
     github_token = args.github_token or os.environ.get('GITHUB_TOKEN')
     
+    # Generate unique user ID for multi-user isolation
+    user_id = args.user_id
+    if not user_id:
+        import time
+        import random
+        timestamp = int(time.time())
+        random_suffix = random.randint(1000, 9999)
+        user_id = f"user-{timestamp}-{random_suffix}"
+        print(f"🔑 Generated user ID: {user_id}")
+    else:
+        print(f"🔑 Using provided user ID: {user_id}")
+    
     print("🚀 Complete Policy Automation Starting...")
     print("=" * 50)
     print(f"📋 Policy Document: {args.policy}")
     print(f"📊 Questionnaire: {args.questionnaire}")
     print(f"📝 Output Name: {args.output_name}")
+    print(f"👤 User ID: {user_id}")
     print(f"🤖 AI: Claude Sonnet 4")
     print(f"⚙️  Automation: GitHub Actions")
     print("=" * 50)
     
-    # Create intermediate file paths
-    questionnaire_csv = f"data/{args.output_name}_questionnaire.csv"
-    edits_json = f"edits/{args.output_name}_edits.json"
+    # Create intermediate file paths with user isolation
+    questionnaire_csv = f"data/{user_id}_{args.output_name}_questionnaire.csv"
+    edits_json = f"edits/{user_id}_{args.output_name}_edits.json"
     prompt_path = "data/prompt.md"
     policy_instructions_path = "data/updated_policy_instructions_v4.0.md"
     
     try:
+        # Track created logo file for git commit
+        created_logo_file = None
+        
         # Step 1: Convert Excel to CSV (if needed)
         if args.questionnaire.endswith(('.xlsx', '.xls')):
             print("\n📊 STEP 1: Converting Excel to CSV")
@@ -306,7 +341,7 @@ def main():
                 
                 if has_logo_operations and not data['metadata'].get('logo_path'):
                     # ONLY check for user's embedded logo data - NO FALLBACKS
-                    local_logo_path = "data/company_logo.png"
+                    local_logo_path = f"data/{user_id}_company_logo.png"
                     
                     # Try to extract logo from user's questionnaire CSV
                     try:
@@ -331,6 +366,7 @@ def main():
                                             f.write(logo_buffer)
                                         
                                         data['metadata']['logo_path'] = local_logo_path
+                                        created_logo_file = local_logo_path  # Track for git commit
                                         print(f"🖼️  Created logo file from user's base64 data")
                                         logo_created = True
                                         break
@@ -364,7 +400,7 @@ def main():
         if not args.skip_github:
             print("\n⚙️  STEP 3: Triggering Automated Tracked Changes")
             success, output = trigger_github_actions(
-                args.policy, edits_json, args.output_name, github_token
+                args.policy, edits_json, args.output_name, github_token, created_logo_file, user_id
             )
             if not success:
                 print(f"❌ GitHub Actions trigger failed: {output}")
@@ -378,9 +414,13 @@ def main():
         print("✅ Generated Files:")
         print(f"   📊 Questionnaire CSV: {questionnaire_csv}")
         print(f"   📋 JSON Instructions: {edits_json}")
+        if created_logo_file:
+            print(f"   🖼️  Logo File: {created_logo_file}")
         
         if not args.skip_github:
-            print(f"   📄 Final DOCX: build/{args.output_name}.docx (via GitHub Actions)")
+            output_prefix = user_id if user_id else f"run-{int(time.time())}"
+            print(f"   📄 Final DOCX: build/{output_prefix}_{args.output_name}.docx (via GitHub Actions)")
+            print(f"   🏷️  Artifact Name: redlined-docx-<run_id>-<run_number>")
             print("\n🔍 Next Steps:")
             print("1. Check GitHub Actions for completion")
             print("2. Download the result from Artifacts")
