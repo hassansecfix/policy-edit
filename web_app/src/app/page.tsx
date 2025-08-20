@@ -133,20 +133,29 @@ export default function Dashboard() {
 
           // Auto-scroll to automation panel after a short delay for better UX
           if (!editingQuestionnaire) {
-            setTimeout(() => {
-              const automationPanel = document.getElementById('automation-panel');
-              if (automationPanel) {
-                automationPanel.scrollIntoView({
-                  behavior: 'smooth',
-                  block: 'start',
-                });
-                // Add a subtle highlight effect
-                automationPanel.classList.add('highlight-automation');
-                setTimeout(() => {
-                  automationPanel.classList.remove('highlight-automation');
-                }, 3000);
-              }
-            }, 1000);
+            // Return a promise that resolves after navigation is complete
+            return new Promise<void>((resolve) => {
+              setTimeout(() => {
+                const automationPanel = document.getElementById('automation-panel');
+                if (automationPanel) {
+                  automationPanel.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                  // Add a subtle highlight effect
+                  automationPanel.classList.add('highlight-automation');
+                  setTimeout(() => {
+                    automationPanel.classList.remove('highlight-automation');
+                    resolve();
+                  }, 3000);
+                } else {
+                  resolve();
+                }
+              }, 1000);
+            });
+          } else {
+            // For editing mode, resolve immediately
+            return Promise.resolve();
           }
         } else {
           const error = await response.json();
@@ -155,6 +164,7 @@ export default function Dashboard() {
             message: `❌ Failed to save questionnaire: ${error.error}`,
             level: 'error',
           });
+          throw new Error(error.error || 'Failed to save questionnaire');
         }
       } catch (error) {
         console.error('Failed to save questionnaire:', error);
@@ -163,6 +173,7 @@ export default function Dashboard() {
           message: '❌ Failed to save questionnaire: Network error',
           level: 'error',
         });
+        throw error;
       }
     },
     [addLog, editingQuestionnaire],

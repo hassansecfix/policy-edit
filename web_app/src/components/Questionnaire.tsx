@@ -6,7 +6,7 @@ import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionnaireProps {
-  onComplete: (answers: Record<string, QuestionnaireAnswer>) => void;
+  onComplete: (answers: Record<string, QuestionnaireAnswer>) => Promise<void>;
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
 }
 
@@ -18,6 +18,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     isCompleted: false,
   });
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load questions from API
@@ -95,7 +96,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     });
   }, []);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     const currentQuestion = questions[state.currentQuestionIndex];
     const hasAnswer = state.answers[currentQuestion.field];
 
@@ -110,9 +111,17 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
         currentQuestionIndex: prev.currentQuestionIndex + 1,
       }));
     } else {
-      // All questions completed
-      setState((prev) => ({ ...prev, isCompleted: true }));
-      onComplete(state.answers);
+      // All questions completed - start submission
+      try {
+        setSubmitting(true);
+        await onComplete(state.answers);
+        // Only set completed state after successful submission and navigation
+        setState((prev) => ({ ...prev, isCompleted: true }));
+      } catch (error) {
+        console.error('Failed to complete questionnaire:', error);
+        setSubmitting(false);
+        alert('Failed to save questionnaire. Please try again.');
+      }
     }
   }, [state.currentQuestionIndex, state.answers, questions, onComplete]);
 
@@ -155,18 +164,25 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     return <div className='text-center text-gray-600'>No questions found.</div>;
   }
 
+  if (submitting) {
+    return (
+      <div className='bg-blue-50 border border-blue-200 rounded-lg p-8 text-center'>
+        <div className='text-blue-600 text-2xl mb-4'>🔄 Submitting...</div>
+        <p className='text-blue-700 text-lg'>Saving your responses and preparing automation.</p>
+        <div className='mt-4 flex items-center justify-center text-blue-600'>
+          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
+          <span className='text-sm'>Processing questionnaire and setting up automation panel</span>
+        </div>
+      </div>
+    );
+  }
+
   if (state.isCompleted) {
     return (
       <div className='bg-green-50 border border-green-200 rounded-lg p-8 text-center'>
         <div className='text-green-600 text-2xl mb-4'>✅ Complete!</div>
-        <p className='text-green-700 text-lg'>Thank you for completing the questionnaire.</p>
-        <p className='text-green-600 mt-2'>
-          Your responses have been saved. Redirecting to automation panel...
-        </p>
-        <div className='mt-4 flex items-center justify-center text-blue-600'>
-          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
-          <span className='text-sm'>Preparing automation controls</span>
-        </div>
+        <p className='text-green-700 text-lg'>Successfully redirected to automation panel!</p>
+        <p className='text-green-600 mt-2'>You should now see the automation controls above.</p>
       </div>
     );
   }
@@ -219,9 +235,23 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
 
           <button
             onClick={handleNext}
-            className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'
+            disabled={submitting}
+            className={`px-6 py-2 rounded-lg transition-colors ${
+              submitting
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            {state.currentQuestionIndex === questions.length - 1 ? 'Complete' : 'Next'}
+            {submitting ? (
+              <div className='flex items-center'>
+                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
+                Submitting...
+              </div>
+            ) : state.currentQuestionIndex === questions.length - 1 ? (
+              'Complete'
+            ) : (
+              'Next'
+            )}
           </button>
         </div>
       </div>
