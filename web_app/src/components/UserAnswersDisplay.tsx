@@ -12,7 +12,9 @@ interface ServerAnswersResponse {
   isUserSpecific?: boolean;
   dataDir?: string;
   originalDataDir?: string;
+  isRender?: boolean;
   isServerless?: boolean;
+  directoryFallbackUsed?: boolean;
   availableUserFiles?: string[];
   searchedPaths?: string[];
   searchedDirectories?: string[];
@@ -262,6 +264,11 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                     {serverAnswers.cwd && (
                       <p className='text-xs text-gray-500'>
                         🏠 Working directory: {serverAnswers.cwd}
+                      </p>
+                    )}
+                    {serverAnswers.directoryFallbackUsed && (
+                      <p className='text-xs text-orange-600 font-medium'>
+                        ⚠️ Directory fallback used - original location was not writable
                       </p>
                     )}
                     {serverAnswers.availableUserFiles &&

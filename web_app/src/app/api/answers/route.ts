@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     // In serverless environments, /var/task is read-only, so use /tmp for writing
     const isRender = process.cwd().includes('/var/task') || process.env.RENDER;
     const isServerless = isRender || process.env.VERCEL || process.env.LAMBDA_TASK_ROOT;
-    const writableDir = isServerless ? '/tmp' : originalDataDir;
+    let writableDir = isServerless ? '/tmp' : originalDataDir;
 
     console.log('🌐 Environment check:', {
       isRender: isRender,
@@ -165,20 +165,29 @@ export async function POST(request: NextRequest) {
       platform: process.platform,
     });
 
-    const answersPath = path.join(writableDir, 'user_questionnaire_responses.csv');
+    let answersPath = path.join(writableDir, 'user_questionnaire_responses.csv');
 
     // Generate a unique filename with timestamp to avoid conflicts
     const timestamp = Date.now();
     const userSpecificFilename = `user_questionnaire_responses_${timestamp}.csv`;
-    const userSpecificPath = path.join(writableDir, userSpecificFilename);
+    let userSpecificPath = path.join(writableDir, userSpecificFilename);
 
     console.log('💾 Saving answers to main file:', answersPath);
     console.log('💾 Saving answers to user-specific file:', userSpecificPath);
     console.log('📊 CSV content preview:', csvContent.split('\n').slice(0, 3).join('\n'));
     console.log('📁 Data directory permissions check...');
 
-    // Check directory permissions and existence
+        // Check directory permissions and existence
+    console.log('🔍 Checking writable directory:', writableDir);
+    
     try {
+      // First check if directory exists
+      if (!fs.existsSync(writableDir)) {
+        console.log('📁 Directory does not exist, attempting to create:', writableDir);
+        fs.mkdirSync(writableDir, { recursive: true });
+        console.log('✅ Successfully created directory:', writableDir);
+      }
+      
       const dirStats = fs.statSync(writableDir);
       console.log('📁 Writable directory exists:', true);
       console.log('📁 Writable directory stats:', {
@@ -189,21 +198,77 @@ export async function POST(request: NextRequest) {
         gid: dirStats.gid,
       });
 
+      // Get current process info
+      console.log('🔍 Process info:', {
+        uid: process.getuid ? process.getuid() : 'N/A',
+        gid: process.getgid ? process.getgid() : 'N/A',
+        groups: process.getgroups ? process.getgroups() : 'N/A',
+      });
+
       // Test if we can create a temporary file in the directory
       const testFilePath = path.join(writableDir, `test_write_${timestamp}.tmp`);
+      console.log('🧪 Testing write to:', testFilePath);
       fs.writeFileSync(testFilePath, 'test', 'utf-8');
       console.log('✅ Directory write test successful');
-      fs.unlinkSync(testFilePath); // Clean up test file
+      
+      // Verify the test file was created
+      if (fs.existsSync(testFilePath)) {
+        const testContent = fs.readFileSync(testFilePath, 'utf-8');
+        console.log('✅ Test file verification passed, content:', testContent);
+        fs.unlinkSync(testFilePath); // Clean up test file
+        console.log('✅ Test file cleanup successful');
+      } else {
+        console.error('❌ Test file was not created despite no error');
+      }
     } catch (dirError) {
-      console.error('❌ Directory permission check failed:', dirError);
-
-      // If /tmp fails, try creating it
-      if (isServerless && writableDir === '/tmp') {
-        try {
-          fs.mkdirSync('/tmp', { recursive: true });
-          console.log('✅ Created /tmp directory');
-        } catch (mkdirError) {
-          console.error('❌ Failed to create /tmp directory:', mkdirError);
+      // Type assertion for Node.js filesystem errors
+      const fsError = dirError as Error & {
+        code?: string;
+        errno?: number;
+        path?: string;
+        syscall?: string;
+      };
+      
+      console.error('❌ Directory permission check failed:', {
+        error: fsError.message,
+        code: fsError.code,
+        errno: fsError.errno,
+        path: fsError.path,
+        syscall: fsError.syscall,
+      });
+      
+      // Try alternative approaches
+      if (isServerless) {
+        console.log('🔄 Trying alternative writable locations...');
+        const alternativePaths = ['/tmp', '/var/tmp', './tmp', process.cwd() + '/tmp'];
+        
+        for (const altPath of alternativePaths) {
+          try {
+            console.log('🧪 Testing alternative path:', altPath);
+            if (!fs.existsSync(altPath)) {
+              fs.mkdirSync(altPath, { recursive: true });
+            }
+            const testFile = path.join(altPath, `test_${timestamp}.tmp`);
+            fs.writeFileSync(testFile, 'test', 'utf-8');
+            fs.unlinkSync(testFile);
+            console.log('✅ Alternative path works:', altPath);
+            // Update writableDir to the working alternative
+            const originalWritableDir = writableDir;
+            writableDir = altPath;
+            
+            // Update file paths with the new working directory
+            answersPath = path.join(writableDir, 'user_questionnaire_responses.csv');
+            userSpecificPath = path.join(writableDir, userSpecificFilename);
+            
+            console.log('🔄 Updated file paths:');
+            console.log('   Main file:', answersPath);
+            console.log('   Timestamped file:', userSpecificPath);
+            console.log('   Original dir:', originalWritableDir, '→ Working dir:', writableDir);
+            break;
+          } catch (altError) {
+            const errorMessage = altError instanceof Error ? altError.message : String(altError);
+            console.log('❌ Alternative path failed:', altPath, errorMessage);
+          }
         }
       }
     }
@@ -217,9 +282,13 @@ export async function POST(request: NextRequest) {
       { path: userSpecificPath, type: 'timestamped-backup', required: false },
     ];
 
+    console.log('🔄 Starting file write attempts...');
+    console.log('📋 Files to try:', filesToTry.map(f => ({ type: f.type, path: f.path })));
+
     for (const fileInfo of filesToTry) {
       try {
         console.log(`🔄 Attempting to write ${fileInfo.type} file:`, fileInfo.path);
+        console.log(`📊 Content length: ${csvContent.length} characters`);
 
         // Check if file already exists and its current state
         if (fs.existsSync(fileInfo.path)) {
@@ -344,8 +413,10 @@ export async function POST(request: NextRequest) {
       mainFilePath: answersPath,
       dataDir: writableDir,
       originalDataDir: originalDataDir,
+      isRender: isRender,
       isServerless: isServerless,
       timestamp: timestamp,
+      directoryFallbackUsed: writableDir !== (isServerless ? '/tmp' : originalDataDir),
       answers: sortedAnswers.map((a) => ({ field: a.field, value: a.value })), // Include answers for debugging
     });
   } catch (error) {
