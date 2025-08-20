@@ -95,9 +95,9 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
             />
             {value && typeof value === 'object' && 'name' in value && (
               <div className='text-sm text-gray-600'>
-                {(value as any).data === 'existing-file'
-                  ? `Previously uploaded: ${(value as any).name}`
-                  : `Selected: ${(value as any).name}`}
+                {(value as FileUpload).data === 'existing-file'
+                  ? `Previously uploaded: ${(value as FileUpload).name}`
+                  : `Selected: ${(value as FileUpload).name}`}
               </div>
             )}
           </div>

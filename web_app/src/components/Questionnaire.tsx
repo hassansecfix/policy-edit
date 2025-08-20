@@ -1,7 +1,7 @@
 'use client';
 
 import { QuestionInput } from '@/components/QuestionInput';
-import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
+import { Question, QuestionnaireAnswer, QuestionnaireState, FileUpload } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionnaireProps {
@@ -30,7 +30,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
         const questionsData = await response.json();
         setQuestions(questionsData);
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError('Failed to load questions. Please try again.');
         setLoading(false);
       }
@@ -57,7 +57,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
               const [questionNumber, , field, , value] = line.split(';');
               if (field && value && value !== '{}') {
                 // Skip empty file objects
-                let processedValue = value;
+                let processedValue: string | number | File | FileUpload = value;
 
                 // Handle file uploads - for logo files, show as uploaded file
                 if (field === 'onboarding.company_logo' && value === 'data/company_logo.png') {
@@ -66,7 +66,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
                     type: 'image/png',
                     size: 0,
                     data: 'existing-file',
-                  } as any; // Type assertion for FileUpload object
+                  } as FileUpload;
                 }
 
                 existingAnswers[field] = {
@@ -84,7 +84,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
             }));
           }
         }
-      } catch (error) {
+      } catch {
         console.log('No existing answers found or failed to load, starting fresh');
       }
     };

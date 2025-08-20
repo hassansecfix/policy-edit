@@ -1,4 +1,4 @@
-import { QuestionnaireAnswer } from '@/types';
+import { QuestionnaireAnswer, FileUpload } from '@/types';
 import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
           'data' in answer.value
         ) {
           // Handle base64 file uploads
-          const fileData = answer.value as any;
+                          const fileData = answer.value as FileUpload;
           if (answer.field === 'onboarding.company_logo') {
             if (fileData.data === 'existing-file') {
               // Read existing logo file and convert to base64 for embedding
