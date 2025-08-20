@@ -3,13 +3,23 @@
 import { QuestionnaireAnswer } from '@/types';
 import { useEffect, useState } from 'react';
 
+interface ServerAnswersResponse {
+  exists?: boolean;
+  content?: string;
+  message?: string;
+  filePath?: string;
+  lineCount?: number;
+  searchedPaths?: string[];
+  error?: any;
+}
+
 interface UserAnswersDisplayProps {
   visible?: boolean;
 }
 
 export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps) {
   const [answers, setAnswers] = useState<Record<string, QuestionnaireAnswer> | null>(null);
-  const [serverAnswers, setServerAnswers] = useState<any>(null);
+  const [serverAnswers, setServerAnswers] = useState<ServerAnswersResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,7 +134,9 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                       <strong>Preview:</strong>
                       <pre className='mt-1 whitespace-pre-wrap'>
                         {serverAnswers.content?.split('\n').slice(0, 5).join('\n')}
-                        {serverAnswers.content?.split('\n').length > 5 && '\n...'}
+                        {serverAnswers.content &&
+                          serverAnswers.content.split('\n').length > 5 &&
+                          '\n...'}
                       </pre>
                     </div>
                   </>
@@ -160,8 +172,8 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
       <div className='mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
         <p className='text-sm text-yellow-800'>
           <strong>💡 Debug Info:</strong> This panel helps diagnose questionnaire saving issues. If
-          your answers appear in "Local Storage" but not "Server", there's a file path or permission
-          issue in production.
+          your answers appear in &quot;Local Storage&quot; but not &quot;Server&quot;, there&apos;s
+          a file path or permission issue in production.
         </p>
       </div>
     </div>
