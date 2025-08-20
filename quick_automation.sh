@@ -42,9 +42,18 @@ echo ""
 # Load shared configuration (single source of truth)
 source "$(dirname "$0")/config.sh"
 
+# Prioritize user questionnaire file if it exists
+if [[ -f "data/user_questionnaire_responses.csv" ]]; then
+    QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
+    echo "📊 Using user-provided questionnaire responses"
+else
+    QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
+    echo "📊 Using default questionnaire responses"
+fi
+
 # Configuration (single source of truth) - use env vars with fallbacks
 POLICY_FILE="${POLICY_FILE:-$DEFAULT_POLICY_FILE}"
-QUESTIONNAIRE_FILE="${QUESTIONNAIRE_FILE:-$DEFAULT_QUESTIONNAIRE_FILE}"
+# QUESTIONNAIRE_FILE already set above based on user file availability
 OUTPUT_NAME="${OUTPUT_NAME:-$DEFAULT_OUTPUT_NAME}"
 
 show_config

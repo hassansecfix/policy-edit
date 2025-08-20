@@ -1,7 +1,7 @@
 'use client';
 
 import { QuestionInput } from '@/components/QuestionInput';
-import { Question, QuestionnaireAnswer, QuestionnaireState, FileUpload } from '@/types';
+import { FileUpload, Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionnaireProps {
