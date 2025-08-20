@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
           errno?: number;
           syscall?: string;
         };
-        
+
         console.error(`❌ Failed to write ${fileInfo.type} file:`, {
           path: fileInfo.path,
           error: writeError instanceof Error ? writeError.message : String(writeError),
