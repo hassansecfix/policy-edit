@@ -5,12 +5,34 @@ import path from 'path';
 
 export async function GET() {
   try {
-    // Path to the questions.csv file
-    const questionsPath = path.join(process.cwd(), '../data/questions.csv');
+    // Try multiple possible paths for the data directory
+    const possibleQuestionsPaths = [
+      path.join(process.cwd(), '../data/questions.csv'), // Original path
+      path.join(process.cwd(), '../../data/questions.csv'), // One more level up
+      path.join(process.cwd(), 'data/questions.csv'), // Same level
+      path.join(process.cwd(), './data/questions.csv'), // Explicit same level
+    ];
 
-    // Check if file exists
-    if (!fs.existsSync(questionsPath)) {
-      return NextResponse.json({ error: 'Questions file not found' }, { status: 404 });
+    let questionsPath = '';
+    for (const testPath of possibleQuestionsPaths) {
+      console.log('🔍 Checking questions path:', testPath);
+      if (fs.existsSync(testPath)) {
+        questionsPath = testPath;
+        console.log('✅ Found questions file at:', questionsPath);
+        break;
+      }
+    }
+
+    if (!questionsPath) {
+      console.error('❌ Questions file not found at any of these paths:', possibleQuestionsPaths);
+      return NextResponse.json(
+        {
+          error: 'Questions file not found',
+          searchedPaths: possibleQuestionsPaths,
+          cwd: process.cwd(),
+        },
+        { status: 404 },
+      );
     }
 
     // Read and parse the CSV file

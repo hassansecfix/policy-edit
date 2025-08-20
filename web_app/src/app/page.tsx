@@ -7,6 +7,7 @@ import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
 import { ProgressTracker } from '@/components/ProgressTracker';
 import { Questionnaire } from '@/components/Questionnaire';
+import { UserAnswersDisplay } from '@/components/UserAnswersDisplay';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
+  const [showDebugAnswers, setShowDebugAnswers] = useState(false);
   const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
@@ -122,14 +124,37 @@ export default function Dashboard() {
         if (response.ok) {
           setQuestionnaireCompleted(true);
           setEditingQuestionnaire(false); // Exit editing mode
+
+          // Parse response to get debugging info
+          const responseData = await response.json();
+
           const message = editingQuestionnaire
             ? '✅ Questionnaire updated successfully'
-            : '✅ Questionnaire completed successfully! Ready to start automation.';
+            : `✅ Questionnaire completed successfully! Saved ${
+                responseData.answerCount || 'unknown'
+              } answers. Ready to start automation.`;
           addLog({
             timestamp: formatTime(new Date()),
             message,
             level: 'success',
           });
+
+          // Add debug information
+          if (responseData.filePath) {
+            addLog({
+              timestamp: formatTime(new Date()),
+              message: `📁 Answers saved to: ${responseData.filePath}`,
+              level: 'info',
+            });
+          }
+
+          if (responseData.dataDir) {
+            addLog({
+              timestamp: formatTime(new Date()),
+              message: `📂 Using data directory: ${responseData.dataDir}`,
+              level: 'info',
+            });
+          }
 
           // Auto-scroll to automation panel after a short delay for better UX
           if (!editingQuestionnaire) {
@@ -279,14 +304,25 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleEditQuestionnaire}
-              className='ml-4 px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium'
-            >
-              📝 Edit Questionnaire
-            </button>
+            <div className='flex gap-2'>
+              <button
+                onClick={handleEditQuestionnaire}
+                className='px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium'
+              >
+                📝 Edit Questionnaire
+              </button>
+              <button
+                onClick={() => setShowDebugAnswers(!showDebugAnswers)}
+                className='px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium'
+              >
+                🔍 {showDebugAnswers ? 'Hide' : 'Show'} Answers
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Debug Answers Display */}
+        <UserAnswersDisplay visible={showDebugAnswers} />
 
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Left Column - Control Panel & Progress */}
