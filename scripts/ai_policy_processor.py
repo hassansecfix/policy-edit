@@ -40,9 +40,30 @@ def load_file_content(file_path):
         raise FileNotFoundError(f"File not found: {file_path}")
     
     if file_path.suffix.lower() == '.csv':
-        # Read CSV as formatted text
+        # Read CSV as formatted text, but filter out base64 image data for API efficiency
         with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
+            content = f.read()
+        
+        # Filter out base64 logo data to save API tokens
+        lines = content.split('\n')
+        filtered_lines = []
+        
+        for line in lines:
+            # Check if this line contains base64 logo data
+            if ';Logo Base64 Data;_logo_base64_data;' in line:
+                # Replace the large base64 data with a placeholder
+                parts = line.split(';', 4)
+                if len(parts) >= 5:
+                    # Keep the structure but replace data with placeholder
+                    filtered_line = ';'.join(parts[:4]) + ';[BASE64_LOGO_DATA_REMOVED_FOR_API_EFFICIENCY]'
+                    filtered_lines.append(filtered_line)
+                    print(f"🖼️  Filtered out base64 logo data ({len(parts[4])} chars) to save API tokens")
+                else:
+                    filtered_lines.append(line)
+            else:
+                filtered_lines.append(line)
+        
+        return '\n'.join(filtered_lines)
     
     elif file_path.suffix.lower() == '.md':
         # Read markdown
