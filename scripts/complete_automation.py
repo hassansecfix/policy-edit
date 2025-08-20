@@ -144,16 +144,30 @@ def commit_and_push_json(edits_json, logo_file=None):
         # Push to GitHub with explicit remote and branch
         # First, try to get the current branch name
         branch_result = subprocess.run(['git', 'branch', '--show-current'], capture_output=True, text=True)
-        current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 else 'main'
+        current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 and branch_result.stdout.strip() else None
+        
+        # Fallback for older Git versions
+        if not current_branch:
+            branch_result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True)
+            current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 and branch_result.stdout.strip() else 'main'
+        
+        # Final validation
+        if not current_branch or current_branch == 'HEAD':
+            print("⚠️  Could not determine current branch, using 'main'")
+            current_branch = 'main'
+        
+        print(f"🔄 Pushing to branch: {current_branch}")
         
         # Try pushing with explicit origin and branch
         result = subprocess.run(['git', 'push', 'origin', current_branch], capture_output=True, text=True)
         if result.returncode != 0:
             # Fallback: try setting upstream and pushing
             print(f"⚠️  Initial push failed, trying to set upstream...")
+            print(f"    Error: {result.stderr.strip()}")
             upstream_result = subprocess.run(['git', 'push', '--set-upstream', 'origin', current_branch], capture_output=True, text=True)
             if upstream_result.returncode != 0:
-                return False, f"Failed to push JSON: {result.stderr}"
+                error_msg = upstream_result.stderr.strip() or result.stderr.strip()
+                return False, f"Failed to push JSON: {error_msg}"
             else:
                 print(f"✅ Set upstream branch and pushed to origin/{current_branch}")
         else:
