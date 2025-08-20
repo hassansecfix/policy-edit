@@ -383,12 +383,22 @@ def main():
                     target_text = logo_op.get('target_text', '')
                     print(f"🔍 Looking for logo placeholder: '{target_text}'")
                     
-                    # Get logo from user's uploaded data (base64 embedded in questionnaire)
-                    questionnaire_logo = None
+                    # Get logo from metadata (preferred) or user's uploaded data (fallback)
+                    logo_file_path = None
                     logo_base64_data = None
                     
-                    # ONLY use the provided questionnaire file - NO FALLBACKS
-                    if args.questionnaire_csv and os.path.exists(args.questionnaire_csv):
+                    # First, check if logo path is already provided in JSON metadata
+                    try:
+                        meta = data.get('metadata', {})
+                        meta_logo_path = meta.get('logo_path', '').strip()
+                        if meta_logo_path and os.path.exists(meta_logo_path):
+                            logo_file_path = meta_logo_path
+                            print(f"🖼️  Using logo from metadata: {logo_file_path}")
+                    except Exception as e:
+                        print(f"⚠️  Error reading metadata: {e}")
+                    
+                    # Fallback: try to get base64 data from questionnaire
+                    if not logo_file_path and args.questionnaire_csv and os.path.exists(args.questionnaire_csv):
                         try:
                             with open(args.questionnaire_csv, 'r', encoding='utf-8') as f:
                                 content = f.read()
@@ -399,22 +409,27 @@ def main():
                                     parts = line.split(';', 4)
                                     if len(parts) >= 5:
                                         logo_base64_data = parts[4]
-                                        print(f"🖼️  Found user's uploaded logo data")
+                                        print(f"🖼️  Found user's uploaded logo data in questionnaire")
                                         break
                         except Exception as e:
                             print(f"⚠️  Error reading user questionnaire: {e}")
-                    else:
-                        print(f"⚠️  No user questionnaire file provided - skipping logo")
                     
-                    # Use user's uploaded logo (base64 data)
-                    if logo_base64_data:
+                    # Process logo (either from existing file or convert from base64)
+                    if logo_file_path or logo_base64_data:
                         try:
-                            import tempfile
-                            import base64
-                            print(f"🖼️  Processing user's uploaded logo...")
+                            temp_file_to_cleanup = None
+                            actual_logo_path = None
                             
-                            # Convert base64 to file
-                            try:
+                            if logo_file_path:
+                                # Use existing logo file
+                                actual_logo_path = logo_file_path
+                                print(f"🖼️  Using existing logo file: {actual_logo_path}")
+                            elif logo_base64_data:
+                                # Convert base64 to temporary file
+                                import tempfile
+                                import base64
+                                print(f"🖼️  Converting base64 logo data...")
+                                
                                 # Remove data URL prefix if present
                                 if ',' in logo_base64_data:
                                     base64_content = logo_base64_data.split(',')[1]
@@ -429,8 +444,11 @@ def main():
                                 temp_file.write(logo_binary)
                                 temp_file.close()
                                 
-                                print(f"✅ User logo converted from base64 ({len(logo_binary)} bytes)")
-                                
+                                actual_logo_path = temp_file.name
+                                temp_file_to_cleanup = temp_file.name
+                                print(f"✅ Logo converted from base64 ({len(logo_binary)} bytes)")
+                            
+                            if actual_logo_path and os.path.exists(actual_logo_path):
                                 # DIRECT REPLACEMENT WITHOUT TRACKING
                                 search_desc = doc.createSearchDescriptor()
                                 search_desc.SearchString = target_text
@@ -446,7 +464,7 @@ def main():
                                         
                                         # Create and insert graphic
                                         graphic = doc.createInstance("com.sun.star.text.GraphicObject")
-                                        logo_file_url = to_url(temp_file.name)
+                                        logo_file_url = to_url(actual_logo_path)
                                         graphic.setPropertyValue("GraphicURL", logo_file_url)
                                         
                                         # Set anchor type to ensure proper positioning
@@ -497,20 +515,20 @@ def main():
                                     
                                     found_range = doc.findNext(found_range, search_desc)
                                 
-                                # Clean up
-                                try:
-                                    os.unlink(temp_file.name)
-                                except:
-                                    pass
-                                    
+                                # Clean up temporary file if created
+                                if temp_file_to_cleanup:
+                                    try:
+                                        os.unlink(temp_file_to_cleanup)
+                                    except:
+                                        pass
+                                        
                                 if replaced_count > 0:
                                     print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s) with user's logo")
                                 else:
                                     print(f"❌ Could not find '{target_text}' in document")
+                            else:
+                                print(f"❌ Logo file not found: {actual_logo_path}")
                                     
-                            except Exception as e:
-                                print(f"❌ Failed to decode user's logo data: {e}")
-                            
                         except Exception as e:
                             print(f"❌ Failed to process user's logo: {e}")
                     else:

@@ -308,14 +308,14 @@ def main():
                     # ONLY check for user's embedded logo data - NO FALLBACKS
                     local_logo_path = "data/company_logo.png"
                     
-                    # Try to extract logo base64 data from user's questionnaire CSV only
+                    # Try to extract logo from user's questionnaire CSV
                     try:
                         logo_created = False
                         if os.path.exists(questionnaire_csv):
                             with open(questionnaire_csv, 'r', encoding='utf-8') as f:
                                 csv_content = f.read()
                             
-                            # Look for the special logo base64 entry (user upload)
+                            # First, try to find base64 data entry (newer format)
                             for line in csv_content.split('\n'):
                                 if line.startswith('99;Logo Base64 Data;_logo_base64_data;'):
                                     parts = line.split(';', 4)
@@ -331,9 +331,22 @@ def main():
                                             f.write(logo_buffer)
                                         
                                         data['metadata']['logo_path'] = local_logo_path
-                                        print(f"🖼️  Created logo file from user's uploaded data")
+                                        print(f"🖼️  Created logo file from user's base64 data")
                                         logo_created = True
                                         break
+                            
+                            # Fallback: check if user provided a file path reference
+                            if not logo_created:
+                                for line in csv_content.split('\n'):
+                                    if 'company_logo' in line and 'File upload' in line:
+                                        parts = line.split(';')
+                                        if len(parts) >= 5:
+                                            file_path = parts[4].strip()
+                                            if file_path and os.path.exists(file_path):
+                                                data['metadata']['logo_path'] = file_path
+                                                print(f"🖼️  Using logo file from questionnaire: {file_path}")
+                                                logo_created = True
+                                                break
                         
                         if not logo_created:
                             print("⚠️  No user logo found - skipping logo operations")
