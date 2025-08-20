@@ -165,6 +165,28 @@ def commit_and_push_json(edits_json, logo_file=None):
             subprocess.run(['git', 'config', 'user.email', git_user_email], capture_output=True)
             print(f"✅ Git identity configured: {git_user_name} <{git_user_email}>")
         
+        # CRITICAL: Check if we're in detached HEAD state BEFORE committing
+        print("🔍 Checking repository state before committing...")
+        status_check = subprocess.run(['git', 'status'], capture_output=True, text=True)
+        if status_check.returncode == 0 and "HEAD detached" in status_check.stdout:
+            print("🚨 Repository is in detached HEAD state - fixing before commit...")
+            
+            # Try to checkout main branch
+            checkout_main = subprocess.run(['git', 'checkout', 'main'], capture_output=True, text=True)
+            if checkout_main.returncode == 0:
+                print("✅ Successfully switched to main branch")
+            else:
+                print(f"⚠️  Could not checkout main: {checkout_main.stderr}")
+                # Try to create main branch if it doesn't exist
+                create_main = subprocess.run(['git', 'checkout', '-b', 'main'], capture_output=True, text=True)
+                if create_main.returncode == 0:
+                    print("✅ Created and switched to main branch")
+                else:
+                    print(f"❌ Could not create main branch: {create_main.stderr}")
+                    return False, "Cannot fix detached HEAD state - unable to checkout or create main branch"
+        else:
+            print("✅ Repository is in proper branch state")
+        
         # Verify JSON file exists before adding
         if not os.path.exists(edits_json):
             return False, f"JSON file does not exist: {edits_json}"
@@ -346,7 +368,55 @@ def commit_and_push_json(edits_json, logo_file=None):
             print(f"📊 Git status after push:")
             print(f"   {status_output.strip()}")
             
-            if "ahead of" in status_output:
+            # CRITICAL: Check for detached HEAD state
+            if "HEAD detached" in status_output:
+                print("🚨 CRITICAL ISSUE: Repository is in detached HEAD state!")
+                print("   This means commits are not attached to any branch and won't be pushed.")
+                print("   Attempting to fix by switching to main branch...")
+                
+                # Get the current commit hash
+                commit_hash_result = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True)
+                if commit_hash_result.returncode == 0:
+                    current_commit = commit_hash_result.stdout.strip()
+                    print(f"   Current commit: {current_commit}")
+                    
+                    # Try to switch to main branch and cherry-pick the commit
+                    checkout_result = subprocess.run(['git', 'checkout', 'main'], capture_output=True, text=True)
+                    if checkout_result.returncode == 0:
+                        print("✅ Successfully switched to main branch")
+                        
+                        # Cherry-pick the commit to main
+                        cherry_pick_result = subprocess.run(['git', 'cherry-pick', current_commit], capture_output=True, text=True)
+                        if cherry_pick_result.returncode == 0:
+                            print("✅ Successfully applied commit to main branch")
+                            
+                            # Now push again
+                            final_push = subprocess.run(['git', 'push', 'origin', 'main'], capture_output=True, text=True)
+                            if final_push.returncode == 0:
+                                print("✅ Successfully pushed commit to main branch")
+                            else:
+                                print(f"❌ Failed to push after fixing detached HEAD: {final_push.stderr}")
+                                return False, f"Failed to push after fixing detached HEAD: {final_push.stderr}"
+                        else:
+                            print(f"❌ Failed to cherry-pick commit: {cherry_pick_result.stderr}")
+                            # Try alternative: reset main to the commit
+                            reset_result = subprocess.run(['git', 'reset', '--hard', current_commit], capture_output=True, text=True)
+                            if reset_result.returncode == 0:
+                                print("✅ Reset main branch to include our commit")
+                                final_push = subprocess.run(['git', 'push', 'origin', 'main', '--force-with-lease'], capture_output=True, text=True)
+                                if final_push.returncode == 0:
+                                    print("✅ Force-pushed main branch with our commit")
+                                else:
+                                    print(f"❌ Failed to force-push: {final_push.stderr}")
+                                    return False, f"Failed to force-push after detached HEAD fix: {final_push.stderr}"
+                            else:
+                                return False, f"Failed to fix detached HEAD state: {reset_result.stderr}"
+                    else:
+                        return False, f"Failed to checkout main branch: {checkout_result.stderr}"
+                else:
+                    return False, "Could not determine current commit hash"
+                    
+            elif "ahead of" in status_output:
                 print("🚨 WARNING: Local is still ahead of remote - push may have failed!")
                 return False, "Local repository is still ahead of remote after push - push failed"
             elif "behind" in status_output:
