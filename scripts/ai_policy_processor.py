@@ -315,19 +315,35 @@ def main():
     skip_api = args.skip_api or skip_api_env in ['true', '1', 'yes', 'on']
     
     if skip_api:
-        # Check if output file already exists
-        if not Path(args.output).exists():
-            print("❌ Error: --skip-api specified but output JSON file doesn't exist!")
+        # Look for existing JSON file - first check exact output path, then fallback to edits folder
+        json_file_to_use = None
+        
+        if Path(args.output).exists():
+            json_file_to_use = args.output
+            print("🔄 SKIP_API_CALL enabled - Using specified output JSON file")
+        else:
+            # Look for existing JSON files in edits folder
+            edits_dir = Path("edits")
+            if edits_dir.exists():
+                json_files = list(edits_dir.glob("*.json"))
+                if json_files:
+                    # Use the most recent JSON file or a specific one
+                    json_file_to_use = str(json_files[0])  # Use first available
+                    print("🔄 SKIP_API_CALL enabled - Using existing JSON file from edits folder")
+                    print(f"   Output file {args.output} doesn't exist, falling back to {json_file_to_use}")
+        
+        if not json_file_to_use:
+            print("❌ Error: --skip-api specified but no JSON file found!")
             print(f"   Expected file: {args.output}")
+            print(f"   Or existing files in: edits/*.json")
             print("   Either run without --skip-api first, or provide an existing JSON file")
             sys.exit(1)
         
-        print("🔄 SKIP_API_CALL enabled - Using existing JSON file for testing/development")
-        print(f"📁 Using existing file: {args.output}")
+        print(f"📁 Using existing file: {json_file_to_use}")
         
         # Validate the existing JSON file
         try:
-            with open(args.output, 'r', encoding='utf-8') as f:
+            with open(json_file_to_use, 'r', encoding='utf-8') as f:
                 content = f.read()
             validate_json_content(content)
             
@@ -347,6 +363,14 @@ def main():
             print("\n📋 Operations Summary (from existing file):")
             for action, count in actions.items():
                 print(f"   {action}: {count} operations")
+            
+            # If using a fallback file, copy it to the expected output location
+            if json_file_to_use != args.output:
+                print(f"\n📋 Copying {json_file_to_use} to {args.output} for consistency...")
+                Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+                import shutil
+                shutil.copy2(json_file_to_use, args.output)
+                print(f"✅ Copied to {args.output}")
             
             print(f"\n💰 API call skipped - cost savings for testing/development!")
             return
