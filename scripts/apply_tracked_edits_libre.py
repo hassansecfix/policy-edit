@@ -31,6 +31,9 @@ import time
 import subprocess
 from pathlib import Path
 
+# Configuration constants
+MAX_LOGO_SPACES_TO_REMOVE = 4  # Maximum number of leading spaces to remove before logo placeholder
+
 def parse_args():
     p = argparse.ArgumentParser(description="Apply tracked edits to DOCX via LibreOffice (headless UNO).")
     p.add_argument("--in", dest="in_path", required=True, help="Input .docx")
@@ -450,7 +453,7 @@ def main():
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
                                 # DIRECT REPLACEMENT WITHOUT TRACKING using multiple strategies to remove spaces + placeholder
-                                print(f"🔄 Attempting to remove spaces before '{target_text}' using multiple strategies")
+                                print(f"🔄 Attempting to remove up to {MAX_LOGO_SPACES_TO_REMOVE} spaces before '{target_text}' using multiple strategies")
                                 
                                 import re
                                 escaped_target = re.escape(target_text)
@@ -467,7 +470,7 @@ def main():
                                     if found_range:
                                         # Get surrounding text to see what's actually there
                                         cursor = found_range.getText().createTextCursorByRange(found_range)
-                                        cursor.goLeft(25, True)  # Expand left to capture preceding chars
+                                        cursor.goLeft(MAX_LOGO_SPACES_TO_REMOVE + 5, True)  # Expand left to capture preceding chars
                                         cursor.gotoRange(found_range.getEnd(), True)  # Extend to end of original range
                                         surrounding_text = cursor.getString()
                                         
@@ -482,8 +485,8 @@ def main():
                                 
                                 # Strategy 1: Try comprehensive whitespace regex (spaces, tabs, non-breaking spaces)
                                 try:
-                                    # Pattern: up to 20 whitespace chars (spaces, tabs, non-breaking spaces) followed by target
-                                    regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,20}}{escaped_target}"
+                                    # Pattern: up to MAX_LOGO_SPACES_TO_REMOVE whitespace chars (spaces, tabs, non-breaking spaces) followed by target
+                                    regex_pattern = f"[\\s\\u00A0\\u2000-\\u200A\\u202F\\u205F\\u3000]{{0,{MAX_LOGO_SPACES_TO_REMOVE}}}{escaped_target}"
                                     
                                     rd1 = doc.createReplaceDescriptor()
                                     rd1.SearchString = regex_pattern
@@ -497,7 +500,7 @@ def main():
                                     
                                     if replaced_count == 0:
                                         # Strategy 2: Try simpler space-only regex
-                                        regex_pattern2 = f" {{0,20}}{escaped_target}"
+                                        regex_pattern2 = f" {{0,{MAX_LOGO_SPACES_TO_REMOVE}}}{escaped_target}"
                                         rd2 = doc.createReplaceDescriptor()
                                         rd2.SearchString = regex_pattern2
                                         rd2.ReplaceString = "__LOGO_PLACEHOLDER__"
@@ -541,30 +544,13 @@ def main():
                                 if replaced_count == 0:
                                     print(f"🔄 Strategy 4: Manual space removal approach")
                                     
-                                    # Try different space combinations manually
-                                    space_patterns = [
-                                        f"                    {target_text}",  # 20 spaces
-                                        f"                   {target_text}",   # 19 spaces
-                                        f"                  {target_text}",    # 18 spaces
-                                        f"                 {target_text}",     # 17 spaces
-                                        f"                {target_text}",      # 16 spaces
-                                        f"               {target_text}",       # 15 spaces
-                                        f"              {target_text}",        # 14 spaces
-                                        f"             {target_text}",         # 13 spaces
-                                        f"            {target_text}",          # 12 spaces
-                                        f"           {target_text}",           # 11 spaces
-                                        f"          {target_text}",            # 10 spaces
-                                        f"         {target_text}",             # 9 spaces
-                                        f"        {target_text}",              # 8 spaces
-                                        f"       {target_text}",               # 7 spaces
-                                        f"      {target_text}",                # 6 spaces
-                                        f"     {target_text}",                 # 5 spaces
-                                        f"    {target_text}",                  # 4 spaces
-                                        f"   {target_text}",                   # 3 spaces
-                                        f"  {target_text}",                    # 2 spaces
-                                        f" {target_text}",                     # 1 space
-                                        target_text                            # No spaces
-                                    ]
+                                    # Try different space combinations manually - generate dynamically based on MAX_LOGO_SPACES_TO_REMOVE
+                                    space_patterns = []
+                                    for num_spaces in range(MAX_LOGO_SPACES_TO_REMOVE, -1, -1):  # From MAX_LOGO_SPACES_TO_REMOVE down to 0
+                                        spaces = " " * num_spaces
+                                        space_patterns.append(f"{spaces}{target_text}")
+                                    
+                                    print(f"🔍 Trying {len(space_patterns)} different space combinations (from {MAX_LOGO_SPACES_TO_REMOVE} down to 0 spaces)")
                                     
                                     for pattern in space_patterns:
                                         rd3 = doc.createReplaceDescriptor()
