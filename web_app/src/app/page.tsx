@@ -138,9 +138,9 @@ export default function Dashboard() {
             setTimeout(() => {
               const automationPanel = document.getElementById('automation-panel');
               if (automationPanel) {
-                automationPanel.scrollIntoView({ 
-                  behavior: 'smooth', 
-                  block: 'start' 
+                automationPanel.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'start',
                 });
                 // Add a subtle highlight effect
                 automationPanel.classList.add('highlight-automation');
@@ -255,13 +255,18 @@ export default function Dashboard() {
             <div className='flex items-center'>
               <div className='text-green-600 mr-4 text-2xl'>✅</div>
               <div>
-                <h3 className='text-green-900 font-semibold text-lg'>Questionnaire Completed Successfully!</h3>
+                <h3 className='text-green-900 font-semibold text-lg'>
+                  Questionnaire Completed Successfully!
+                </h3>
                 <p className='text-green-700 text-sm mt-1'>
-                  Your responses have been saved. <strong>Next step:</strong> Click "Start Automation" below to generate your custom policy document.
+                  Your responses have been saved. <strong>Next step:</strong> Click "Start
+                  Automation" below to generate your custom policy document.
                 </p>
                 <div className='flex items-center mt-2 text-blue-700 text-sm'>
                   <span className='mr-2'>👇</span>
-                  <span className='font-medium'>Use the automation panel below to start processing</span>
+                  <span className='font-medium'>
+                    Use the automation panel below to start processing
+                  </span>
                 </div>
               </div>
             </div>
@@ -277,7 +282,7 @@ export default function Dashboard() {
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Left Column - Control Panel & Progress */}
           <div className='lg:col-span-1 space-y-6'>
-            <div id="automation-panel" className='automation-panel'>
+            <div id='automation-panel' className='automation-panel'>
               <ControlPanel
                 onStartAutomation={handleStartAutomation}
                 onStopAutomation={handleStopAutomation}
