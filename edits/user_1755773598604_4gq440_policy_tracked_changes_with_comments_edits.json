@@ -46,47 +46,49 @@
       {
         "target_text": "Password management systems should be user-friendly",
         "action": "comment",
-        "comment": "You indicated Todoist for password management, which appears to be a task management tool rather than a password manager. Please verify if you have a dedicated password management solution. No password tool = section removed; Using specific tool = policy references actual system.",
+        "comment": "You indicated Todoist for password management, which appears to be a task management tool rather than a password manager. We recommend implementing a dedicated password management solution. No password tool = section removed; Using specific tool = policy references actual system.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through our Custom Ticketing system",
-        "comment": "You indicated using a custom ticketing system for access requests. Ticketing system = proper audit trails and tracking capabilities.",
+        "comment": "You indicated using a Custom Ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "quarterly basis",
-        "action": "comment",
-        "comment": "You indicated a custom access review timeframe. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Please specify your desired review frequency.",
+        "action": "replace",
+        "replacement": "custom basis",
+        "comment": "You selected a custom access review timeframe. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<24 business hours>",
-        "action": "comment",
-        "comment": "You indicated a custom revocation timeframe. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. Please specify your desired timeframe.",
+        "action": "replace",
+        "replacement": "custom revoke time",
+        "comment": "You selected a custom termination timeframe. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<owner>",
         "action": "replace",
         "replacement": "Hassan",
-        "comment": "You indicated that Hassan is the owner of this access control policy, so the owner placeholder needs to be replaced. This person is the enforcer of the policy. If your employees have questions about the policy, that person should be easily identified by employees and prepared to answer any of their questions regarding the policy.",
+        "comment": "You indicated that Hassan is the owner of this access control policy, so the owner placeholder needs to be replaced. This person is the enforcer of the policy.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Exceptions: IT Manager>",
         "action": "replace",
         "replacement": "custom approving person",
-        "comment": "You indicated that the custom approving person is responsible for approving exceptions to this policy. Can be the same person as violations reporting section. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here.",
+        "comment": "You indicated that the custom approving person is responsible for approving exceptions to this policy. Can be the same person as violations reporting section.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Violations: IT Manager>",
         "action": "replace",
         "replacement": "custom violation report person",
-        "comment": "You indicated that the custom violation report person is responsible for handling policy violations. Can be the same person as exception approval section. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here.",
+        "comment": "You indicated that the custom violation report person is responsible for handling policy violations. Can be the same person as exception approval section.",
         "comment_author": "Secfix AI"
       }
     ]
