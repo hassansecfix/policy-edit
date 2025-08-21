@@ -687,6 +687,26 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
     except Exception as e:
         return False, f"GitHub Actions trigger failed: {e}"
 
+def clean_policy_highlighting(policy_path):
+    """Clean highlighting from policy document before processing."""
+    try:
+        # Import the highlighting cleaner function
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from ai_policy_processor import clean_docx_highlighting
+        
+        print("🎨 Cleaning highlighted text from policy document...")
+        success, message = clean_docx_highlighting(policy_path)
+        
+        if success:
+            print(f"✅ {message}")
+        else:
+            print(f"⚠️  Warning: {message}")
+            
+        return success
+    except Exception as e:
+        print(f"⚠️  Warning: Could not clean highlighting: {e}")
+        return False
+
 def main():
     parser = argparse.ArgumentParser(description='Complete Policy Automation - End-to-End Flow')
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
@@ -701,6 +721,7 @@ def main():
     parser.add_argument('--logo-width-mm', type=int, help='Optional logo width in millimeters')
     parser.add_argument('--logo-height-mm', type=int, help='Optional logo height in millimeters')
     parser.add_argument('--user-id', help='Unique user identifier for multi-user isolation (auto-generated if not provided)')
+    parser.add_argument('--skip-highlighting-cleanup', action='store_true', help='Skip automatic removal of highlighted text from policy document')
     
     args = parser.parse_args()
     
@@ -749,6 +770,12 @@ def main():
     policy_instructions_path = "data/updated_policy_instructions_v4.0.md"
     
     try:
+        # Pre-Step: Clean highlighting from policy document
+        if not args.skip_highlighting_cleanup:
+            clean_policy_highlighting(args.policy)
+        else:
+            print("⏭️  Skipping highlighting cleanup (--skip-highlighting-cleanup)")
+        
         # Track created logo file for git commit
         created_logo_file = None
         

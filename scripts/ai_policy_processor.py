@@ -32,6 +32,63 @@ anthropic = None
 # Suppress deprecation warnings for the Claude API
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+def clean_docx_highlighting(input_path, output_path=None):
+    """Remove all highlighting from a DOCX file."""
+    try:
+        import docx
+        from docx.shared import RGBColor
+        
+        # If no output path specified, overwrite the input file
+        if output_path is None:
+            output_path = input_path
+            
+        doc = docx.Document(input_path)
+        highlighting_removed = 0
+        
+        # Process all paragraphs
+        for paragraph in doc.paragraphs:
+            for run in paragraph.runs:
+                # Remove highlight color
+                try:
+                    if run.font.highlight_color is not None:
+                        run.font.highlight_color = None
+                        highlighting_removed += 1
+                except:
+                    pass
+                
+                # Remove background color
+                try:
+                    if hasattr(run.font, 'fill'):
+                        run.font.fill.fore_color.rgb = None
+                except:
+                    pass
+        
+        # Process tables if any
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            try:
+                                if run.font.highlight_color is not None:
+                                    run.font.highlight_color = None
+                                    highlighting_removed += 1
+                            except:
+                                pass
+        
+        # Save the cleaned document
+        doc.save(output_path)
+        
+        if highlighting_removed > 0:
+            print(f"🎨 Removed highlighting from {highlighting_removed} text runs in DOCX")
+        
+        return True, f"Cleaned {highlighting_removed} highlighted sections"
+        
+    except ImportError:
+        return False, "python-docx not available for highlighting removal"
+    except Exception as e:
+        return False, f"Error cleaning DOCX highlighting: {e}"
+
 def filter_base64_from_csv(csv_content):
     """Filter out base64 logo data from CSV content to save API tokens."""
     lines = csv_content.split('\n')
@@ -81,9 +138,39 @@ def load_file_content(file_path):
             import docx
             doc = docx.Document(file_path)
             content = []
+            
             for paragraph in doc.paragraphs:
-                content.append(paragraph.text)
-            return '\n'.join(content)
+                # Extract text while filtering out highlighted content
+                clean_text = ""
+                for run in paragraph.runs:
+                    # Check if the run has highlighting
+                    is_highlighted = False
+                    try:
+                        # Check for highlight color (python-docx way)
+                        if run.font.highlight_color is not None:
+                            is_highlighted = True
+                    except:
+                        pass
+                    
+                    # Also check for background color highlighting
+                    try:
+                        if hasattr(run.font, 'fill') and run.font.fill.fore_color.rgb is not None:
+                            is_highlighted = True
+                    except:
+                        pass
+                    
+                    # Only add text if it's not highlighted
+                    if not is_highlighted:
+                        clean_text += run.text
+                
+                # Only add non-empty paragraphs
+                if clean_text.strip():
+                    content.append(clean_text)
+            
+            filtered_content = '\n'.join(content)
+            print(f"📄 DOCX loaded: {len(filtered_content)} characters (highlighted text removed)")
+            return filtered_content
+            
         except ImportError:
             return f"[DOCX FILE: {file_path.name} - Install python-docx to read content]"
         except Exception as e:
