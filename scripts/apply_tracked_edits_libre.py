@@ -446,28 +446,80 @@ def main():
                                 actual_logo_path = logo_file_path
                                 print(f"🖼️  Using existing logo file: {actual_logo_path}")
                             elif logo_base64_data:
-                                # Convert base64 to temporary file
-                                import tempfile
+                                # Convert base64 directly to LibreOffice graphic without temporary file
                                 import base64
-                                print(f"🖼️  Converting base64 logo data...")
+                                import io
+                                print(f"🖼️  Processing base64 logo data directly...")
                                 
-                                # Remove data URL prefix if present
+                                # Validate and clean base64 data
                                 if ',' in logo_base64_data:
                                     base64_content = logo_base64_data.split(',')[1]
+                                    print(f"🔍 Removed data URL prefix, base64 content length: {len(base64_content)}")
                                 else:
                                     base64_content = logo_base64_data
+                                    print(f"🔍 Using raw base64 content, length: {len(base64_content)}")
                                 
-                                # Decode base64 to binary
-                                logo_binary = base64.b64decode(base64_content)
+                                # Validate base64 content
+                                if not base64_content or len(base64_content.strip()) == 0:
+                                    print(f"❌ Base64 content is empty after processing")
+                                    continue
                                 
-                                # Create temporary file
-                                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-                                temp_file.write(logo_binary)
-                                temp_file.close()
+                                # Clean base64 content (remove whitespace)
+                                base64_content = base64_content.strip()
                                 
-                                actual_logo_path = temp_file.name
-                                temp_file_to_cleanup = temp_file.name
-                                print(f"✅ Logo converted from base64 ({len(logo_binary)} bytes)")
+                                # Decode base64 to binary with error handling
+                                try:
+                                    logo_binary = base64.b64decode(base64_content, validate=True)
+                                    if len(logo_binary) == 0:
+                                        print(f"❌ Base64 decoded to empty binary data")
+                                        continue
+                                    print(f"✅ Successfully decoded base64 to {len(logo_binary)} bytes")
+                                except Exception as decode_error:
+                                    print(f"❌ Base64 decode failed: {decode_error}")
+                                    print(f"🔍 Base64 sample (first 100 chars): {base64_content[:100]}...")
+                                    continue
+                                
+                                # Create temporary file for LibreOffice with better error handling
+                                try:
+                                    # Create a temporary file for LibreOffice to read
+                                    import tempfile
+                                    import os
+                                    
+                                    # Determine image format from base64 header
+                                    image_suffix = '.png'  # default
+                                    if logo_base64_data.startswith('data:image/'):
+                                        format_part = logo_base64_data.split(';')[0].split('/')[-1]
+                                        if format_part.lower() in ['jpg', 'jpeg', 'png', 'gif', 'webp']:
+                                            image_suffix = f'.{format_part.lower()}'
+                                    
+                                    # Create temporary file with proper permissions
+                                    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=image_suffix)
+                                    temp_file.write(logo_binary)
+                                    temp_file.flush()  # Ensure data is written
+                                    temp_file.close()
+                                    
+                                    # Verify file was created and has content
+                                    if os.path.exists(temp_file.name) and os.path.getsize(temp_file.name) > 0:
+                                        actual_logo_path = temp_file.name
+                                        temp_file_to_cleanup = temp_file.name
+                                        print(f"✅ Logo temporary file created: {temp_file.name} ({len(logo_binary)} bytes, format: {image_suffix})")
+                                        
+                                        # Set readable permissions
+                                        try:
+                                            os.chmod(temp_file.name, 0o644)
+                                        except Exception:
+                                            pass  # Not critical if chmod fails
+                                    else:
+                                        print(f"❌ Temporary file creation failed or file is empty")
+                                        actual_logo_path = None
+                                        temp_file_to_cleanup = None
+                                        
+                                except Exception as e:
+                                    print(f"❌ Failed to process base64 logo data: {e}")
+                                    import traceback
+                                    print(f"🐛 Stack trace: {traceback.format_exc()}")
+                                    actual_logo_path = None
+                                    temp_file_to_cleanup = None
                             
                             if actual_logo_path and os.path.exists(actual_logo_path):
                                 # Handle both space removal (positive) and space addition (negative)
@@ -732,8 +784,9 @@ def main():
                                 if temp_file_to_cleanup:
                                     try:
                                         os.unlink(temp_file_to_cleanup)
-                                    except:
-                                        pass
+                                        print(f"🧹 Cleaned up temporary logo file: {temp_file_to_cleanup}")
+                                    except Exception as e:
+                                        print(f"⚠️  Could not clean up temporary file: {e}")
                                         
                                 if replaced_count > 0:
                                     print(f"🎉 Successfully replaced {replaced_count} logo placeholder(s) with user's logo")
