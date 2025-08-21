@@ -823,8 +823,11 @@ def main():
                 operations = data.get('instructions', {}).get('operations', [])
                 has_logo_operations = any(op.get('action') == 'replace_with_logo' for op in operations)
                 
+                print(f"🔍 DEBUG: has_logo_operations = {has_logo_operations}")
+                print(f"🔍 DEBUG: existing logo_path = {data['metadata'].get('logo_path')}")
+                
                 if has_logo_operations and not data['metadata'].get('logo_path'):
-                    # ONLY check for user's embedded logo data - NO FALLBACKS
+                    print("🔍 DEBUG: Logo operations found and no existing logo path - attempting to create PNG from base64")
                     
                     # Try to extract logo from original environment variable data (before API filtering)
                     try:
@@ -832,6 +835,7 @@ def main():
                         
                         # First, try environment variable data (contains original base64)
                         env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+                        print(f"🔍 DEBUG: Environment data exists: {bool(env_data)}")
                         if env_data:
                             try:
                                 json_data = json.loads(env_data)
@@ -868,9 +872,13 @@ def main():
                                         
                             except (json.JSONDecodeError, KeyError, Exception) as e:
                                 print(f"⚠️  Could not extract logo from environment data: {e}")
+                                import traceback
+                                print(f"🔍 DEBUG: Full error trace: {traceback.format_exc()}")
                         
                         # Fallback: try CSV file (for backward compatibility)
+                        print(f"🔍 DEBUG: logo_created after env processing = {logo_created}")
                         if not logo_created and os.path.exists(questionnaire_csv):
+                            print(f"🔍 DEBUG: Trying CSV fallback: {questionnaire_csv}")
                             with open(questionnaire_csv, 'r', encoding='utf-8') as f:
                                 csv_content = f.read()
                             
@@ -900,6 +908,7 @@ def main():
                                         break
                             
                             # Fallback: check if user provided a file path reference
+                            print(f"🔍 DEBUG: logo_created after CSV processing = {logo_created}")
                             if not logo_created:
                                 for line in csv_content.split('\n'):
                                     if 'company_logo' in line and 'File upload' in line:
@@ -914,9 +923,15 @@ def main():
                         
                         if not logo_created:
                             print("⚠️  No user logo found - skipping logo operations")
+                            print(f"🔍 DEBUG: logo_created final status = {logo_created}")
                             
                     except Exception as e:
                         print(f"⚠️  Failed to process user's logo data: {e}")
+                else:
+                    if not has_logo_operations:
+                        print("🔍 DEBUG: No logo operations found in JSON - no logo processing needed")
+                    if data['metadata'].get('logo_path'):
+                        print(f"🔍 DEBUG: Existing logo path found: {data['metadata'].get('logo_path')}")
             
             with open(edits_json, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
