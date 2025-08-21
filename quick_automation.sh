@@ -82,18 +82,23 @@ build_logo_args
 build_github_arg
 
 # Check for user-specific uploaded company logo
+LOGO_ARGS=""
 # Look for user-specific logo files (pattern: data/{user_id}_company_logo.png)
 USER_LOGO=$(find data/ -name "*_company_logo.png" 2>/dev/null | head -1)
 if [[ -f "$USER_LOGO" ]]; then
+    LOGO_ARGS=" --logo $USER_LOGO"
     echo "🖼️  Using user-specific logo: $USER_LOGO"
 elif [[ -f "data/company_logo.png" ]]; then
+    LOGO_ARGS=" --logo data/company_logo.png"
     echo "🖼️  Using default logo: data/company_logo.png"
 else
     echo "📷 No logo file found - will use original policy document logo"
 fi
 
-# Check for skip API configuration (will be added to Python args later)
+# Check for skip API configuration
+SKIP_API_ARG=""
 if [[ "${SKIP_API_CALL}" == "true" ]] || [[ "${SKIP_API_CALL}" == "TRUE" ]] || [[ "${SKIP_API_CALL}" == "True" ]]; then
+    SKIP_API_ARG=" --skip-api"
     echo "💰 SKIP_API_CALL enabled - will use existing JSON file"
 fi
 
@@ -104,56 +109,26 @@ echo "🔑 User ID: $USER_ID (for multi-user isolation)"
 # Pass questionnaire source to Python script
 export QUESTIONNAIRE_SOURCE="${QUESTIONNAIRE_SOURCE:-file}"
 
-# Build command arguments array to avoid "Argument list too long" error
-PYTHON_ARGS=("scripts/complete_automation.py")
-PYTHON_ARGS+=("--policy" "$POLICY_FILE")
-PYTHON_ARGS+=("--output-name" "$OUTPUT_NAME")
-PYTHON_ARGS+=("--user-id" "$USER_ID")
-PYTHON_ARGS+=("--api-key" "$CLAUDE_API_KEY")
-
-# Add questionnaire argument based on input method
+# Build questionnaire argument based on input method
 if [[ "$QUESTIONNAIRE_INPUT_METHOD" == "env_var" ]]; then
     # Pass environment variable data directly to the automation script
-    PYTHON_ARGS+=("--questionnaire-env-data")
+    QUESTIONNAIRE_ARG="--questionnaire-env-data"
     echo "🔧 Using environment variable data approach (production-friendly)"
 elif [[ "$QUESTIONNAIRE_INPUT_METHOD" == "temp_file" ]]; then
     # Use temp file approach (legacy)
-    PYTHON_ARGS+=("--questionnaire" "$QUESTIONNAIRE_JSON_FILE")
+    QUESTIONNAIRE_ARG="--questionnaire \"$QUESTIONNAIRE_JSON_FILE\""
     echo "🔧 Using temp file approach (legacy)"
 else
     echo "❌ ERROR: Unknown questionnaire input method: $QUESTIONNAIRE_INPUT_METHOD"
     exit 1
 fi
 
-# Add logo arguments if available
-if [[ -f "$USER_LOGO" ]]; then
-    PYTHON_ARGS+=("--logo" "$USER_LOGO")
-elif [[ -f "data/company_logo.png" ]]; then
-    PYTHON_ARGS+=("--logo" "data/company_logo.png")
-elif [[ -n "${LOGO_PATH}" ]]; then
-    PYTHON_ARGS+=("--logo" "${LOGO_PATH}")
-fi
-
-# Add logo dimensions if specified
-if [[ -n "${LOGO_WIDTH_MM}" ]]; then
-    PYTHON_ARGS+=("--logo-width-mm" "${LOGO_WIDTH_MM}")
-fi
-
-if [[ -n "${LOGO_HEIGHT_MM}" ]]; then
-    PYTHON_ARGS+=("--logo-height-mm" "${LOGO_HEIGHT_MM}")
-fi
-
-if [[ -n "$GITHUB_TOKEN" ]]; then
-    PYTHON_ARGS+=("--github-token" "$GITHUB_TOKEN")
-fi
-
-if [[ "${SKIP_API_CALL}" == "true" ]] || [[ "${SKIP_API_CALL}" == "TRUE" ]] || [[ "${SKIP_API_CALL}" == "True" ]]; then
-    PYTHON_ARGS+=("--skip-api")
-fi
-
-# Execute the command with proper argument handling
-echo "🚀 Executing: python3 ${PYTHON_ARGS[*]}"
-python3 "${PYTHON_ARGS[@]}"
+eval "python3 scripts/complete_automation.py \
+  --policy \"$POLICY_FILE\" \
+  $QUESTIONNAIRE_ARG \
+  --output-name \"$OUTPUT_NAME\" \
+  --user-id \"$USER_ID\" \
+  --api-key \"$CLAUDE_API_KEY\"${LOGO_ARGS}${GITHUB_ARG}${SKIP_API_ARG}"
 
 echo ""
 echo "✨ Done! Check GitHub Actions for your results."
