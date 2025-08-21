@@ -396,10 +396,24 @@ def main():
         # Load questionnaire content from environment variable or file
         if args.questionnaire_env_data:
             print("📊 Loading questionnaire data from environment variable...")
-            env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
-            if not env_data:
-                print("❌ Error: QUESTIONNAIRE_ANSWERS_DATA environment variable not set!")
-                sys.exit(1)
+            # Try to get questionnaire data from file or environment variable
+            env_data = None
+            questionnaire_data_file = os.environ.get('QUESTIONNAIRE_DATA_FILE')
+            if questionnaire_data_file and os.path.exists(questionnaire_data_file):
+                try:
+                    with open(questionnaire_data_file, 'r', encoding='utf-8') as f:
+                        env_data = f.read()
+                    print(f"📄 Reading questionnaire data from file: {questionnaire_data_file}")
+                except Exception as e:
+                    print(f"❌ Error: Failed to read questionnaire data file: {e}")
+                    sys.exit(1)
+            else:
+                # Fallback to environment variable
+                env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+                if not env_data:
+                    print("❌ Error: Neither QUESTIONNAIRE_DATA_FILE nor QUESTIONNAIRE_ANSWERS_DATA available!")
+                    sys.exit(1)
+                print("📄 Using questionnaire data from environment variable")
             
             try:
                 # Parse and convert JSON to CSV-like format

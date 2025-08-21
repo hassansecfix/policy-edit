@@ -250,12 +250,18 @@ class AutomationRunner:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
             
-            # Pass questionnaire data via environment variable (no temp files needed)
-            # This avoids production file system permission issues
+            # Pass questionnaire data via temporary file to avoid command line size limits
+            # Base64 logo data can be very large and cause "Argument list too long" errors
             try:
                 questionnaire_json_str = json.dumps(questionnaire_answers)
-                env['QUESTIONNAIRE_ANSWERS_DATA'] = questionnaire_json_str
-                env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+                # Write to temporary file instead of environment variable
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json', prefix='questionnaire_') as f:
+                    f.write(questionnaire_json_str)
+                    temp_questionnaire_file = f.name
+                
+                env['QUESTIONNAIRE_DATA_FILE'] = temp_questionnaire_file
+                env['QUESTIONNAIRE_SOURCE'] = 'temp_file'
                 
                 # Pass user ID for multi-user isolation if provided
                 if user_id:
