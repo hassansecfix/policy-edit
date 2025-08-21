@@ -54,7 +54,7 @@
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be managed through the Custom Ticketing system",
+        "replacement": "All requests will be submitted through the Custom Ticketing system",
         "comment": "You indicated using a custom ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
