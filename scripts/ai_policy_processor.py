@@ -428,10 +428,11 @@ def main():
                         csv_line = f"{question_number};{question_text};{field};{response_type};{value}"
                         csv_lines.append(csv_line)
                 
-                # Create CSV content and apply base64 filtering using existing logic
+                # Create CSV content and apply base64 filtering ONLY for API (keep original in env)
                 raw_csv_content = '\n'.join(csv_lines)
                 questionnaire_content = filter_base64_from_csv(raw_csv_content)
                 print(f"📊 Converted {len(json_data)} JSON answers from environment to CSV format")
+                print(f"🖼️  Note: Original base64 logo data preserved in environment for automation scripts")
                 
             except json.JSONDecodeError as e:
                 print(f"❌ Error: Invalid JSON in environment variable: {e}")
