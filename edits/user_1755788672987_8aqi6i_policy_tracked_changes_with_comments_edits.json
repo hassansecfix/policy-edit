@@ -40,53 +40,57 @@
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
+        "replacement": "",
         "comment": "You indicated you use Azure DevOps for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Password management systems should be user-friendly",
-        "action": "comment",
-        "comment": "You indicated Todoist which is not a password management tool. This section should be reviewed as Todoist is a task management tool, not a password manager. Consider implementing a dedicated password management solution for security.",
+        "action": "replace",
+        "replacement": "Password management systems, specifically Todoist, should be user-friendly",
+        "comment": "You indicated you use Todoist for password management, so we've updated the generic reference. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through our Custom Ticketing system",
-        "comment": "You indicated using a Custom Ticketing system for access requests. Ticketing system = proper audit trails and tracking; Email = simple but no tracking; Chat = fast but informal.",
+        "comment": "You indicated using a custom ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "a quarterly basis",
-        "action": "comment",
-        "comment": "You indicated 'Custom access review time' but didn't specify the frequency. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex structure, consider monthly reviews. Small companies can use annual reviews. Pick any frequency that works for your company - auditors care about consistency, not specific timeframe.",
+        "action": "replace",
+        "replacement": "Custom access review time",
+        "comment": "You selected Custom access review time instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<24 business hours>",
-        "action": "comment",
-        "comment": "You indicated 'custom revoke time' but didn't specify the timeframe. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe.",
+        "action": "replace",
+        "replacement": "custom revoke time",
+        "comment": "You selected custom revoke time instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<owner>",
         "action": "replace",
         "replacement": "Hassan",
-        "comment": "You indicated that Hassan is the owner of this access control policy. This person is the enforcer of the policy and should be prepared to answer any questions regarding the policy.",
+        "comment": "You indicated that Hassan is the owner of this access control policy, so the owner placeholder needs to be replaced. This person is the enforcer of the policy. If your employees have questions about the policy, that person should be easily identified by employees and prepared to answer any of their questions regarding the policy.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Exceptions: IT Manager>",
         "action": "replace",
         "replacement": "custom approving person",
-        "comment": "You indicated that the custom approving person is responsible for approving exceptions to this policy. Can be the same person as violations reporting section. Select what works best for you - auditors will not issue a non-conformity for role selection.",
+        "comment": "You indicated that the custom approving person is responsible for approving exceptions to this policy, so the IT Manager placeholder should be updated. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Violations: IT Manager>",
         "action": "replace",
         "replacement": "custom violation report person",
-        "comment": "You indicated that the custom violation report person is responsible for handling policy violations. Can be the same person as exception approval section. Select what works best for you - auditors will not issue a non-conformity for role selection.",
+        "comment": "You indicated that the custom violation report person is responsible for handling policy violations, so the IT Manager placeholder should be updated. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
         "comment_author": "Secfix AI"
       }
     ]
