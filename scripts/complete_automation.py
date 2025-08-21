@@ -837,22 +837,9 @@ def main():
                     try:
                         logo_created = False
                         
-                        # First, try questionnaire data file (contains original base64)
-                        env_data = None
-                        questionnaire_data_file = os.environ.get('QUESTIONNAIRE_DATA_FILE')
-                        if questionnaire_data_file and os.path.exists(questionnaire_data_file):
-                            print(f"🔍 DEBUG: Reading questionnaire data from file: {questionnaire_data_file}")
-                            try:
-                                with open(questionnaire_data_file, 'r', encoding='utf-8') as f:
-                                    env_data = f.read()
-                            except Exception as e:
-                                print(f"🔍 DEBUG: Failed to read questionnaire data file: {e}")
-                        else:
-                            # Fallback to environment variable (for backward compatibility)
-                            env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
-                            print(f"🔍 DEBUG: Using environment variable data")
-                        
-                        print(f"🔍 DEBUG: Questionnaire data exists: {bool(env_data)}")
+                        # First, try environment variable data (contains original base64)
+                        env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+                        print(f"🔍 DEBUG: Environment data exists: {bool(env_data)}")
                         if env_data:
                             try:
                                 json_data = json.loads(env_data)
@@ -1033,48 +1020,23 @@ def main():
             except Exception as e:
                 print(f"⚠️  Warning: Could not clean up logo file: {e}")
         
-        # Clean up temporary questionnaire data file
-        questionnaire_data_file = os.environ.get('QUESTIONNAIRE_DATA_FILE')
-        if questionnaire_data_file and os.path.exists(questionnaire_data_file):
-            try:
-                os.unlink(questionnaire_data_file)
-                print(f"🧹 Cleaned up temporary questionnaire file: {questionnaire_data_file}")
-            except Exception as e:
-                print(f"⚠️  Warning: Could not clean up questionnaire file: {e}")
-        
     except KeyboardInterrupt:
         print("\n⏹️  Automation cancelled by user")
         # Clean up user logo file if it was created
-        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('edits/'):
+        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('data/'):
             try:
                 os.unlink(created_logo_file)
                 print(f"🧹 Cleaned up user logo file")
-            except:
-                pass
-        # Clean up temporary questionnaire data file
-        questionnaire_data_file = os.environ.get('QUESTIONNAIRE_DATA_FILE')
-        if questionnaire_data_file and os.path.exists(questionnaire_data_file):
-            try:
-                os.unlink(questionnaire_data_file)
-                print(f"🧹 Cleaned up temporary questionnaire file")
             except:
                 pass
         sys.exit(1)
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
         # Clean up user logo file if it was created
-        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('edits/'):
+        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('data/'):
             try:
                 os.unlink(created_logo_file)
                 print(f"🧹 Cleaned up user logo file")
-            except:
-                pass
-        # Clean up temporary questionnaire data file
-        questionnaire_data_file = os.environ.get('QUESTIONNAIRE_DATA_FILE')
-        if questionnaire_data_file and os.path.exists(questionnaire_data_file):
-            try:
-                os.unlink(questionnaire_data_file)
-                print(f"🧹 Cleaned up temporary questionnaire file")
             except:
                 pass
         sys.exit(1)
