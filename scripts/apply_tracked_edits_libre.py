@@ -195,8 +195,8 @@ def ensure_listener(fast_mode=False):
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=os.environ)
         
         # Wait and test connection (reduced time in fast mode)
-        max_wait = 10 if fast_mode else 30
-        wait_interval = 0.5 if fast_mode else 1
+        max_wait = 5 if fast_mode else 15
+        wait_interval = 0.2 if fast_mode else 0.5
         print("Starting LibreOffice listener...")
         for i in range(max_wait):
             time.sleep(wait_interval)
@@ -204,15 +204,16 @@ def ensure_listener(fast_mode=False):
                 # Test if we can connect
                 import socket
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(1)
+                sock.settimeout(0.5)
                 result = sock.connect_ex(('127.0.0.1', 2002))
                 sock.close()
                 if result == 0:
-                    print(f"LibreOffice listener ready after {i+1} seconds")
+                    print(f"LibreOffice listener ready after {(i+1)*wait_interval:.1f} seconds")
                     return
             except:
                 pass
-            print(f"Waiting for LibreOffice... ({i+1}/30)")
+            if not fast_mode or i % 5 == 0:  # Reduce log spam in fast mode
+                print(f"Waiting for LibreOffice... ({i+1}/{max_wait})")
         
         print("WARNING: LibreOffice listener may not be ready")
         
@@ -247,18 +248,20 @@ def main():
     
     print("Connecting to LibreOffice...")
     ctx = None
-    max_attempts = 5 if args.fast else 10
+    max_attempts = 3 if args.fast else 10
+    retry_delay = 0.5 if args.fast else 2
     for attempt in range(max_attempts):
         try:
             ctx = resolver.resolve("uno:socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext")
-            print("Successfully connected to LibreOffice!")
+            print(f"✅ Connected to LibreOffice (attempt {attempt + 1})")
             break
         except Exception as e:
-            if attempt < 9:
-                print(f"Connection attempt {attempt + 1} failed, retrying in 2 seconds...")
-                time.sleep(2)
+            if attempt < max_attempts - 1:
+                if not args.fast or attempt == 0:  # Reduce log spam in fast mode
+                    print(f"Connection attempt {attempt + 1} failed, retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
             else:
-                print(f"Could not connect to LibreOffice listener after 10 attempts. Error: {e}", file=sys.stderr)
+                print(f"❌ Could not connect to LibreOffice listener after {max_attempts} attempts. Error: {e}", file=sys.stderr)
                 print("Make sure LibreOffice is running with --launch flag or start it externally.", file=sys.stderr)
                 sys.exit(1)
     
@@ -319,13 +322,16 @@ def main():
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
 
-    # Set document properties for tracked changes
-    try:
-        doc_info = doc.getDocumentInfo()
-        doc_info.setPropertyValue("Author", "Secfix AI")
-        doc_info.setPropertyValue("ModifiedBy", "Secfix AI")
-    except Exception as e:
-        print(f"Warning: Could not set document author: {e}")
+    # Set document properties for tracked changes (skip in fast mode)
+    if not args.fast:
+        try:
+            doc_info = doc.getDocumentInfo()
+            doc_info.setPropertyValue("Author", "Secfix AI")
+            doc_info.setPropertyValue("ModifiedBy", "Secfix AI")
+        except Exception as e:
+            print(f"Warning: Could not set document author: {e}")
+    else:
+        print("⚡ Fast mode: Skipping document metadata setup")
 
     # Initially set tracking to False - we'll enable it after logo operations
     # This gets overridden later in the script
@@ -1138,7 +1144,10 @@ def main():
                     print(f"Warning: Could not add comment: {e}")
             
             if count_replaced > 0:
-                print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
+                if args.fast and count_replaced > 10:
+                    print(f"⚡ Replaced {count_replaced} occurrences by {author_name} (fast mode)")
+                else:
+                    print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
     finally:
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)

@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # OPTIMIZATION 1: Cache LibreOffice installation
+      # OPTIMIZATION 1: Enhanced LibreOffice caching
       - name: Cache LibreOffice installation
         uses: actions/cache@v4
         with:
@@ -30,19 +30,28 @@ jobs:
             /usr/lib/libreoffice
             /usr/lib/python3/dist-packages/*uno*
             /usr/share/libreoffice
-          key: libreoffice-${{ runner.os }}-v2
+            /var/cache/apt/archives/*.deb
+          key: libreoffice-${{ runner.os }}-v3
           restore-keys: |
+            libreoffice-${{ runner.os }}-v2
             libreoffice-${{ runner.os }}-
 
-      # OPTIMIZATION 2: Only install if not cached
-      - name: Install LibreOffice and Python UNO (if not cached)
+      # OPTIMIZATION 2: Ultra-fast installation with minimal packages
+      - name: Install LibreOffice and Python UNO (Ultra-fast)
         run: |
           if [ ! -d "/usr/lib/libreoffice" ]; then
-            echo "LibreOffice not found in cache, installing..."
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends libreoffice python3-uno
+            echo "Installing LibreOffice (minimal)..."
+            # Parallel operations for speed
+            (sudo apt-get update -qq) &
+            # Install only essential packages
+            sudo apt-get install -y --no-install-recommends \
+              libreoffice-core \
+              libreoffice-writer \
+              python3-uno \
+              xvfb
+            echo "✅ LibreOffice installed"
           else
-            echo "LibreOffice found in cache, skipping installation"
+            echo "✅ LibreOffice found in cache"
           fi
 
       # OPTIMIZATION 3: Simplified Python UNO setup
@@ -65,8 +74,8 @@ jobs:
           [ -f '${{ github.event.inputs.edits_csv }}' ] || (echo "CSV/JSON missing" && exit 1)
           echo "✅ All input files present"
 
-      # OPTIMIZATION 5: Streamlined execution
-      - name: Run redline job (Optimized)
+      # OPTIMIZATION 5: Ultra-streamlined execution
+      - name: Run redline job (Ultra-fast)
         env:
           LO_PY: ${{ steps.lo_py.outputs.path }}
           PYTHONPATH: ${{ steps.lo_py.outputs.pythonpath }}
@@ -75,25 +84,24 @@ jobs:
         run: |
           mkdir -p build
 
-          # OPTIMIZATION: Start services in parallel
-          (sudo apt-get install -y --no-install-recommends xvfb > /dev/null 2>&1 &)
-
-          # Kill existing processes quickly
+          # Kill any existing processes immediately
           sudo pkill -f soffice || true
+          sudo pkill -f Xvfb || true
 
-          # Start virtual display (faster setup)
-          Xvfb :99 -screen 0 800x600x16 > /dev/null 2>&1 &
+          # Start virtual display with minimal settings
+          Xvfb :99 -screen 0 800x600x16 -nolisten tcp > /dev/null 2>&1 &
+          
+          # Minimal wait time
+          sleep 0.5
 
-          # Wait for display
-          sleep 1
-
-          # Run with optimized flags
+          # Set environment once
           export PYTHONPATH="$PYTHONPATH"
           export UNO_PATH="/usr/lib/libreoffice/program"
           export DISPLAY=:99
+          export OMP_NUM_THREADS=1
 
-          # OPTIMIZATION: Add --fast flag to skip heavy operations
-          "$LO_PY" scripts/apply_tracked_edits_libre.py \
+          # Run with all optimizations enabled
+          timeout 300 "$LO_PY" scripts/apply_tracked_edits_libre.py \
             --in "${{ github.event.inputs.input_docx }}" \
             --csv "${{ github.event.inputs.edits_csv }}" \
             --out "${{ github.event.inputs.output_docx }}" \
