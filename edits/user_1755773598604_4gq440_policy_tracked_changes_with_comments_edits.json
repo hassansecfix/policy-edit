@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "generated_timestamp": "2024-02-13T10:00:00Z",
+    "company_name": "Test - Company Name",
+    "format_version": "operations",
+    "total_operations": 12,
+    "generator": "PolicyWorkflow v2.0"
+  },
+  "instructions": {
+    "operations": [
+      {
+        "target_text": "<Company Name>",
+        "action": "replace",
+        "replacement": "Test - Company Name",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Company name, address>",
+        "action": "replace",
+        "replacement": "Test - Company Name, test - address",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "[ADD COMPANY LOGO]",
+        "action": "replace_with_logo",
+        "replacement": "",
+        "comment": "Company logo inserted from questionnaire upload",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
+        "action": "delete",
+        "replacement": "",
+        "comment": "You indicated that you do not have an office, so this section should be removed. No office = no guest network needed; Having office = visitors need controlled network access for security.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Access to Program Source Code",
+        "action": "comment",
+        "comment": "You indicated you use Azure DevOps for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Password management systems should be user-friendly",
+        "action": "comment",
+        "comment": "You indicated Todoist which is not a password management tool. This section should be reviewed as Todoist is a task management tool, not a password manager. No password tool = section removed; Using specific tool = policy references actual system.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "All requests will be sent by email to <email>",
+        "action": "replace",
+        "replacement": "All requests will be submitted through our Custom Ticketing system",
+        "comment": "You indicated using a Custom Ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "quarterly basis",
+        "action": "replace",
+        "replacement": "custom basis",
+        "comment": "You selected a custom access review timeframe. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<24 business hours>",
+        "action": "replace",
+        "replacement": "custom revoke time",
+        "comment": "You selected a custom termination timeframe. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<owner>",
+        "action": "replace",
+        "replacement": "Hassan",
+        "comment": "You indicated that Hassan is the owner of this access control policy, so the owner placeholder needs to be replaced. This person is the enforcer of the policy.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Exceptions: IT Manager>",
+        "action": "replace",
+        "replacement": "custom approving person",
+        "comment": "You indicated that the custom approving person is responsible for approving exceptions to this policy. Can be the same person as violations reporting section.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Violations: IT Manager>",
+        "action": "replace",
+        "replacement": "custom violation report person",
+        "comment": "You indicated that the custom violation report person is responsible for handling policy violations. Can be the same person as exception approval section.",
+        "comment_author": "Secfix AI"
+      }
+    ]
+  }
+}
