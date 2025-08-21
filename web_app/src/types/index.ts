@@ -50,6 +50,7 @@ export interface Question {
     | 'Number input'
     | 'File upload'
     | 'Email/User selector'
+    | 'Email/User selector/String'
     | 'Date picker';
   options?: string[];
 }

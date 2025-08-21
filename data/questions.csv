@@ -1,21 +1,14 @@
-Question Number;Question Text;field;Response Type
-1;Company legal name;onboarding.company_legal_name;Text input
-2;What's the company's main address?;onboarding.company_address;Text input
-3;Do you have an office?;onboarding.has_office;Radio buttons
-4;Do you provide your own company devices to your employees?;onboarding.provides_company_devices;Radio buttons
-5;What do you use for version control?;onboarding.version_control_tools;Dropdown
-6;What kind of services do you provide?;onboarding.service_type;Dropdown
-7;What do you use for password management?;onboarding.password_management_tool;Dropdown
-8;Number of employees;onboarding.employee_count;Number input
-9;Number of contractors?;onboarding.contractor_count;Number input
-10;What do you use for ticket / project management?;onboarding.ticket_management_tools;Dropdown
-11;Please upload your company logo;onboarding.company_logo;File upload
-12;Who is the owner of this access control policy?;user_response.policy_owner_email;Email/User selector
-13;Who has authority to approve this policy?;user_response.policy_approver_email;Email/User selector
-14;When should this policy become effective?;user_response.effective_date;Date picker
-15;Do you require Multi-Factor Authentication (MFA) for privileged access?;user_response.require_mfa;Radio buttons
-16;How often do you perform user access reviews?;user_response.review_frequency;Dropdown
-17;How long after termination should access be revoked?;user_response.termination_timeframe;Dropdown
-18;Who is responsible for approving exceptions to this policy?;user_response.exception_approver;Dropdown
-19;Who do you report policy violations to?;user_response.violations_reporter;Dropdown
-20;How do you handle access requests and approvals?;user_response.access_request_method;Radio buttons
+Question Number,Question,Question description,field,Response Type,Response options,Rules
+1,What's your company's legal name?,,onboarding.company_legal_name,Text input,-,Replaces all <Company Name> placeholders with actual company name and address
+2,What's the company's main address?,Format: Example Street 3; 80333 Examplecity,onboarding.company_address,Text input,-,Replaces all <Company Name; Address> placeholders with actual company name
+3,Do you have a physical office?,,onboarding.has_office,Radio buttons,Yes|No,Removes guest network sentences and bullet point if No
+4,What do you use for version control?,No version control = no source code to protect; Using version control = IP protection needed.,onboarding.version_control_tools,Radio buttons,Github|Gitlab|Bitbucket|Azure DevOps|None|Other,Helps determine if source code section is needed
+5,What do you use for password management?,,onboarding.password_management_tool,Radio buttons,1Password|LastPass|Dashlane|None|Other,Customizes or removes password management section
+6,What do you use as ticketing system?,This is used for creating your ISMS tickets e.g. risk treatment tasks; incident tickets; pentest tickets; access requests; etc.,onboarding.ticket_management_tools,Radio buttons,Jira|Asana|Linear|Trello|Github Issues|None|Other,Updates access request language for ticketing systems
+7,Please upload your company logo,We'll insert the logo in the header for you.,onboarding.company_logo,File upload,PNG|JPG|SVG (max 2MB),Inserts logo in heading of each page
+8,Who is the owner of this Access Control policy?,This person enforces the policy and answers employee questions about it.,user_response.policy_owner_email,Email/User selector/String,-,Updates owner placeholder in the header
+9,How often do you perform user access reviews?,If you operate in highly critical industries with complex or large company structure (1000+ employees); you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.,user_response.review_frequency,Radio buttons,Monthly|Quarterly (Recommended)|Annually|Other,Replaces default quarterly placeholder schedule
+10,When an employee leaves the company; how long until access is revoked?,We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe; not for choosing the wrong timeframe.,user_response.termination_timeframe,Radio buttons,Immediately|8 business hours|24 business hours (Recommended)|1 week|Other,Replaces <24 business hours> placeholder
+11,Who is responsible for approving exceptions to this policy?,Acceptable roles: CISO; CEO; CTO; IT Manager; HR Manager or similar. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here.,user_response.exception_approver,Radio buttons,CEO|CISO|CTO|IT Manager|HR Manager|Other,Replaces <Exceptions: IT Manager> in exceptions section
+12,Who receives policy violation reports?,Can be the same person responsible for exceptions. Acceptable roles: CISO; CEO; CTO; IT Manager; HR Manager or similar. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here.,user_response.violations_reporter,Radio buttons,CEO|CISO|CTO|IT Manager|HR Manager|Other,Replaces <Violations: IT Manager> in violations section
+13,How do you handle access requests and approvals?,,user_response.access_request_method,Radio buttons,Email-based|Ticketing system (Jira/ServiceNow/etc.)|Other,Updates access request language for ticketing systems

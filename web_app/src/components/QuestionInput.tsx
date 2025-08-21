@@ -1,7 +1,7 @@
 'use client';
 
 import { FileUpload, Question, QuestionnaireAnswer } from '@/types';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionInputProps {
   question: Question;
@@ -10,6 +10,23 @@ interface QuestionInputProps {
 }
 
 export function QuestionInput({ question, value, onChange }: QuestionInputProps) {
+  const [customText, setCustomText] = useState('');
+  const [isOtherSelected, setIsOtherSelected] = useState(false);
+
+  // Initialize state based on current value
+  useEffect(() => {
+    if (typeof value === 'string' && value.startsWith('Other: ')) {
+      setIsOtherSelected(true);
+      setCustomText(value.replace('Other: ', ''));
+    } else if (value === 'Other') {
+      setIsOtherSelected(true);
+      setCustomText('');
+    } else {
+      setIsOtherSelected(false);
+      setCustomText('');
+    }
+  }, [value]);
+
   const handleChange = useCallback(
     (newValue: string | number | File | FileUpload) => {
       onChange({
@@ -19,6 +36,33 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
       });
     },
     [question, onChange],
+  );
+
+  const handleRadioChange = useCallback(
+    (selectedValue: string) => {
+      if (selectedValue === 'Other') {
+        setIsOtherSelected(true);
+        // If there's already custom text, use it; otherwise just "Other"
+        const finalValue = customText ? `Other: ${customText}` : 'Other';
+        handleChange(finalValue);
+      } else {
+        setIsOtherSelected(false);
+        setCustomText('');
+        handleChange(selectedValue);
+      }
+    },
+    [customText, handleChange],
+  );
+
+  const handleCustomTextChange = useCallback(
+    (text: string) => {
+      setCustomText(text);
+      if (isOtherSelected) {
+        const finalValue = text ? `Other: ${text}` : 'Other';
+        handleChange(finalValue);
+      }
+    },
+    [isOtherSelected, handleChange],
   );
 
   const renderInput = () => {
@@ -47,6 +91,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
         );
 
       case 'Email/User selector':
+      case 'Email/User selector/String':
         return (
           <input
             type='email'
@@ -104,38 +149,82 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
         );
 
       case 'Radio buttons':
+        const radioOptions = question.options || getRadioOptions(question);
         return (
           <div className='space-y-3'>
-            {getRadioOptions(question).map((option) => (
-              <label key={option} className='flex items-center space-x-3 cursor-pointer'>
-                <input
-                  type='radio'
-                  name={`question-${question.questionNumber}`}
-                  value={option}
-                  checked={value === option}
-                  onChange={(e) => handleChange(e.target.value)}
-                  className='w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500'
-                />
-                <span className='text-gray-700'>{option}</span>
-              </label>
-            ))}
+            {radioOptions.map((option) => {
+              const isCurrentlySelected =
+                option === 'Other'
+                  ? isOtherSelected
+                  : typeof value === 'string' && !value.startsWith('Other: ') && value === option;
+
+              return (
+                <div key={option}>
+                  <label className='flex items-center space-x-3 cursor-pointer'>
+                    <input
+                      type='radio'
+                      name={`question-${question.questionNumber}`}
+                      value={option}
+                      checked={isCurrentlySelected}
+                      onChange={(e) => handleRadioChange(e.target.value)}
+                      className='w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500'
+                    />
+                    <span className='text-gray-700'>{option}</span>
+                  </label>
+
+                  {/* Show text input when "Other" is selected */}
+                  {option === 'Other' && isOtherSelected && (
+                    <div className='ml-7 mt-2'>
+                      <input
+                        type='text'
+                        value={customText}
+                        onChange={(e) => handleCustomTextChange(e.target.value)}
+                        placeholder='Please specify...'
+                        className='w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white text-sm'
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         );
 
       case 'Dropdown':
+        const dropdownOptions = question.options || getDropdownOptions(question);
+        const dropdownValue =
+          typeof value === 'string' && value.startsWith('Other: ')
+            ? 'Other'
+            : (value as string) || '';
+
         return (
-          <select
-            value={(value as string) || ''}
-            onChange={(e) => handleChange(e.target.value)}
-            className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white text-gray-900'
-          >
-            <option value=''>Select an option...</option>
-            {getDropdownOptions(question).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+          <div className='space-y-3'>
+            <select
+              value={dropdownValue}
+              onChange={(e) => handleRadioChange(e.target.value)}
+              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white text-gray-900'
+            >
+              <option value=''>Select an option...</option>
+              {dropdownOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+
+            {/* Show text input when "Other" is selected in dropdown */}
+            {isOtherSelected && (
+              <div>
+                <input
+                  type='text'
+                  value={customText}
+                  onChange={(e) => handleCustomTextChange(e.target.value)}
+                  placeholder='Please specify...'
+                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white'
+                />
+              </div>
+            )}
+          </div>
         );
 
       default:
