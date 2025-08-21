@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "generated_timestamp": "2024-02-13T10:00:00Z",
+    "company_name": "Celonis SE",
+    "format_version": "operations",
+    "total_operations": 12,
+    "generator": "PolicyWorkflow v2.0",
+    "logo_path": "edits/user_1755795926932_m428dq_company_logo.png"
+  },
+  "instructions": {
+    "operations": [
+      {
+        "target_text": "<Company Name>",
+        "action": "replace",
+        "replacement": "Celonis SE",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Company name, address>",
+        "action": "replace",
+        "replacement": "Celonis SE, Blutenburgstr 103, 80633 München",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "[ADD COMPANY LOGO]",
+        "action": "replace_with_logo",
+        "replacement": "",
+        "comment": "Company logo inserted from questionnaire upload",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
+        "action": "delete",
+        "replacement": "",
+        "comment": "You indicated that you do not have an office, so this section should be removed. No office = no guest network needed; Having office = visitors need controlled network access for security.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Access to Program Source Code",
+        "action": "comment",
+        "replacement": "",
+        "comment": "You indicated you use self-hosted GitLab (git.celonis.com) for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Password management systems should be user-friendly",
+        "action": "replace",
+        "replacement": "Password management systems, specifically 1Password or Bitwarden, should be user-friendly",
+        "comment": "You indicated employees use 1Password or Bitwarden for password management, so we're specifying the approved tools. No password tool = section removed; Using specific tools = policy references actual systems rather than generic language.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "All requests will be sent by email to <email>",
+        "action": "replace",
+        "replacement": "All requests will be submitted through Linear (transitioning to Jira Service Management from 01.10.2025)",
+        "comment": "You indicated using Linear (transitioning to Jira Service Management) for ticketing. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "a quarterly basis",
+        "action": "replace",
+        "replacement": "Annually",
+        "comment": "You selected Annually instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<24 business hours>",
+        "action": "replace",
+        "replacement": "Immediately",
+        "comment": "You selected immediate termination instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<owner>",
+        "action": "replace",
+        "replacement": "Mike Malkoff",
+        "comment": "You indicated that Mike Malkoff is the owner of this access control policy, so the owner placeholder needs to be replaced. This person is the enforcer of the policy. If your employees have questions about the policy, that person should be easily identified by employees and prepared to answer any of their questions regarding the policy.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Exceptions: IT Manager>",
+        "action": "replace",
+        "replacement": "CTO and IT Manager",
+        "comment": "You indicated that the CTO and IT Manager are responsible for approving exceptions to this policy, so the IT Manager placeholder should be updated. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Violations: IT Manager>",
+        "action": "replace",
+        "replacement": "CTO and IT Manager",
+        "comment": "You indicated that the CTO and IT Manager are responsible for handling policy violations, so the IT Manager placeholder should be updated. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment_author": "Secfix AI"
+      }
+    ]
+  }
+}
