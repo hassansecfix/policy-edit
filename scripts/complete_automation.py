@@ -804,6 +804,7 @@ def main():
 
         # If logo was provided via CLI, inject metadata. Otherwise, check if we need fallback logic
         try:
+            import json
             with open(edits_json, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             data.setdefault('metadata', {})
@@ -833,7 +834,6 @@ def main():
                         env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
                         if env_data:
                             try:
-                                import json
                                 json_data = json.loads(env_data)
                                 
                                 # Debug: Show what keys we have
