@@ -53,6 +53,11 @@ export async function POST(request: NextRequest) {
             value: logoData.data, // Keep full data URL (data:image/png;base64,...)
           };
 
+          console.log('🔍 DEBUG: Added logo data to answers:');
+          console.log('🔍 DEBUG: Logo data type:', typeof logoData.data);
+          console.log('🔍 DEBUG: Logo data starts with:', logoData.data.substring(0, 50));
+          console.log('🔍 DEBUG: Logo data contains base64:', logoData.data.includes('base64,'));
+
           logoProcessed = true;
 
           // Calculate logo size for logging

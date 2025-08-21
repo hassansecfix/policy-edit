@@ -7,5 +7,10 @@
     "NEXT_PUBLIC_API_URL": "https://policy-configurator-api.onrender.com",
     "GITHUB_REPO_OWNER": "hassantayyab",
     "GITHUB_REPO_NAME": "policy-edit"
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
   }
 }

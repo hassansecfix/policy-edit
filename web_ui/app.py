@@ -262,6 +262,15 @@ class AutomationRunner:
                     env['USER_ID'] = user_id
                     self.emit_log(f"👤 User ID: {user_id}", "info")
                 
+                # Debug: Check if logo data is present
+                has_logo = '_logo_base64_data' in questionnaire_answers
+                self.emit_log(f"🔍 DEBUG: Logo data present in questionnaire: {has_logo}", "info")
+                if has_logo:
+                    logo_data = questionnaire_answers.get('_logo_base64_data', {})
+                    logo_value = logo_data.get('value', '')
+                    has_base64 = 'base64,' in str(logo_value)
+                    self.emit_log(f"🔍 DEBUG: Logo value type: {type(logo_value)}, contains base64: {has_base64}", "info")
+                
                 self.emit_log(f"📊 Questionnaire data passed via environment variable", "info")
                 self.emit_log(f"📂 Source: localStorage ({len(questionnaire_answers)} fields)", "info")
                 self.emit_log(f"📏 Data size: {len(questionnaire_json_str)} characters", "info")

@@ -836,8 +836,16 @@ def main():
                                 import json
                                 json_data = json.loads(env_data)
                                 
+                                # Debug: Show what keys we have
+                                print(f"🔍 DEBUG: Environment JSON keys: {list(json_data.keys())}")
+                                
                                 # Look for base64 logo data in JSON
                                 logo_data = json_data.get('_logo_base64_data', {})
+                                print(f"🔍 DEBUG: Logo data found: {bool(logo_data)}")
+                                if logo_data:
+                                    print(f"🔍 DEBUG: Logo data type: {type(logo_data)}")
+                                    print(f"🔍 DEBUG: Logo data keys: {logo_data.keys() if isinstance(logo_data, dict) else 'Not a dict'}")
+                                
                                 if isinstance(logo_data, dict) and 'value' in logo_data:
                                     base64_value = logo_data['value']
                                     if isinstance(base64_value, str) and 'base64,' in base64_value:
