@@ -861,8 +861,11 @@ def main():
                                         
                                         local_logo_path = temp_file.name
                                         data['metadata']['logo_path'] = local_logo_path
+                                        # ALSO store the raw base64 data for direct processing
+                                        data['metadata']['logo_base64_data'] = base64_value
                                         created_logo_file = local_logo_path  # Track for cleanup
                                         print(f"🖼️  Created temporary logo file from environment data ({len(logo_buffer)} bytes)")
+                                        print(f"🖼️  Also stored base64 data in metadata for direct processing")
                                         logo_created = True
                                         
                             except (json.JSONDecodeError, KeyError, Exception) as e:
@@ -892,8 +895,11 @@ def main():
                                         
                                         local_logo_path = temp_file.name
                                         data['metadata']['logo_path'] = local_logo_path
+                                        # ALSO store the raw base64 data for direct processing
+                                        data['metadata']['logo_base64_data'] = base64_data
                                         created_logo_file = local_logo_path  # Track for cleanup
                                         print(f"🖼️  Created temporary logo file from CSV data ({len(logo_buffer)} bytes)")
+                                        print(f"🖼️  Also stored base64 data in metadata for direct processing")
                                         logo_created = True
                                         break
                             

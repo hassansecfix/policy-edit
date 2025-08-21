@@ -422,8 +422,34 @@ def main():
                     except Exception as e:
                         print(f"⚠️  Error reading metadata: {e}")
                     
-                    # Fallback: try to get base64 data from questionnaire
-                    if not logo_file_path and args.questionnaire_csv and os.path.exists(args.questionnaire_csv):
+                    # Fallback 1: Check JSON metadata for base64 logo data
+                    if not logo_file_path:
+                        try:
+                            meta = data.get('metadata', {})
+                            # Look for base64 logo data in metadata
+                            if 'logo_base64_data' in meta:
+                                logo_base64_data = meta['logo_base64_data']
+                                print(f"🖼️  Found base64 logo data in JSON metadata")
+                        except Exception as e:
+                            print(f"⚠️  Error reading metadata: {e}")
+                    
+                    # Fallback 2: Check if environment has base64 data 
+                    if not logo_file_path and not logo_base64_data:
+                        import os
+                        env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+                        if env_data:
+                            try:
+                                import json
+                                json_data = json.loads(env_data)
+                                logo_data = json_data.get('_logo_base64_data', {})
+                                if isinstance(logo_data, dict) and 'value' in logo_data:
+                                    logo_base64_data = logo_data['value']
+                                    print(f"🖼️  Found base64 logo data in environment")
+                            except Exception as e:
+                                print(f"⚠️  Error reading environment logo data: {e}")
+                    
+                    # Fallback 3: try to get base64 data from questionnaire CSV
+                    if not logo_file_path and not logo_base64_data and args.questionnaire_csv and os.path.exists(args.questionnaire_csv):
                         try:
                             with open(args.questionnaire_csv, 'r', encoding='utf-8') as f:
                                 content = f.read()
@@ -434,7 +460,7 @@ def main():
                                     parts = line.split(';', 4)
                                     if len(parts) >= 5:
                                         logo_base64_data = parts[4]
-                                        print(f"🖼️  Found user's uploaded logo data in questionnaire")
+                                        print(f"🖼️  Found user's uploaded logo data in questionnaire CSV")
                                         break
                         except Exception as e:
                             print(f"⚠️  Error reading user questionnaire: {e}")
