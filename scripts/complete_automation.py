@@ -89,7 +89,6 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
             else:
                 # Fallback to temp file approach 
                 import tempfile
-                import json
                 
                 temp_json_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
                 json.dump(json.loads(questionnaire_json), temp_json_file, indent=2)
@@ -124,16 +123,25 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
         
         result = run_command(cmd, "Processing JSON instructions")
         
-        return result
-        
-    finally:
-        # Clean up temporary file
+        # Clean up temporary file AFTER the command completes
         if temp_json_file and os.path.exists(temp_json_file.name):
             try:
                 os.unlink(temp_json_file.name)
                 print(f"🗑️  Cleaned up temp file: {temp_json_file.name}")
             except Exception as e:
                 print(f"⚠️  Warning: Could not clean up temp file {temp_json_file.name}: {e}")
+        
+        return result
+        
+    except Exception as e:
+        # Clean up temp file on error too
+        if temp_json_file and os.path.exists(temp_json_file.name):
+            try:
+                os.unlink(temp_json_file.name)
+                print(f"🗑️  Cleaned up temp file after error: {temp_json_file.name}")
+            except Exception as cleanup_error:
+                print(f"⚠️  Warning: Could not clean up temp file {temp_json_file.name}: {cleanup_error}")
+        raise e
 
 def commit_and_push_json(edits_json, logo_file=None):
     """Commit and push the generated JSON file and optional logo file to GitHub."""
@@ -708,6 +716,9 @@ def clean_policy_highlighting(policy_path):
         return False
 
 def main():
+    # Ensure json module is available in function scope (avoid scoping issues)
+    import json as json_module
+    
     parser = argparse.ArgumentParser(description='Complete Policy Automation - End-to-End Flow')
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
     parser.add_argument('--questionnaire', help='Path to questionnaire Excel/CSV/JSON file')
@@ -799,7 +810,7 @@ def main():
                 # Direct JSON input from localStorage approach
                 print("\n📊 STEP 1: Using Direct JSON Questionnaire Data (localStorage mode)")
                 with open(args.questionnaire, 'r', encoding='utf-8') as f:
-                    questionnaire_json_data = json.dumps(json.load(f))
+                    questionnaire_json_data = json_module.dumps(json_module.load(f))
                 questionnaire_csv = None  # Not needed for JSON approach
                 print(f"✅ Loaded questionnaire JSON from: {args.questionnaire}")
             elif args.questionnaire.endswith(('.xlsx', '.xls')):
@@ -831,9 +842,8 @@ def main():
 
         # If logo was provided via CLI, inject metadata. Otherwise, check if we need fallback logic
         try:
-            import json
             with open(edits_json, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+                data = json_module.load(f)
             data.setdefault('metadata', {})
             
             # Check if CLI logo provided
@@ -869,7 +879,7 @@ def main():
                         print(f"🔍 DEBUG: Environment data exists: {bool(env_data)}")
                         if env_data:
                             try:
-                                json_data = json.loads(env_data)
+                                json_data = json_module.loads(env_data)
                                 
                                 # Debug: Show what keys we have
                                 print(f"🔍 DEBUG: Environment JSON keys: {list(json_data.keys())}")
@@ -999,7 +1009,7 @@ def main():
                         print(f"🔍 DEBUG: Existing logo path found: {data['metadata'].get('logo_path')}")
             
             with open(edits_json, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+                json_module.dump(data, f, ensure_ascii=False, indent=2)
                 
         except Exception as e:
             print(f"⚠️  Could not process logo metadata: {e}")

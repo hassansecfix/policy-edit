@@ -250,12 +250,36 @@ class AutomationRunner:
                 env['SKIP_API_CALL'] = 'true'
                 self.emit_log("💰 API call will be skipped (using existing JSON)", "warning")
             
-            # Pass questionnaire data via environment variable (no temp files needed)
-            # This avoids production file system permission issues
+            # Pass questionnaire data - use env vars for small data, temp files for large data
+            # This avoids "Argument list too long" errors while maintaining production compatibility
             try:
                 questionnaire_json_str = json.dumps(questionnaire_answers)
-                env['QUESTIONNAIRE_ANSWERS_DATA'] = questionnaire_json_str
-                env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+                data_size = len(questionnaire_json_str)
+                
+                # Environment variable size limit (conservative - system ARG_MAX is typically 128KB-2MB)
+                MAX_ENV_SIZE = 32 * 1024  # 32KB conservative limit
+                
+                if data_size <= MAX_ENV_SIZE:
+                    # Small data - use environment variable (production-friendly)
+                    env['QUESTIONNAIRE_ANSWERS_DATA'] = questionnaire_json_str
+                    env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+                    self.emit_log(f"📊 Using environment variable for questionnaire data", "info")
+                    self.emit_log(f"📏 Data size: {data_size} characters", "info")
+                else:
+                    # Large data - use temporary file approach
+                    import tempfile
+                    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+                    temp_file.write(questionnaire_json_str)
+                    temp_file.close()
+                    
+                    # Track for cleanup
+                    temp_answers_file = temp_file.name
+                    
+                    env['QUESTIONNAIRE_ANSWERS_JSON'] = temp_file.name
+                    env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+                    self.emit_log(f"📊 Using temporary file for questionnaire data (large size)", "warning")
+                    self.emit_log(f"📏 Data size: {data_size} characters (>{MAX_ENV_SIZE} limit)", "info")
+                    self.emit_log(f"📄 Temp file: {temp_file.name}", "info")
                 
                 # Pass user ID for multi-user isolation if provided
                 if user_id:
@@ -271,9 +295,7 @@ class AutomationRunner:
                     has_base64 = 'base64,' in str(logo_value)
                     self.emit_log(f"🔍 DEBUG: Logo value type: {type(logo_value)}, contains base64: {has_base64}", "info")
                 
-                self.emit_log(f"📊 Questionnaire data passed via environment variable", "info")
                 self.emit_log(f"📂 Source: localStorage ({len(questionnaire_answers)} fields)", "info")
-                self.emit_log(f"📏 Data size: {len(questionnaire_json_str)} characters", "info")
                 
             except Exception as e:
                 self.emit_log(f"❌ Failed to serialize questionnaire data: {str(e)}", "error")
