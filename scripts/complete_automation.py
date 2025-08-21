@@ -852,20 +852,17 @@ def main():
                                         # Extract base64 data
                                         base64_data = base64_value.split('base64,')[1]
                                         
-                                        # Create temporary logo file from user's base64 data
-                                        import tempfile
-                                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                        # Create logo file from user's base64 data (simple approach)
                                         logo_buffer = base64.b64decode(base64_data)
-                                        temp_file.write(logo_buffer)
-                                        temp_file.close()
+                                        logo_path = f"data/company_logo.png"
+                                        os.makedirs("data", exist_ok=True)
                                         
-                                        local_logo_path = temp_file.name
-                                        data['metadata']['logo_path'] = local_logo_path
-                                        # ALSO store the raw base64 data for direct processing
-                                        data['metadata']['logo_base64_data'] = base64_value
-                                        created_logo_file = local_logo_path  # Track for cleanup
-                                        print(f"🖼️  Created temporary logo file from environment data ({len(logo_buffer)} bytes)")
-                                        print(f"🖼️  Also stored base64 data in metadata for direct processing")
+                                        with open(logo_path, 'wb') as logo_file:
+                                            logo_file.write(logo_buffer)
+                                        
+                                        data['metadata']['logo_path'] = logo_path
+                                        print(f"🖼️  Created logo file from base64: {logo_path} ({len(logo_buffer)} bytes)")
+                                        print(f"✅ Logo will be used by existing PNG logic that already works!")
                                         logo_created = True
                                         
                             except (json.JSONDecodeError, KeyError, Exception) as e:
@@ -886,20 +883,17 @@ def main():
                                         if ',' in base64_data:
                                             base64_data = base64_data.split(',')[1]
                                         
-                                        # Create temporary logo file from user's base64 data
-                                        import tempfile
-                                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                        # Create logo file from CSV base64 data (simple approach)
                                         logo_buffer = base64.b64decode(base64_data)
-                                        temp_file.write(logo_buffer)
-                                        temp_file.close()
+                                        logo_path = f"data/company_logo.png"
+                                        os.makedirs("data", exist_ok=True)
                                         
-                                        local_logo_path = temp_file.name
-                                        data['metadata']['logo_path'] = local_logo_path
-                                        # ALSO store the raw base64 data for direct processing
-                                        data['metadata']['logo_base64_data'] = base64_data
-                                        created_logo_file = local_logo_path  # Track for cleanup
-                                        print(f"🖼️  Created temporary logo file from CSV data ({len(logo_buffer)} bytes)")
-                                        print(f"🖼️  Also stored base64 data in metadata for direct processing")
+                                        with open(logo_path, 'wb') as logo_file:
+                                            logo_file.write(logo_buffer)
+                                        
+                                        data['metadata']['logo_path'] = logo_path
+                                        print(f"🖼️  Created logo file from CSV base64: {logo_path} ({len(logo_buffer)} bytes)")
+                                        print(f"✅ Logo will be used by existing PNG logic that already works!")
                                         logo_created = True
                                         break
                             
