@@ -823,11 +823,15 @@ def main():
                 operations = data.get('instructions', {}).get('operations', [])
                 has_logo_operations = any(op.get('action') == 'replace_with_logo' for op in operations)
                 
-                print(f"🔍 DEBUG: has_logo_operations = {has_logo_operations}")
-                print(f"🔍 DEBUG: existing logo_path = {data['metadata'].get('logo_path')}")
+                existing_logo_path = data['metadata'].get('logo_path')
+                logo_file_exists = existing_logo_path and os.path.exists(existing_logo_path)
                 
-                if has_logo_operations and not data['metadata'].get('logo_path'):
-                    print("🔍 DEBUG: Logo operations found and no existing logo path - attempting to create PNG from base64")
+                print(f"🔍 DEBUG: has_logo_operations = {has_logo_operations}")
+                print(f"🔍 DEBUG: existing logo_path = {existing_logo_path}")
+                print(f"🔍 DEBUG: logo_file_exists = {logo_file_exists}")
+                
+                if has_logo_operations and not logo_file_exists:
+                    print("🔍 DEBUG: Logo operations found and logo file missing - attempting to create PNG from base64")
                     
                     # Try to extract logo from original environment variable data (before API filtering)
                     try:
@@ -890,8 +894,9 @@ def main():
                                         
                                         # Create user-specific logo file from base64 data
                                         logo_buffer = base64.b64decode(base64_data)
-                                        logo_path = f"data/{user_id}_company_logo.png"
-                                        os.makedirs("data", exist_ok=True)
+                                        # Use the same directory as JSON files (which works in production)
+                                        logo_path = f"edits/{user_id}_company_logo.png"
+                                        os.makedirs("edits", exist_ok=True)
                                         
                                         with open(logo_path, 'wb') as logo_file:
                                             logo_file.write(logo_buffer)
@@ -926,8 +931,9 @@ def main():
                                         
                                         # Create user-specific logo file from CSV base64 data
                                         logo_buffer = base64.b64decode(base64_data)
-                                        logo_path = f"data/{user_id}_company_logo.png"
-                                        os.makedirs("data", exist_ok=True)
+                                        # Use the same directory as JSON files (which works in production)
+                                        logo_path = f"edits/{user_id}_company_logo.png"
+                                        os.makedirs("edits", exist_ok=True)
                                         
                                         with open(logo_path, 'wb') as logo_file:
                                             logo_file.write(logo_buffer)
@@ -1007,7 +1013,7 @@ def main():
         print("\n🏆 Your policy is ready for review with automated suggestions!")
         
         # Clean up user-specific logo file if it was created from base64 data
-        if created_logo_file and created_logo_file.startswith('data/') and user_id in created_logo_file:
+        if created_logo_file and created_logo_file.startswith('edits/') and user_id in created_logo_file:
             try:
                 os.unlink(created_logo_file)
                 print(f"🧹 Cleaned up user logo file: {created_logo_file}")
