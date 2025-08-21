@@ -847,8 +847,22 @@ def main():
                                 logo_data = json_data.get('_logo_base64_data', {})
                                 if not logo_data:
                                     # Fallback: check the original form field name
-                                    logo_data = json_data.get('onboarding.company_logo', {})
-                                    print(f"🔍 DEBUG: Using onboarding.company_logo instead of _logo_base64_data")
+                                    original_logo_data = json_data.get('onboarding.company_logo', {})
+                                    if isinstance(original_logo_data, dict) and 'value' in original_logo_data:
+                                        # Extract the file upload data
+                                        file_data = original_logo_data['value']
+                                        if isinstance(file_data, dict) and 'data' in file_data:
+                                            # Convert to the expected format
+                                            logo_data = {
+                                                'questionNumber': 99,
+                                                'field': '_logo_base64_data', 
+                                                'value': file_data['data']  # This should be the base64 data URL
+                                            }
+                                            print(f"🔍 DEBUG: Converted onboarding.company_logo to _logo_base64_data format")
+                                        else:
+                                            print(f"🔍 DEBUG: onboarding.company_logo data structure unexpected: {type(file_data)}")
+                                    else:
+                                        print(f"🔍 DEBUG: onboarding.company_logo not found or invalid structure")
                                 
                                 print(f"🔍 DEBUG: Logo data found: {bool(logo_data)}")
                                 if logo_data:
@@ -865,7 +879,12 @@ def main():
                                         base64_value = base64_value['data']
                                         print(f"🔍 DEBUG: Extracted data field from nested dict")
                                     
-                                    if isinstance(base64_value, str) and 'base64,' in base64_value:
+                                    # Check if the data was filtered out
+                                    if isinstance(base64_value, str) and 'BASE64_DATA_REMOVED_FOR_API_EFFICIENCY' in base64_value:
+                                        print(f"❌ ERROR: Base64 data was filtered out! The environment variable contains filtered data.")
+                                        print(f"🔍 DEBUG: This means the filtering happened before the environment variable was set.")
+                                        
+                                    elif isinstance(base64_value, str) and 'base64,' in base64_value:
                                         # Extract base64 data
                                         base64_data = base64_value.split('base64,')[1]
                                         
