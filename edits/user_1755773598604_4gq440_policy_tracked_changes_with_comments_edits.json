@@ -4,7 +4,8 @@
     "company_name": "Test - Company Name",
     "format_version": "operations",
     "total_operations": 12,
-    "generator": "PolicyWorkflow v2.0"
+    "generator": "PolicyWorkflow v2.0",
+    "logo_path": "data/user_1755773598604_4gq440_company_logo.png"
   },
   "instructions": {
     "operations": [
