@@ -843,8 +843,13 @@ def main():
                                 # Debug: Show what keys we have
                                 print(f"🔍 DEBUG: Environment JSON keys: {list(json_data.keys())}")
                                 
-                                # Look for base64 logo data in JSON
+                                # Look for base64 logo data in JSON (check both possible keys)
                                 logo_data = json_data.get('_logo_base64_data', {})
+                                if not logo_data:
+                                    # Fallback: check the original form field name
+                                    logo_data = json_data.get('onboarding.company_logo', {})
+                                    print(f"🔍 DEBUG: Using onboarding.company_logo instead of _logo_base64_data")
+                                
                                 print(f"🔍 DEBUG: Logo data found: {bool(logo_data)}")
                                 if logo_data:
                                     print(f"🔍 DEBUG: Logo data type: {type(logo_data)}")
@@ -852,6 +857,14 @@ def main():
                                 
                                 if isinstance(logo_data, dict) and 'value' in logo_data:
                                     base64_value = logo_data['value']
+                                    print(f"🔍 DEBUG: base64_value type: {type(base64_value)}")
+                                    print(f"🔍 DEBUG: base64_value preview: {str(base64_value)[:100]}...")
+                                    
+                                    # Check if it's a dict with 'data' field (file upload format)
+                                    if isinstance(base64_value, dict) and 'data' in base64_value:
+                                        base64_value = base64_value['data']
+                                        print(f"🔍 DEBUG: Extracted data field from nested dict")
+                                    
                                     if isinstance(base64_value, str) and 'base64,' in base64_value:
                                         # Extract base64 data
                                         base64_data = base64_value.split('base64,')[1]
