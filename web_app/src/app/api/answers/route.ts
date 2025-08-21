@@ -10,11 +10,21 @@ interface FileUploadValue {
   data: string;
 }
 
+// Generate a unique user session ID
+function generateUserId(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `user_${timestamp}_${random}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Handle JSON with base64 file uploads
     const body = await request.json();
     const answers: Record<string, QuestionnaireAnswer> = body.answers;
+
+    // Generate unique user ID for this session
+    const userId = generateUserId();
 
     console.log('📝 Receiving questionnaire answers:', Object.keys(answers).length, 'answers');
     console.log('✨ Using Direct API approach - processing logo and preparing for automation');
@@ -48,7 +58,7 @@ export async function POST(request: NextRequest) {
 
           // Get project root directory (parent of web_app)
           const projectRoot = path.join(process.cwd(), '..');
-          const logoPath = path.join(projectRoot, 'data', 'company_logo.png');
+          const logoPath = path.join(projectRoot, 'data', `${userId}_company_logo.png`);
 
           // Ensure data directory exists
           const dataDir = path.dirname(logoPath);
@@ -62,6 +72,32 @@ export async function POST(request: NextRequest) {
 
           console.log('✅ Company logo saved to:', logoPath);
           console.log('📏 Logo size:', Math.round(imageBuffer.length / 1024), 'KB');
+
+          // Clean up old user logo files (older than 24 hours) to prevent disk space issues
+          try {
+            const dataDir = path.dirname(logoPath);
+            const files = fs.readdirSync(dataDir);
+            const now = Date.now();
+            const oneDayAgo = now - 24 * 60 * 60 * 1000;
+
+            let cleanedCount = 0;
+            files.forEach((file) => {
+              if (file.startsWith('user_') && file.endsWith('_company_logo.png')) {
+                const filePath = path.join(dataDir, file);
+                const stats = fs.statSync(filePath);
+                if (stats.mtime.getTime() < oneDayAgo) {
+                  fs.unlinkSync(filePath);
+                  cleanedCount++;
+                }
+              }
+            });
+
+            if (cleanedCount > 0) {
+              console.log(`🧹 Cleaned up ${cleanedCount} old user logo files`);
+            }
+          } catch (cleanupError) {
+            console.warn('⚠️ Warning: Could not clean up old logo files:', cleanupError);
+          }
         }
       }
     } catch (logoError) {
@@ -76,11 +112,12 @@ export async function POST(request: NextRequest) {
       message: 'Answers received - ready for direct automation',
       answerCount: Object.keys(answers).length,
       logoProcessed: logoProcessed,
+      userId: userId, // Return user ID for automation system
       method: 'direct_api',
       timestamp: Date.now(),
       note: logoProcessed
-        ? 'Answers processed and company logo extracted successfully!'
-        : 'Answers processed - no logo upload detected',
+        ? `Answers processed and company logo extracted successfully! (User: ${userId})`
+        : `Answers processed - no logo upload detected (User: ${userId})`,
     });
   } catch (error) {
     console.error('Error processing answers:', error);

@@ -199,7 +199,7 @@ class AutomationRunner:
             'progress': (step / len(self.steps)) * 100
         })
         
-    def run_automation(self, skip_api=False, questionnaire_answers=None, timestamp=None):
+    def run_automation(self, skip_api=False, questionnaire_answers=None, timestamp=None, user_id=None):
         """Run the automation process"""
         temp_answers_file = None  # Track temp file for cleanup
         try:
@@ -256,6 +256,11 @@ class AutomationRunner:
                 questionnaire_json_str = json.dumps(questionnaire_answers)
                 env['QUESTIONNAIRE_ANSWERS_DATA'] = questionnaire_json_str
                 env['QUESTIONNAIRE_SOURCE'] = 'direct_api'
+                
+                # Pass user ID for multi-user isolation if provided
+                if user_id:
+                    env['USER_ID'] = user_id
+                    self.emit_log(f"👤 User ID: {user_id}", "info")
                 
                 self.emit_log(f"📊 Questionnaire data passed via environment variable", "info")
                 self.emit_log(f"📂 Source: localStorage ({len(questionnaire_answers)} fields)", "info")
@@ -576,21 +581,24 @@ def start_automation():
     
     skip_api = data.get('skip_api', False)
     questionnaire_answers = data.get('questionnaire_answers', {})
+    user_id = data.get('user_id')  # Get user ID for multi-user isolation
     timestamp = data.get('timestamp', int(time.time() * 1000))
     
     print(f"🔍 DEBUG: Extracted questionnaire_answers: {questionnaire_answers}")
     print(f"🔍 DEBUG: Type of questionnaire_answers: {type(questionnaire_answers)}")
+    print(f"🔍 DEBUG: User ID: {user_id}")
     print(f"🚀 Starting automation with {len(questionnaire_answers)} questionnaire answers")
     print(f"📊 Answer fields: {list(questionnaire_answers.keys())}")
     
-    # Start automation in a separate thread with answers
-    runner.thread = threading.Thread(target=runner.run_automation, args=(skip_api, questionnaire_answers, timestamp))
+    # Start automation in a separate thread with answers and user ID
+    runner.thread = threading.Thread(target=runner.run_automation, args=(skip_api, questionnaire_answers, timestamp, user_id))
     runner.thread.daemon = True
     runner.thread.start()
     
     return jsonify({
         'message': 'Automation started',
         'answerCount': len(questionnaire_answers),
+        'userId': user_id,
         'timestamp': timestamp
     })
 

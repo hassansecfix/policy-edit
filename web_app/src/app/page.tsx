@@ -94,6 +94,10 @@ export default function Dashboard() {
           'fields',
         );
 
+        // Get the stored userId for this session
+        const userId = localStorage.getItem('questionnaire_user_id');
+        console.log('🔍 Using stored user ID for automation:', userId);
+
         const response = await fetch(getApiUrl(API_CONFIG.endpoints.start), {
           method: 'POST',
           headers: {
@@ -102,6 +106,7 @@ export default function Dashboard() {
           body: JSON.stringify({
             skip_api: skipApi,
             questionnaire_answers: filteredAnswers,
+            user_id: userId, // Include userId for multi-user isolation
             timestamp: Date.now(),
           }),
         });
@@ -181,11 +186,19 @@ export default function Dashboard() {
           // Parse response to get debugging info
           const responseData = await response.json();
 
+          // Store the userId for later use in automation
+          if (responseData.userId) {
+            localStorage.setItem('questionnaire_user_id', responseData.userId);
+            console.log('💾 Stored user ID for automation:', responseData.userId);
+          }
+
           const message = editingQuestionnaire
             ? '✅ Questionnaire updated successfully'
             : `✅ Questionnaire completed successfully! Saved ${
                 responseData.answerCount || 'unknown'
-              } answers. Ready to start automation.`;
+              } answers${
+                responseData.logoProcessed ? ' (logo processed)' : ''
+              }. Ready to start automation.`;
           addLog({
             timestamp: formatTime(new Date()),
             message,
