@@ -1,7 +1,5 @@
 import { QuestionnaireAnswer } from '@/types';
-import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
 
 interface FileUploadValue {
   name: string;
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No answers provided' }, { status: 400 });
     }
 
-    // Extract and save company logo if provided
+    // Process company logo by adding base64 data to questionnaire answers
     let logoProcessed = false;
     try {
       const logoAnswer = answers['onboarding.company_logo'];
@@ -47,57 +45,26 @@ export async function POST(request: NextRequest) {
         if (logoData.data && logoData.type?.startsWith('image/')) {
           console.log('🖼️ Processing uploaded company logo:', logoData.name);
 
-          // Extract base64 data (remove data URL prefix if present)
+          // Add base64 logo data as a special entry for automation scripts
+          // This follows the format automation scripts expect for logo processing
+          answers['_logo_base64_data'] = {
+            questionNumber: 99,
+            field: '_logo_base64_data',
+            value: logoData.data, // Keep full data URL (data:image/png;base64,...)
+          };
+
+          logoProcessed = true;
+
+          // Calculate logo size for logging
           let base64Data = logoData.data;
           if (base64Data.includes(',')) {
             base64Data = base64Data.split(',')[1];
           }
+          const sizeKB = Math.round((base64Data.length * 3) / 4 / 1024);
 
-          // Convert base64 to buffer
-          const imageBuffer = Buffer.from(base64Data, 'base64');
-
-          // Get project root directory (parent of web_app)
-          const projectRoot = path.join(process.cwd(), '..');
-          const logoPath = path.join(projectRoot, 'data', `${userId}_company_logo.png`);
-
-          // Ensure data directory exists
-          const dataDir = path.dirname(logoPath);
-          if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-          }
-
-          // Save the logo file
-          fs.writeFileSync(logoPath, imageBuffer);
-          logoProcessed = true;
-
-          console.log('✅ Company logo saved to:', logoPath);
-          console.log('📏 Logo size:', Math.round(imageBuffer.length / 1024), 'KB');
-
-          // Clean up old user logo files (older than 24 hours) to prevent disk space issues
-          try {
-            const dataDir = path.dirname(logoPath);
-            const files = fs.readdirSync(dataDir);
-            const now = Date.now();
-            const oneDayAgo = now - 24 * 60 * 60 * 1000;
-
-            let cleanedCount = 0;
-            files.forEach((file) => {
-              if (file.startsWith('user_') && file.endsWith('_company_logo.png')) {
-                const filePath = path.join(dataDir, file);
-                const stats = fs.statSync(filePath);
-                if (stats.mtime.getTime() < oneDayAgo) {
-                  fs.unlinkSync(filePath);
-                  cleanedCount++;
-                }
-              }
-            });
-
-            if (cleanedCount > 0) {
-              console.log(`🧹 Cleaned up ${cleanedCount} old user logo files`);
-            }
-          } catch (cleanupError) {
-            console.warn('⚠️ Warning: Could not clean up old logo files:', cleanupError);
-          }
+          console.log('✅ Company logo processed as base64 data (no file created)');
+          console.log('📏 Logo size:', sizeKB, 'KB');
+          console.log('🚀 Logo data will be passed directly to automation scripts');
         }
       }
     } catch (logoError) {

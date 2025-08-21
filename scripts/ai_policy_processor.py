@@ -32,6 +32,42 @@ anthropic = None
 # Suppress deprecation warnings for the Claude API
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+def filter_base64_from_csv(csv_content):
+    """Filter out base64 logo data from CSV content to save API tokens."""
+    lines = csv_content.split('\n')
+    filtered_lines = []
+    
+    for line in lines:
+        # Check if this line contains base64 logo data
+        if ';Logo Base64 Data;_logo_base64_data;' in line:
+            # Find where the actual base64 data starts (after "data:image/")
+            if 'data:image/' in line and 'base64,' in line:
+                # Split at base64, and keep everything before it + placeholder
+                base64_start = line.find('base64,') + 7  # +7 for "base64,"
+                if base64_start > 6:  # Valid base64 start found
+                    before_base64 = line[:base64_start]
+                    base64_data = line[base64_start:]
+                    filtered_line = before_base64 + '[BASE64_DATA_REMOVED_FOR_API_EFFICIENCY]'
+                    filtered_lines.append(filtered_line)
+                    print(f"🖼️  FILTERED: Removed {len(base64_data):,} chars of base64 logo data to save API tokens!")
+                    print(f"💰 API Cost Savings: ~${len(base64_data) * 0.000003:.2f} per request")
+                else:
+                    filtered_lines.append(line)
+            else:
+                # Fallback: try the old method with semicolon splitting
+                parts = line.split(';', 4)
+                if len(parts) >= 5:
+                    # Keep the structure but replace data with placeholder
+                    filtered_line = ';'.join(parts[:4]) + ';[BASE64_LOGO_DATA_REMOVED_FOR_API_EFFICIENCY]'
+                    filtered_lines.append(filtered_line)
+                    print(f"🖼️  Filtered out base64 logo data ({len(parts[4])} chars) to save API tokens")
+                else:
+                    filtered_lines.append(line)
+        else:
+            filtered_lines.append(line)
+    
+    return '\n'.join(filtered_lines)
+
 def load_file_content(file_path):
     """Load content from various file types."""
     file_path = Path(file_path)
@@ -91,40 +127,7 @@ def load_file_content(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Filter out base64 logo data to save API tokens
-        lines = content.split('\n')
-        filtered_lines = []
-        
-        for line in lines:
-            # Check if this line contains base64 logo data
-            if ';Logo Base64 Data;_logo_base64_data;' in line:
-                # Find where the actual base64 data starts (after "data:image/")
-                if 'data:image/' in line and 'base64,' in line:
-                    # Split at base64, and keep everything before it + placeholder
-                    base64_start = line.find('base64,') + 7  # +7 for "base64,"
-                    if base64_start > 6:  # Valid base64 start found
-                        before_base64 = line[:base64_start]
-                        base64_data = line[base64_start:]
-                        filtered_line = before_base64 + '[BASE64_DATA_REMOVED_FOR_API_EFFICIENCY]'
-                        filtered_lines.append(filtered_line)
-                        print(f"🖼️  FILTERED: Removed {len(base64_data):,} chars of base64 logo data to save API tokens!")
-                        print(f"💰 API Cost Savings: ~${len(base64_data) * 0.000003:.2f} per request")
-                    else:
-                        filtered_lines.append(line)
-                else:
-                    # Fallback: try the old method with semicolon splitting
-                    parts = line.split(';', 4)
-                    if len(parts) >= 5:
-                        # Keep the structure but replace data with placeholder
-                        filtered_line = ';'.join(parts[:4]) + ';[BASE64_LOGO_DATA_REMOVED_FOR_API_EFFICIENCY]'
-                        filtered_lines.append(filtered_line)
-                        print(f"🖼️  Filtered out base64 logo data ({len(parts[4])} chars) to save API tokens")
-                    else:
-                        filtered_lines.append(line)
-            else:
-                filtered_lines.append(line)
-        
-        return '\n'.join(filtered_lines)
+        return filter_base64_from_csv(content)
     
     # Handle Markdown files
     elif file_path.suffix.lower() == '.md':
@@ -406,7 +409,7 @@ def main():
                 for field, answer_data in json_data.items():
                     if isinstance(answer_data, dict):
                         question_number = answer_data.get('questionNumber', 0)
-                        question_text = answer_data.get('questionText', field)
+                        question_text = answer_data.get('questionText', field)  # Use field as fallback
                         response_type = answer_data.get('responseType', 'text')
                         value = answer_data.get('value', '')
                         
@@ -414,13 +417,20 @@ def main():
                         if isinstance(value, dict) and 'data' in value:
                             # File upload - use filename or placeholder
                             value = value.get('name', 'uploaded_file')
+                        elif field == '_logo_base64_data' and isinstance(value, str):
+                            # Special case: logo base64 data - set correct metadata for existing filter
+                            response_type = 'file_upload'  # Override for logo data
+                            question_text = 'Logo Base64 Data'  # Override for logo data
+                            # Note: base64 filtering will be applied by existing logic below
                         elif isinstance(value, (list, dict)):
                             value = str(value)
                         
                         csv_line = f"{question_number};{question_text};{field};{response_type};{value}"
                         csv_lines.append(csv_line)
                 
-                questionnaire_content = '\n'.join(csv_lines)
+                # Create CSV content and apply base64 filtering using existing logic
+                raw_csv_content = '\n'.join(csv_lines)
+                questionnaire_content = filter_base64_from_csv(raw_csv_content)
                 print(f"📊 Converted {len(json_data)} JSON answers from environment to CSV format")
                 
             except json.JSONDecodeError as e:

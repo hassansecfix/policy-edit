@@ -824,33 +824,68 @@ def main():
                 
                 if has_logo_operations and not data['metadata'].get('logo_path'):
                     # ONLY check for user's embedded logo data - NO FALLBACKS
-                    local_logo_path = f"data/{user_id}_company_logo.png"
                     
-                    # Try to extract logo from user's questionnaire CSV
+                    # Try to extract logo from original environment variable data (before API filtering)
                     try:
                         logo_created = False
-                        if os.path.exists(questionnaire_csv):
+                        
+                        # First, try environment variable data (contains original base64)
+                        env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+                        if env_data:
+                            try:
+                                import json
+                                json_data = json.loads(env_data)
+                                
+                                # Look for base64 logo data in JSON
+                                logo_data = json_data.get('_logo_base64_data', {})
+                                if isinstance(logo_data, dict) and 'value' in logo_data:
+                                    base64_value = logo_data['value']
+                                    if isinstance(base64_value, str) and 'base64,' in base64_value:
+                                        # Extract base64 data
+                                        base64_data = base64_value.split('base64,')[1]
+                                        
+                                        # Create temporary logo file from user's base64 data
+                                        import tempfile
+                                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                                        logo_buffer = base64.b64decode(base64_data)
+                                        temp_file.write(logo_buffer)
+                                        temp_file.close()
+                                        
+                                        local_logo_path = temp_file.name
+                                        data['metadata']['logo_path'] = local_logo_path
+                                        created_logo_file = local_logo_path  # Track for cleanup
+                                        print(f"🖼️  Created temporary logo file from environment data ({len(logo_buffer)} bytes)")
+                                        logo_created = True
+                                        
+                            except (json.JSONDecodeError, KeyError, Exception) as e:
+                                print(f"⚠️  Could not extract logo from environment data: {e}")
+                        
+                        # Fallback: try CSV file (for backward compatibility)
+                        if not logo_created and os.path.exists(questionnaire_csv):
                             with open(questionnaire_csv, 'r', encoding='utf-8') as f:
                                 csv_content = f.read()
                             
-                            # First, try to find base64 data entry (newer format)
+                            # Look for base64 data entry (this will be filtered, so likely won't work)
                             for line in csv_content.split('\n'):
-                                if line.startswith('99;Logo Base64 Data;_logo_base64_data;'):
+                                if '_logo_base64_data' in line and 'file_upload' in line:
                                     parts = line.split(';', 4)
-                                    if len(parts) >= 5:
+                                    if len(parts) >= 5 and not 'REMOVED_FOR_API_EFFICIENCY' in parts[4]:
                                         base64_data = parts[4]
                                         # Remove data URL prefix if present
                                         if ',' in base64_data:
                                             base64_data = base64_data.split(',')[1]
                                         
-                                        # Create logo file from user's base64 data
+                                        # Create temporary logo file from user's base64 data
+                                        import tempfile
+                                        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
                                         logo_buffer = base64.b64decode(base64_data)
-                                        with open(local_logo_path, 'wb') as f:
-                                            f.write(logo_buffer)
+                                        temp_file.write(logo_buffer)
+                                        temp_file.close()
                                         
+                                        local_logo_path = temp_file.name
                                         data['metadata']['logo_path'] = local_logo_path
-                                        created_logo_file = local_logo_path  # Track for git commit
-                                        print(f"🖼️  Created logo file from user's base64 data")
+                                        created_logo_file = local_logo_path  # Track for cleanup
+                                        print(f"🖼️  Created temporary logo file from CSV data ({len(logo_buffer)} bytes)")
                                         logo_created = True
                                         break
                             
@@ -914,11 +949,33 @@ def main():
         
         print("\n🏆 Your policy is ready for review with automated suggestions!")
         
+        # Clean up temporary logo file if it was created from base64 data
+        if created_logo_file and created_logo_file.startswith('/tmp/'):
+            try:
+                os.unlink(created_logo_file)
+                print(f"🧹 Cleaned up temporary logo file")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not clean up temporary logo file: {e}")
+        
     except KeyboardInterrupt:
         print("\n⏹️  Automation cancelled by user")
+        # Clean up temporary logo file if it was created
+        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('/tmp/'):
+            try:
+                os.unlink(created_logo_file)
+                print(f"🧹 Cleaned up temporary logo file")
+            except:
+                pass
         sys.exit(1)
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
+        # Clean up temporary logo file if it was created
+        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('/tmp/'):
+            try:
+                os.unlink(created_logo_file)
+                print(f"🧹 Cleaned up temporary logo file")
+            except:
+                pass
         sys.exit(1)
 
 if __name__ == "__main__":
