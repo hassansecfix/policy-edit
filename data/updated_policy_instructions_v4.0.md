@@ -184,15 +184,15 @@ Analyze the data and generate JSON-formatted customization instructions based on
 **Data Field:** Look for access review frequency preference  
 **JSON Instruction to Generate:**
 
-- Find `quarterly basis` in the document
+- Find `a quarterly basis` in the document
 - If current text matches user selection:
-  - target_text: `quarterly basis`
+  - target_text: `a quarterly basis`
   - action: "comment"
   - comment: "You selected [frequency] which matches the current quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
   - comment_author: "Secfix AI"
 - If replacement needed:
 
-  - target_text: `quarterly basis`
+  - target_text: `a quarterly basis`
   - action: "replace"
   - replacement: [user's selected frequency]
   - comment: "You selected [frequency] instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
