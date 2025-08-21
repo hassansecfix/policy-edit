@@ -139,10 +139,29 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
               accept='image/*,.pdf,.doc,.docx'
             />
             {value && typeof value === 'object' && 'name' in value && (
-              <div className='text-sm text-gray-600'>
-                {(value as FileUpload).data === 'existing-file'
-                  ? `Previously uploaded: ${(value as FileUpload).name}`
-                  : `Selected: ${(value as FileUpload).name}`}
+              <div className='space-y-2'>
+                <div className='text-sm text-gray-600'>
+                  {(value as FileUpload).data === 'existing-file'
+                    ? `Previously uploaded: ${(value as FileUpload).name}`
+                    : `Selected: ${(value as FileUpload).name}`}
+                </div>
+                {/* Show image preview for uploaded images */}
+                {(value as FileUpload).type?.startsWith('image/') &&
+                  (value as FileUpload).data &&
+                  (value as FileUpload).data !== 'existing-file' && (
+                    <div className='border rounded-lg p-3 bg-gray-50'>
+                      <div className='text-xs text-gray-500 mb-2'>Preview:</div>
+                      <img
+                        src={(value as FileUpload).data}
+                        alt={`Preview of ${(value as FileUpload).name}`}
+                        className='max-w-full max-h-32 object-contain rounded border bg-white'
+                        onError={(e) => {
+                          console.error('Image preview load error:', e);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
               </div>
             )}
           </div>

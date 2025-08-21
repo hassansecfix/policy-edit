@@ -213,11 +213,41 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                 {Object.entries(answers).map(([field, answer]) => (
                   <div key={field} className='text-xs'>
                     <span className='font-mono text-blue-600'>{field}:</span>{' '}
-                    <span className='text-gray-700'>
-                      {typeof answer.value === 'object'
-                        ? JSON.stringify(answer.value).substring(0, 50) + '...'
-                        : String(answer.value).substring(0, 100)}
-                    </span>
+                    <div className='text-gray-700 mt-1'>
+                      {typeof answer.value === 'object' &&
+                      answer.value &&
+                      'name' in answer.value ? (
+                        // Handle file uploads (like company logo)
+                        <div className='space-y-2'>
+                          <div className='flex items-center gap-2'>
+                            <span className='font-medium'>{(answer.value as any).name}</span>
+                            <span className='text-gray-500'>
+                              ({Math.round((answer.value as any).size / 1024)}KB)
+                            </span>
+                          </div>
+                          {(answer.value as any).type?.startsWith('image/') &&
+                            (answer.value as any).data && (
+                              <div className='border rounded p-2 bg-white'>
+                                <img
+                                  src={(answer.value as any).data}
+                                  alt={`Uploaded ${(answer.value as any).name}`}
+                                  className='max-w-full max-h-32 object-contain rounded'
+                                  onError={(e) => {
+                                    console.error('Image load error:', e);
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                        </div>
+                      ) : typeof answer.value === 'object' ? (
+                        // Handle other objects
+                        <span>{JSON.stringify(answer.value).substring(0, 50) + '...'}</span>
+                      ) : (
+                        // Handle strings and other primitives
+                        <span>{String(answer.value).substring(0, 100)}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
