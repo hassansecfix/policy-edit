@@ -40,14 +40,14 @@
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
-        "comment": "You indicated you use Gitlab for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Gitlab for version control, so this section should be retained. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Password management systems should be user-friendly",
         "action": "replace",
         "replacement": "Password management systems, specifically Dashlane, should be user-friendly",
-        "comment": "You indicated you use Dashlane for password management, so the generic text should be updated. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
+        "comment": "You indicated you use Dashlane for password management, so the generic text should reference your specific tool. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
         "comment_author": "Secfix AI"
       },
       {
@@ -61,14 +61,14 @@
         "target_text": "quarterly basis",
         "action": "replace",
         "replacement": "wdwadwa basis",
-        "comment": "You selected a custom review frequency instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.",
+        "comment": "You selected a custom review frequency. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<24 business hours>",
         "action": "replace",
         "replacement": "wadwad",
-        "comment": "You selected a custom termination timeframe instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
+        "comment": "You selected a custom termination timeframe. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
         "comment_author": "Secfix AI"
       },
       {
