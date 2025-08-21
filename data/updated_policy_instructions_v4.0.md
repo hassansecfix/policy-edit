@@ -185,20 +185,24 @@ Analyze the data and generate JSON-formatted customization instructions based on
 **JSON Instruction to Generate:**
 
 - Find `a quarterly basis` in the document
-- If current text matches user selection:
-  - target_text: `a quarterly basis`
-  - action: "comment"
-  - comment: "You selected [frequency] which matches the current quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
-  - comment_author: "Secfix AI"
-- If replacement needed:
+- **ALWAYS use "replace" action unless user explicitly selected "Quarterly"**
 
-  - target_text: `a quarterly basis`
-  - action: "replace"
-  - replacement: [user's selected frequency]
-  - comment: "You selected [frequency] instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
-  - comment_author: "Secfix AI"
+**If user selected "Quarterly" (matches current text):**
 
-- **If "Other" + custom text:** Interpret the custom frequency (e.g., "Every 6 months" → "semi-annual basis", "Twice yearly" → "semi-annual basis", "As needed" → "as-needed basis")
+- target_text: `a quarterly basis`
+- action: "comment"
+- comment: "You selected quarterly which matches the current quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
+- comment_author: "Secfix AI"
+
+**If ANY other selection (Monthly, Annually, Other, etc.):**
+
+- target_text: `a quarterly basis`
+- action: "replace"
+- replacement: [user's exact response from CSV]
+- comment: "You selected [original user response] instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
+- comment_author: "Secfix AI"
+
+**CRITICAL: Use the user's EXACT response as the replacement text. Do NOT interpret or convert it.**
 
 ## RULE_09: Access Termination Timeframe
 
@@ -219,7 +223,7 @@ Analyze the data and generate JSON-formatted customization instructions based on
   - comment_author: "Secfix AI"
 - **Include company size context:** For companies with fewer than 50 employees, mention this is appropriate for smaller organizations
 
-- **If "Other" + custom text:** Interpret the timeframe (e.g., "Same day" → "same business day", "Within the hour" → "1 business hour", "End of week" → "by end of business week")
+- **If "Other" + custom text:** Use the user's exact custom text as the replacement
 
 ## RULE_10: Policy Owner Assignment
 
@@ -291,10 +295,31 @@ Generate a JSON structure with the following format:
 
 ## Action Types:
 
-- **"replace"**: Suggest text replacement with comment
-- **"delete"**: Suggest text deletion with comment
-- **"comment"**: Add comment only (no text change)
-- **"replace_with_logo"**: Replace placeholder text with company logo image (requires logo metadata)
+- **"replace"**: Suggest text replacement with comment (**MUST include "replacement" field with actual replacement text**)
+- **"delete"**: Suggest text deletion with comment (replacement field should be empty string)
+- **"comment"**: Add comment only (no text change, replacement field should be empty string)
+- **"replace_with_logo"**: Replace placeholder text with company logo image (replacement field should be empty string)
+
+## CRITICAL: "replace" Action Requirements
+
+**When using "replace" action, you MUST include:**
+
+```json
+{
+  "target_text": "[exact text to find]",
+  "action": "replace",
+  "replacement": "[actual replacement text - CANNOT be empty for replace actions]",
+  "comment": "[explanation]",
+  "comment_author": "Secfix AI"
+}
+```
+
+**Common replace action failures to avoid:**
+
+- ❌ Missing "replacement" field entirely
+- ❌ Empty "replacement" field for "replace" action
+- ❌ Using "comment" action when replacement is needed
+- ✅ Always include proper replacement text for "replace" actions
 
 ## Comment Format Requirements:
 
