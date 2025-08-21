@@ -83,6 +83,7 @@ def rows_from_file(path):
 
 def rows_from_json(path):
     """Load edits from JSON operations format"""
+    import json
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
@@ -223,6 +224,7 @@ def ensure_listener(fast_mode=False):
 def main():
     args = parse_args()
     import os
+    import json
     in_path = os.path.abspath(args.in_path)
     out_path = os.path.abspath(args.out_path)
     csv_path = os.path.abspath(args.csv_path)
