@@ -852,17 +852,18 @@ def main():
                                         # Extract base64 data
                                         base64_data = base64_value.split('base64,')[1]
                                         
-                                        # Create logo file from user's base64 data (simple approach)
+                                        # Create user-specific logo file from base64 data
                                         logo_buffer = base64.b64decode(base64_data)
-                                        logo_path = f"data/company_logo.png"
+                                        logo_path = f"data/{user_id}_company_logo.png"
                                         os.makedirs("data", exist_ok=True)
                                         
                                         with open(logo_path, 'wb') as logo_file:
                                             logo_file.write(logo_buffer)
                                         
                                         data['metadata']['logo_path'] = logo_path
-                                        print(f"🖼️  Created logo file from base64: {logo_path} ({len(logo_buffer)} bytes)")
-                                        print(f"✅ Logo will be used by existing PNG logic that already works!")
+                                        created_logo_file = logo_path  # Track for cleanup
+                                        print(f"🖼️  Created user-specific logo: {logo_path} ({len(logo_buffer)} bytes)")
+                                        print(f"✅ Logo will be processed by existing PNG logic!")
                                         logo_created = True
                                         
                             except (json.JSONDecodeError, KeyError, Exception) as e:
@@ -883,17 +884,18 @@ def main():
                                         if ',' in base64_data:
                                             base64_data = base64_data.split(',')[1]
                                         
-                                        # Create logo file from CSV base64 data (simple approach)
+                                        # Create user-specific logo file from CSV base64 data
                                         logo_buffer = base64.b64decode(base64_data)
-                                        logo_path = f"data/company_logo.png"
+                                        logo_path = f"data/{user_id}_company_logo.png"
                                         os.makedirs("data", exist_ok=True)
                                         
                                         with open(logo_path, 'wb') as logo_file:
                                             logo_file.write(logo_buffer)
                                         
                                         data['metadata']['logo_path'] = logo_path
-                                        print(f"🖼️  Created logo file from CSV base64: {logo_path} ({len(logo_buffer)} bytes)")
-                                        print(f"✅ Logo will be used by existing PNG logic that already works!")
+                                        created_logo_file = logo_path  # Track for cleanup
+                                        print(f"🖼️  Created user-specific logo from CSV: {logo_path} ({len(logo_buffer)} bytes)")
+                                        print(f"✅ Logo will be processed by existing PNG logic!")
                                         logo_created = True
                                         break
                             
@@ -957,31 +959,31 @@ def main():
         
         print("\n🏆 Your policy is ready for review with automated suggestions!")
         
-        # Clean up temporary logo file if it was created from base64 data
-        if created_logo_file and created_logo_file.startswith('/tmp/'):
+        # Clean up user-specific logo file if it was created from base64 data
+        if created_logo_file and created_logo_file.startswith('data/') and user_id in created_logo_file:
             try:
                 os.unlink(created_logo_file)
-                print(f"🧹 Cleaned up temporary logo file")
+                print(f"🧹 Cleaned up user logo file: {created_logo_file}")
             except Exception as e:
-                print(f"⚠️  Warning: Could not clean up temporary logo file: {e}")
+                print(f"⚠️  Warning: Could not clean up logo file: {e}")
         
     except KeyboardInterrupt:
         print("\n⏹️  Automation cancelled by user")
-        # Clean up temporary logo file if it was created
-        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('/tmp/'):
+        # Clean up user logo file if it was created
+        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('data/'):
             try:
                 os.unlink(created_logo_file)
-                print(f"🧹 Cleaned up temporary logo file")
+                print(f"🧹 Cleaned up user logo file")
             except:
                 pass
         sys.exit(1)
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
-        # Clean up temporary logo file if it was created
-        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('/tmp/'):
+        # Clean up user logo file if it was created
+        if 'created_logo_file' in locals() and created_logo_file and created_logo_file.startswith('data/'):
             try:
                 os.unlink(created_logo_file)
-                print(f"🧹 Cleaned up temporary logo file")
+                print(f"🧹 Cleaned up user logo file")
             except:
                 pass
         sys.exit(1)
