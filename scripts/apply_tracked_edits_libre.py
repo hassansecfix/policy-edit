@@ -221,6 +221,7 @@ def ensure_listener(fast_mode=False):
 
 def main():
     args = parse_args()
+    import os
     in_path = os.path.abspath(args.in_path)
     out_path = os.path.abspath(args.out_path)
     csv_path = os.path.abspath(args.csv_path)
@@ -363,10 +364,7 @@ def main():
 
     # Apply replacements, comments, and optional header logo.
     try:
-        # Read optional logo parameters from args first
-        cli_logo_path = args.logo_path
-        cli_logo_w = args.logo_width_mm
-        cli_logo_h = args.logo_height_mm
+        # Note: CLI logo parameters are available but base64 data is preferred
 
         # FIRST: Handle logo replacement BEFORE any tracking is enabled
         if csv_path.endswith('.json'):
@@ -448,7 +446,6 @@ def main():
                             elif logo_base64_data:
                                 # Convert base64 directly to LibreOffice graphic without temporary file
                                 import base64
-                                import io
                                 print(f"🖼️  Processing base64 logo data directly...")
                                 
                                 # Validate and clean base64 data
@@ -805,21 +802,7 @@ def main():
         doc.RecordChanges = True
         print(f"✅ Tracking enabled - all subsequent changes will be tracked")
 
-        # If provided via JSON metadata, prefer it unless CLI overrides are present
-        # Logo parameter preparation (variables prepared but not currently used in logic)
-        try:
-            meta = data.get('metadata', {})
-            json_logo_path = (meta.get('logo_path') or meta.get('logo') or '').strip() or None
-            json_logo_w = meta.get('logo_width_mm')
-            json_logo_h = meta.get('logo_height_mm')
-            # logo_path_to_use = cli_logo_path if cli_logo_path else json_logo_path
-            # logo_w_to_use = cli_logo_w if cli_logo_w is not None else json_logo_w
-            # logo_h_to_use = cli_logo_h if cli_logo_h is not None else json_logo_h
-        except Exception:
-            # logo_path_to_use = cli_logo_path
-            # logo_w_to_use = cli_logo_w
-            # logo_h_to_use = cli_logo_h
-            pass
+        # Process comment-only operations from JSON data
 
         comment_operations = [op for op in operations if op.get('action') == 'comment']
         print(f"📝 Found {len(comment_operations)} comment-only operations to process")

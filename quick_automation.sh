@@ -81,13 +81,13 @@ show_config
 build_logo_args
 build_github_arg
 
-# Check for user uploaded company logo
+# Check for user uploaded company logo (legacy PNG file support)
 LOGO_ARGS=""
 if [[ -f "data/company_logo.png" ]]; then
     LOGO_ARGS=" --logo data/company_logo.png"
-    echo "🖼️  Found user uploaded logo: data/company_logo.png"
+    echo "🖼️  Using legacy PNG logo file (base64 data preferred)"
 else
-    echo "📷 No user logo found - will use original logo from policy document"
+    echo "📷 Using base64 logo data from user upload (PNG fallback not found)"
 fi
 
 # Check for skip API configuration
