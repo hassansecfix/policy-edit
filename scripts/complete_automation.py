@@ -876,13 +876,24 @@ def main():
                         
                         # First, try environment variable data (contains original base64)
                         env_data = os.environ.get('QUESTIONNAIRE_ANSWERS_DATA')
+                        temp_file_path = os.environ.get('QUESTIONNAIRE_ANSWERS_JSON')
+                        
                         print(f"🔍 DEBUG: Environment data exists: {bool(env_data)}")
+                        print(f"🔍 DEBUG: Temp file path exists: {bool(temp_file_path)}")
+                        
+                        json_data = None
                         if env_data:
+                            print("🔍 DEBUG: Using environment variable data for logo extraction")
+                            json_data = json_module.loads(env_data)
+                        elif temp_file_path and os.path.exists(temp_file_path):
+                            print(f"🔍 DEBUG: Using temp file data for logo extraction: {temp_file_path}")
+                            with open(temp_file_path, 'r', encoding='utf-8') as f:
+                                json_data = json_module.load(f)
+                        
+                        if json_data:
                             try:
-                                json_data = json_module.loads(env_data)
-                                
                                 # Debug: Show what keys we have
-                                print(f"🔍 DEBUG: Environment JSON keys: {list(json_data.keys())}")
+                                print(f"🔍 DEBUG: JSON data keys: {list(json_data.keys())}")
                                 
                                 # Look for base64 logo data in JSON (check both possible keys)
                                 logo_data = json_data.get('_logo_base64_data', {})
