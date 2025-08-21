@@ -40,7 +40,7 @@
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
-        "comment": "You indicated you use Gitlab for version control, so this section should be retained. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Gitlab for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -54,7 +54,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through Github Issues",
-        "comment": "You indicated you use Github Issues for ticket management and specified a custom access request method 'dwad'. Ticketing system = proper audit trails and tracking.",
+        "comment": "You indicated using Github Issues for ticket management and a custom access request method 'dwad'. Ticketing system = proper audit trails and tracking.",
         "comment_author": "Secfix AI"
       },
       {
