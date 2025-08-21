@@ -45,7 +45,7 @@
       {
         "target_text": "Password management systems should be user-friendly",
         "action": "comment",
-        "comment": "You indicated Todoist which is not a password management tool. This section should be reviewed as Todoist is a task management tool, not a password manager. No password tool = section removed; Using specific tool = policy references actual system.",
+        "comment": "You indicated Todoist for password management, which appears to be a task management tool rather than a password manager. We recommend implementing a dedicated password management solution. No password tool = section removed; Using specific tool = policy references actual system.",
         "comment_author": "Secfix AI"
       },
       {
