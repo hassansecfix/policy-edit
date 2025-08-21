@@ -3,6 +3,13 @@ import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 
+interface FileUploadValue {
+  name: string;
+  size: number;
+  type: string;
+  data: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Handle JSON with base64 file uploads
@@ -26,7 +33,7 @@ export async function POST(request: NextRequest) {
         logoAnswer.value &&
         'data' in logoAnswer.value
       ) {
-        const logoData = logoAnswer.value as any;
+        const logoData = logoAnswer.value as FileUploadValue;
         if (logoData.data && logoData.type?.startsWith('image/')) {
           console.log('🖼️ Processing uploaded company logo:', logoData.name);
 

@@ -3,6 +3,13 @@
 import { QuestionnaireAnswer } from '@/types';
 import { useEffect, useState } from 'react';
 
+interface FileUploadValue {
+  name: string;
+  size: number;
+  type: string;
+  data: string;
+}
+
 interface ServerAnswersResponse {
   exists?: boolean;
   content?: string;
@@ -220,17 +227,19 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                         // Handle file uploads (like company logo)
                         <div className='space-y-2'>
                           <div className='flex items-center gap-2'>
-                            <span className='font-medium'>{(answer.value as any).name}</span>
+                            <span className='font-medium'>
+                              {(answer.value as FileUploadValue).name}
+                            </span>
                             <span className='text-gray-500'>
-                              ({Math.round((answer.value as any).size / 1024)}KB)
+                              ({Math.round((answer.value as FileUploadValue).size / 1024)}KB)
                             </span>
                           </div>
-                          {(answer.value as any).type?.startsWith('image/') &&
-                            (answer.value as any).data && (
+                          {(answer.value as FileUploadValue).type?.startsWith('image/') &&
+                            (answer.value as FileUploadValue).data && (
                               <div className='border rounded p-2 bg-white'>
                                 <img
-                                  src={(answer.value as any).data}
-                                  alt={`Uploaded ${(answer.value as any).name}`}
+                                  src={(answer.value as FileUploadValue).data}
+                                  alt={`Uploaded ${(answer.value as FileUploadValue).name}`}
                                   className='max-w-full max-h-32 object-contain rounded'
                                   onError={(e) => {
                                     console.error('Image load error:', e);

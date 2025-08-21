@@ -2,12 +2,12 @@
 
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { ControlPanel } from '@/components/ControlPanel';
+import { DocumentChangesPreview } from '@/components/DocumentChangesPreview';
 import { DownloadSection } from '@/components/DownloadSection';
 import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
 import { ProgressTracker } from '@/components/ProgressTracker';
 import { Questionnaire } from '@/components/Questionnaire';
-import { UserAnswersDisplay } from '@/components/UserAnswersDisplay';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
-  const [showDebugAnswers, setShowDebugAnswers] = useState(false);
+  // const [showDebugAnswers, setShowDebugAnswers] = useState(false); // Removed - replaced with DocumentChangesPreview
   const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
@@ -364,18 +364,18 @@ export default function Dashboard() {
               >
                 📝 Edit Questionnaire
               </button>
-              <button
+              {/* <button
                 onClick={() => setShowDebugAnswers(!showDebugAnswers)}
                 className='px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium'
               >
                 🔍 {showDebugAnswers ? 'Hide' : 'Show'} Answers
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
 
-        {/* Debug Answers Display */}
-        <UserAnswersDisplay visible={showDebugAnswers} />
+        {/* Document Changes Preview */}
+        <DocumentChangesPreview visible={questionnaireCompleted && !editingQuestionnaire} />
 
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Left Column - Control Panel & Progress */}

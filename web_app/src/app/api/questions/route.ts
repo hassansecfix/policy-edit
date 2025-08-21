@@ -115,8 +115,8 @@ export async function GET() {
         const [
           questionNumber,
           questionText,
-          questionDescription,
-          field,
+          ,
+          /* questionDescription */ field,
           responseType,
           responseOptions,
         ] = columns;
