@@ -48,7 +48,7 @@
         "target_text": "Password management systems should be user-friendly",
         "action": "replace",
         "replacement": "Password management systems, specifically Test - Company Name development, should be user-friendly",
-        "comment": "You indicated you use a custom password management tool, so the generic reference should be updated. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
+        "comment": "You indicated you use a custom password management tool, so the generic text should be updated to reference your specific system. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
         "comment_author": "Secfix AI"
       },
       {
