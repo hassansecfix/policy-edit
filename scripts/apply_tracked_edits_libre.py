@@ -575,14 +575,13 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set size - 35mm x 10mm
+                                            # Set logo size - hardcoded values
                                             try:
-                                                graphic.setPropertyValue("Width", 3500)  # 35mm
-                                                graphic.setPropertyValue("Height", 1000)  # 10mm
+                                                graphic.setPropertyValue("Height", 1200)  # 12mm height
                                                 graphic.setPropertyValue("SizeType", 1)
                                                 graphic.setPropertyValue("RelativeWidth", 0)
-                                                graphic.setPropertyValue("KeepRatio", False)
-                                                print(f"📏 Set logo size to 35mm x 10mm")
+                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
+                                                print(f"📏 Set logo height to 12mm (auto-width)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
@@ -762,14 +761,13 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set size - 35mm x 10mm
+                                            # Set logo size - hardcoded values
                                             try:
-                                                graphic.setPropertyValue("Width", 3500)  # 35mm
-                                                graphic.setPropertyValue("Height", 1000)  # 10mm
+                                                graphic.setPropertyValue("Height", 1200)  # 12mm height
                                                 graphic.setPropertyValue("SizeType", 1)
                                                 graphic.setPropertyValue("RelativeWidth", 0)
-                                                graphic.setPropertyValue("KeepRatio", False)
-                                                print(f"📏 Set logo size to 35mm x 10mm")
+                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
+                                                print(f"📏 Set logo height to 12mm (auto-width)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
