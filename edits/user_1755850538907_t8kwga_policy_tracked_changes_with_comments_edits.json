@@ -83,14 +83,14 @@
         "target_text": "<Exceptions: IT Manager>",
         "action": "replace",
         "replacement": "Test - Company Name development",
-        "comment": "You indicated that a custom role is responsible for approving exceptions to this policy, so the IT Manager placeholder should be updated. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment": "You indicated that Test - Company Name development is responsible for approving exceptions to this policy, so the IT Manager placeholder should be updated. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Violations: IT Manager>",
         "action": "replace",
         "replacement": "Test - Company Name development",
-        "comment": "You indicated that a custom role is responsible for handling policy violations, so the IT Manager placeholder should be updated. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment": "You indicated that Test - Company Name development is responsible for handling policy violations, so the IT Manager placeholder should be updated. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
         "comment_author": "Secfix AI"
       }
     ]

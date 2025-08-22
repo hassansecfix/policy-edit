@@ -45,10 +45,21 @@ def clean_docx_highlighting(input_path, output_path=None):
         doc = docx.Document(input_path)
         highlighting_removed = 0
         
-        # Process all paragraphs
+        # Process all paragraphs with comprehensive highlighting removal
         for paragraph in doc.paragraphs:
+            # Clear paragraph-level highlighting first
+            try:
+                if hasattr(paragraph._element, 'pPr') and paragraph._element.pPr is not None:
+                    # Remove paragraph shading elements
+                    para_shading = paragraph._element.pPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                    for shd in para_shading:
+                        paragraph._element.pPr.remove(shd)
+                        highlighting_removed += 1
+            except:
+                pass
+            
             for run in paragraph.runs:
-                # Remove highlight color (main highlighting property)
+                # Method 1: Remove highlight color (main highlighting property)
                 try:
                     if run.font.highlight_color is not None:
                         run.font.highlight_color = None
@@ -56,38 +67,237 @@ def clean_docx_highlighting(input_path, output_path=None):
                 except:
                     pass
                 
-                # Remove all possible background/fill colors
+                # Method 2: Remove font fill/background colors
                 try:
                     if hasattr(run.font, 'fill') and run.font.fill is not None:
-                        run.font.fill.fore_color.rgb = None
-                        run.font.fill.solid()  # Reset fill type
+                        if hasattr(run.font.fill, 'fore_color') and run.font.fill.fore_color is not None:
+                            run.font.fill.fore_color.rgb = None
+                            highlighting_removed += 1
+                        # Clear any fill type
+                        run.font.fill.solid()
                 except:
                     pass
                 
-                # Clear character background (another way highlighting can be applied)
+                # Method 3: Clear character shading/background (XML level)
                 try:
-                    # Clear character shading/background
                     if hasattr(run._element, 'rPr') and run._element.rPr is not None:
-                        # Remove shading elements that can cause highlighting
+                        # Remove ALL shading elements
                         shading_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
                         for shd in shading_elements:
                             run._element.rPr.remove(shd)
                             highlighting_removed += 1
                 except:
                     pass
+                
+                # Method 4: Remove character spacing and position (sometimes contains highlighting info)
+                try:
+                    if hasattr(run._element, 'rPr') and run._element.rPr is not None:
+                        # Remove highlight-related XML properties
+                        highlight_props = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}highlight')
+                        for prop in highlight_props:
+                            run._element.rPr.remove(prop)
+                            highlighting_removed += 1
+                except:
+                    pass
+                
+                # Method 5: Clear any w:color background attributes
+                try:
+                    if hasattr(run._element, 'rPr') and run._element.rPr is not None:
+                        color_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color')
+                        for color_elem in color_elements:
+                            # Remove background color attributes
+                            if color_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill'):
+                                del color_elem.attrib['{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill']
+                                highlighting_removed += 1
+                except:
+                    pass
         
-        # Process tables if any
+        # Process tables with comprehensive highlighting removal
         for table in doc.tables:
             for row in table.rows:
                 for cell in row.cells:
+                    # Clear cell-level shading
+                    try:
+                        if hasattr(cell._element, 'tcPr') and cell._element.tcPr is not None:
+                            cell_shading = cell._element.tcPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                            for shd in cell_shading:
+                                cell._element.tcPr.remove(shd)
+                                highlighting_removed += 1
+                    except:
+                        pass
+                    
                     for paragraph in cell.paragraphs:
+                        # Clear paragraph-level highlighting in tables
+                        try:
+                            if hasattr(paragraph._element, 'pPr') and paragraph._element.pPr is not None:
+                                para_shading = paragraph._element.pPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                for shd in para_shading:
+                                    paragraph._element.pPr.remove(shd)
+                                    highlighting_removed += 1
+                        except:
+                            pass
+                        
                         for run in paragraph.runs:
+                            # Apply all 5 methods to table text as well
                             try:
                                 if run.font.highlight_color is not None:
                                     run.font.highlight_color = None
                                     highlighting_removed += 1
                             except:
                                 pass
+                            
+                            try:
+                                if hasattr(run.font, 'fill') and run.font.fill is not None:
+                                    if hasattr(run.font.fill, 'fore_color') and run.font.fill.fore_color is not None:
+                                        run.font.fill.fore_color.rgb = None
+                                        highlighting_removed += 1
+                                    run.font.fill.solid()
+                            except:
+                                pass
+                            
+                            try:
+                                if hasattr(run._element, 'rPr') and run._element.rPr is not None:
+                                    # Remove shading elements
+                                    shading_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                    for elem in shading_elements:
+                                        run._element.rPr.remove(elem)
+                                        highlighting_removed += 1
+                                    
+                                    # Remove highlight elements
+                                    highlight_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}highlight')
+                                    for elem in highlight_elements:
+                                        run._element.rPr.remove(elem)
+                                        highlighting_removed += 1
+                            except:
+                                pass
+        
+        # Process headers and footers (this was missing!)
+        for section in doc.sections:
+            # Process all types of headers
+            for header_type in ['first_page_header', 'even_page_header', 'header']:
+                try:
+                    header = getattr(section, header_type)
+                    if header is not None:
+                        for paragraph in header.paragraphs:
+                            # Clear paragraph-level highlighting in headers
+                            try:
+                                if hasattr(paragraph._element, 'pPr') and paragraph._element.pPr is not None:
+                                    para_shading = paragraph._element.pPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                    for shd in para_shading:
+                                        paragraph._element.pPr.remove(shd)
+                                        highlighting_removed += 1
+                            except:
+                                pass
+                            
+                            for run in paragraph.runs:
+                                # Apply all 5 highlighting removal methods to header text
+                                try:
+                                    if run.font.highlight_color is not None:
+                                        run.font.highlight_color = None
+                                        highlighting_removed += 1
+                                except:
+                                    pass
+                                
+                                try:
+                                    if hasattr(run.font, 'fill') and run.font.fill is not None:
+                                        if hasattr(run.font.fill, 'fore_color') and run.font.fill.fore_color is not None:
+                                            run.font.fill.fore_color.rgb = None
+                                            highlighting_removed += 1
+                                        run.font.fill.solid()
+                                except:
+                                    pass
+                                
+                                try:
+                                    if hasattr(run._element, 'rPr') and run._element.rPr is not None:
+                                        # Remove shading elements
+                                        shading_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                        for elem in shading_elements:
+                                            run._element.rPr.remove(elem)
+                                            highlighting_removed += 1
+                                        
+                                        # Remove highlight elements
+                                        highlight_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}highlight')
+                                        for elem in highlight_elements:
+                                            run._element.rPr.remove(elem)
+                                            highlighting_removed += 1
+                                        
+                                        # Remove color background attributes
+                                        color_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}color')
+                                        for color_elem in color_elements:
+                                            if color_elem.get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill'):
+                                                del color_elem.attrib['{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fill']
+                                                highlighting_removed += 1
+                                except:
+                                    pass
+                        
+                        # Process tables in headers if any
+                        for table in header.tables:
+                            for row in table.rows:
+                                for cell in row.cells:
+                                    # Clear cell-level shading in header tables
+                                    try:
+                                        if hasattr(cell._element, 'tcPr') and cell._element.tcPr is not None:
+                                            cell_shading = cell._element.tcPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                            for shd in cell_shading:
+                                                cell._element.tcPr.remove(shd)
+                                                highlighting_removed += 1
+                                    except:
+                                        pass
+                                    
+                                    for paragraph in cell.paragraphs:
+                                        for run in paragraph.runs:
+                                            # Apply highlighting removal to table text in headers
+                                            try:
+                                                if run.font.highlight_color is not None:
+                                                    run.font.highlight_color = None
+                                                    highlighting_removed += 1
+                                            except:
+                                                pass
+                except:
+                    pass
+            
+            # Process all types of footers
+            for footer_type in ['first_page_footer', 'even_page_footer', 'footer']:
+                try:
+                    footer = getattr(section, footer_type)
+                    if footer is not None:
+                        for paragraph in footer.paragraphs:
+                            # Clear paragraph-level highlighting in footers
+                            try:
+                                if hasattr(paragraph._element, 'pPr') and paragraph._element.pPr is not None:
+                                    para_shading = paragraph._element.pPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                    for shd in para_shading:
+                                        paragraph._element.pPr.remove(shd)
+                                        highlighting_removed += 1
+                            except:
+                                pass
+                            
+                            for run in paragraph.runs:
+                                # Apply all highlighting removal methods to footer text
+                                try:
+                                    if run.font.highlight_color is not None:
+                                        run.font.highlight_color = None
+                                        highlighting_removed += 1
+                                except:
+                                    pass
+                                
+                                try:
+                                    if hasattr(run._element, 'rPr') and run._element.rPr is not None:
+                                        # Remove shading elements
+                                        shading_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                                        for elem in shading_elements:
+                                            run._element.rPr.remove(elem)
+                                            highlighting_removed += 1
+                                        
+                                        # Remove highlight elements
+                                        highlight_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}highlight')
+                                        for elem in highlight_elements:
+                                            run._element.rPr.remove(elem)
+                                            highlighting_removed += 1
+                                except:
+                                    pass
+                except:
+                    pass
         
         # Save the cleaned document
         doc.save(output_path)
