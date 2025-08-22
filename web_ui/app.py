@@ -481,19 +481,16 @@ class AutomationRunner:
         # Get project root directory (parent of web_ui)
         base_path = Path(__file__).parent.parent
         
+        # Collect all DOCX files that need processing
+        docx_files_to_process = []
+        
         # Check for local DOCX output in build directory
         build_path = base_path / "build"
         if build_path.exists():
             output_name = os.environ.get('OUTPUT_NAME', 'policy_tracked_changes_with_comments')
             docx_files = list(build_path.glob(f"{output_name}*.docx"))
             for docx_file in docx_files:
-                size = docx_file.stat().st_size
-                files_found.append({
-                    'name': f'Policy Document - {docx_file.name}',
-                    'path': f'build/{docx_file.name}',  # Relative to project root
-                    'size': f"{size / 1024:.1f} KB",
-                    'type': 'docx'
-                })
+                docx_files_to_process.append(docx_file)
         
         # Check for any DOCX files in the root directory (from LibreOffice output)
         # Exclude the original policy file
@@ -502,7 +499,19 @@ class AutomationRunner:
         for docx_file in docx_files:
             # Skip the original policy file and any files in the data directory
             if docx_file.name not in original_policy and 'data/' not in str(docx_file):
-                size = docx_file.stat().st_size
+                docx_files_to_process.append(docx_file)
+        
+        # Add all found DOCX files to results
+        for docx_file in docx_files_to_process:
+            size = docx_file.stat().st_size
+            if docx_file.parent.name == 'build':
+                files_found.append({
+                    'name': f'Policy Document - {docx_file.name}',
+                    'path': f'build/{docx_file.name}',  # Relative to project root
+                    'size': f"{size / 1024:.1f} KB",
+                    'type': 'docx'
+                })
+            else:
                 files_found.append({
                     'name': f'Policy Document - {docx_file.name}',
                     'path': f'{docx_file.name}',  # Relative to project root

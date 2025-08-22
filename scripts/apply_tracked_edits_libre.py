@@ -324,6 +324,39 @@ def main():
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
 
+    # Clean highlighting from the loaded document BEFORE applying any edits
+    print("🎨 Cleaning highlighting from document before applying edits...")
+    try:
+        # Access the document's text content
+        text = doc.getText()
+        cursor = text.createTextCursor()
+        cursor.gotoStart(False)
+        cursor.gotoEnd(True)  # Select all text
+        
+        # Clear character highlighting
+        try:
+            cursor.setPropertyValue("CharBackColor", -1)  # -1 means no background color
+        except Exception:
+            pass
+        
+        # Clear paragraph highlighting  
+        try:
+            cursor.setPropertyValue("ParaBackColor", -1)  # -1 means no background color
+        except Exception:
+            pass
+            
+        # Also clear any highlight color property
+        try:
+            cursor.setPropertyValue("CharHighlight", 0)  # 0 means no highlight
+        except Exception:
+            pass
+        
+        print("✅ Successfully cleaned highlighting from document")
+        
+    except Exception as e:
+        print(f"⚠️ Warning: Could not clean highlighting from document: {e}")
+        # Continue anyway - not a critical failure
+
     # Set document properties for tracked changes (skip in fast mode)
     if not args.fast:
         try:
