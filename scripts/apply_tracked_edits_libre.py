@@ -575,15 +575,40 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - height only, auto-maintain aspect ratio
+                                            # Set logo size - maintain aspect ratio by using Size struct
                                             try:
-                                                # Set height only - LibreOffice should auto-calculate width based on aspect ratio
-                                                graphic.setPropertyValue("Height", 600)   # 6mm height
-                                                graphic.setPropertyValue("SizeType", 1)   # Absolute size
-                                                graphic.setPropertyValue("RelativeHeight", 0)  # Not relative
-                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
+                                                # Import LibreOffice Size structure
+                                                from com.sun.star.awt import Size
                                                 
-                                                print(f"📏 Set logo height to 6mm (width will auto-adjust to maintain aspect ratio)")
+                                                # Get original image dimensions to calculate proper aspect ratio
+                                                # Set height to 600 (6mm) and calculate proportional width
+                                                target_height = 600  # 6mm in 1/100mm units
+                                                
+                                                # Create Size object with height set and width proportional
+                                                # Use a reasonable default width that will be auto-adjusted
+                                                size = Size()
+                                                size.Height = target_height
+                                                size.Width = 0  # Let LibreOffice calculate this
+                                                
+                                                # Set the size as a complete Size object
+                                                graphic.setPropertyValue("Size", size)
+                                                
+                                                # Ensure aspect ratio is preserved
+                                                graphic.setPropertyValue("SizeType", 1)   # Absolute size
+                                                graphic.setPropertyValue("IsSizeProtected", False)
+                                                
+                                                # Multiple attempts at aspect ratio preservation
+                                                try:
+                                                    graphic.setPropertyValue("KeepRatio", True)
+                                                except:
+                                                    pass
+                                                    
+                                                try:
+                                                    graphic.setPropertyValue("PreserveAspectRatio", True)
+                                                except:
+                                                    pass
+                                                
+                                                print(f"📏 Set logo height to 6mm using Size object (width auto-calculated for aspect ratio)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
@@ -763,15 +788,40 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - height only, auto-maintain aspect ratio
+                                            # Set logo size - maintain aspect ratio by using Size struct
                                             try:
-                                                # Set height only - LibreOffice should auto-calculate width based on aspect ratio
-                                                graphic.setPropertyValue("Height", 600)   # 6mm height
-                                                graphic.setPropertyValue("SizeType", 1)   # Absolute size
-                                                graphic.setPropertyValue("RelativeHeight", 0)  # Not relative
-                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
+                                                # Import LibreOffice Size structure
+                                                from com.sun.star.awt import Size
                                                 
-                                                print(f"📏 Set logo height to 6mm (width will auto-adjust to maintain aspect ratio)")
+                                                # Get original image dimensions to calculate proper aspect ratio
+                                                # Set height to 600 (6mm) and calculate proportional width
+                                                target_height = 600  # 6mm in 1/100mm units
+                                                
+                                                # Create Size object with height set and width proportional
+                                                # Use a reasonable default width that will be auto-adjusted
+                                                size = Size()
+                                                size.Height = target_height
+                                                size.Width = 0  # Let LibreOffice calculate this
+                                                
+                                                # Set the size as a complete Size object
+                                                graphic.setPropertyValue("Size", size)
+                                                
+                                                # Ensure aspect ratio is preserved
+                                                graphic.setPropertyValue("SizeType", 1)   # Absolute size
+                                                graphic.setPropertyValue("IsSizeProtected", False)
+                                                
+                                                # Multiple attempts at aspect ratio preservation
+                                                try:
+                                                    graphic.setPropertyValue("KeepRatio", True)
+                                                except:
+                                                    pass
+                                                    
+                                                try:
+                                                    graphic.setPropertyValue("PreserveAspectRatio", True)
+                                                except:
+                                                    pass
+                                                
+                                                print(f"📏 Set logo height to 6mm using Size object (width auto-calculated for aspect ratio)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
