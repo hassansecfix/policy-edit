@@ -55,7 +55,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through Test - Company Name development changed",
-        "comment": "You indicated using a custom ticketing system for access requests. Ticketing system = proper audit trails; Email = simple but no tracking; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated using a custom ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
