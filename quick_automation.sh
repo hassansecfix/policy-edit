@@ -81,19 +81,10 @@ show_config
 build_logo_args
 build_github_arg
 
-# Check for user-specific uploaded company logo
+# Logo handling - the Python automation will extract logo from localStorage if available
+# No need to check for logo files here since they get created during the automation process
 LOGO_ARGS=""
-# Look for user-specific logo files (pattern: data/{user_id}_company_logo.png)
-USER_LOGO=$(find data/ -name "*_company_logo.png" 2>/dev/null | head -1)
-if [[ -f "$USER_LOGO" ]]; then
-    LOGO_ARGS=" --logo $USER_LOGO"
-    echo "🖼️  Using user-specific logo: $USER_LOGO"
-elif [[ -f "data/company_logo.png" ]]; then
-    LOGO_ARGS=" --logo data/company_logo.png"
-    echo "🖼️  Using default logo: data/company_logo.png"
-else
-    echo "📷 No logo file found - will use original policy document logo"
-fi
+echo "🖼️  Logo will be extracted from localStorage during automation if provided"
 
 # Check for skip API configuration
 SKIP_API_ARG=""
