@@ -32,6 +32,7 @@ Read the processing instructions v3.8 to understand all customization rules and 
 - Normalize multi-line addresses to single line format with commas when provided
 - Extract tool names properly (remove parenthetical text like "(recommended)")
 - Include company size context for termination timeframe when <50 employees
+- **CRITICAL: Ensure all replacement text is grammatically correct in context** - follow the grammatical correctness requirements in the processing instructions
 
 ## Expected JSON Output:
 

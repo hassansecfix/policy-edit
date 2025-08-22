@@ -321,6 +321,70 @@ Generate a JSON structure with the following format:
 - ❌ Using "comment" action when replacement is needed
 - ✅ Always include proper replacement text for "replace" actions
 
+## CRITICAL: Grammatical Correctness Requirements
+
+**MANDATORY: All replacement text must be grammatically correct in context.**
+
+When generating replacement text, you MUST consider the surrounding context to ensure proper grammar:
+
+### **Punctuation Rules:**
+
+- **End of sentences:** If the target_text is at the end of a sentence and lacks proper punctuation, add a period (.) to the replacement text
+- **Mid-sentence replacements:** Preserve existing punctuation patterns and add appropriate punctuation if needed
+- **List items:** Maintain consistent punctuation across list items (periods, commas, semicolons as appropriate)
+- **Abbreviations:** Ensure proper punctuation for abbreviated forms (e.g., "Inc.", "LLC", "Corp.")
+
+### **Article Usage (a/an):**
+
+- Use "an" before words starting with vowel SOUNDS: "an employee", "an IT system", "an hour"
+- Use "a" before words starting with consonant SOUNDS: "a user", "a policy", "a one-time access"
+- **Examples:**
+  - ✅ "an IT Manager" (vowel sound)
+  - ✅ "a user-friendly system" (consonant sound)
+  - ❌ "a IT Manager" or "an user-friendly system"
+
+### **Capitalization Rules:**
+
+- **Proper nouns:** Company names, tool names, role titles should maintain proper capitalization
+- **Sentence case:** First word of replacement should be capitalized only if it starts a new sentence
+- **Title case:** For headings or formal titles, use appropriate title case
+- **Acronyms:** Preserve correct capitalization (IT, CEO, API, etc.)
+
+### **Context-Aware Sentence Structure:**
+
+- **Subject-verb agreement:** Ensure verbs match singular/plural subjects correctly
+- **Tense consistency:** Match the tense of surrounding text
+- **Voice consistency:** Maintain active/passive voice as appropriate for the context
+- **Flow:** Ensure the replacement text flows naturally with preceding and following text
+
+### **Special Context Considerations:**
+
+- **Policy language:** Maintain formal, professional tone appropriate for policy documents
+- **Technical terms:** Ensure technical terms are used correctly and consistently
+- **Role references:** Use consistent formatting for job titles and roles throughout
+- **Tool/system names:** Preserve exact capitalization and formatting of software/tool names
+
+### **Validation Before Generation:**
+
+Before finalizing any replacement text, mentally read the sentence with your replacement to ensure:
+
+1. **Grammar:** The sentence is grammatically correct
+2. **Punctuation:** Proper punctuation is used
+3. **Flow:** The text reads naturally
+4. **Consistency:** Style matches the surrounding document
+5. **Clarity:** The meaning is clear and unambiguous
+
+**Example Applications:**
+
+- ❌ Target: "managed by IT Manager" → Replacement: "managed by john smith"
+- ✅ Target: "managed by IT Manager" → Replacement: "managed by John Smith"
+
+- ❌ Target: "using a password tool" → Replacement: "using 1Password system"
+- ✅ Target: "using a password tool" → Replacement: "using the 1Password system"
+
+- ❌ Target: "quarterly basis" → Replacement: "annual"
+- ✅ Target: "quarterly basis" → Replacement: "annual basis"
+
 ## Comment Format Requirements:
 
 ### **Comment Field:**
@@ -346,6 +410,7 @@ Generate a JSON structure with the following format:
 7. **Tool Name Extraction:** Remove parenthetical text like "(recommended)" from tool names
 8. **Simple Comments:** Use "Replaced" for company name, address, and logo rules
 9. **Comment Attribution:** Always include "Secfix AI" as comment_author for all operations
+10. **MANDATORY GRAMMATICAL CORRECTNESS:** All replacement text must be grammatically correct in context - check punctuation, articles (a/an), capitalization, sentence structure, and flow
 
 **DO NOT include:**
 
