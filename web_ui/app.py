@@ -501,8 +501,28 @@ class AutomationRunner:
             if docx_file.name not in original_policy and 'data/' not in str(docx_file):
                 docx_files_to_process.append(docx_file)
         
-        # Add all found DOCX files to results
+        # Post-process DOCX files to remove highlighting (safer than LibreOffice UNO API)
         for docx_file in docx_files_to_process:
+            try:
+                # Clean highlighting using python-docx (safer approach)
+                self.emit_log(f"🎨 Post-processing {docx_file.name} to remove highlighting...", "info")
+                
+                import sys
+                sys.path.append(str(base_path / "scripts"))
+                from ai_policy_processor import clean_docx_highlighting
+                
+                # Clean highlighting in-place on the generated document
+                success, message = clean_docx_highlighting(str(docx_file))
+                
+                if success:
+                    self.emit_log(f"✅ Cleaned highlighting from {docx_file.name}", "success")
+                else:
+                    self.emit_log(f"⚠️ Could not clean highlighting from {docx_file.name}: {message}", "warning")
+                    
+            except Exception as e:
+                self.emit_log(f"⚠️ Error post-processing {docx_file.name}: {e}", "warning")
+            
+            # Add file to results
             size = docx_file.stat().st_size
             if docx_file.parent.name == 'build':
                 files_found.append({
