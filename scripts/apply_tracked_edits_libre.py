@@ -582,21 +582,49 @@ def main():
                                                 calculated_width = target_height  # Default fallback
                                                 
                                                 try:
-                                                    # Try to get image dimensions using PIL/Pillow
-                                                    from PIL import Image
+                                                    # First try to install Pillow if not available
+                                                    try:
+                                                        from PIL import Image
+                                                    except ImportError:
+                                                        print("📏 Installing Pillow for image processing...")
+                                                        import subprocess
+                                                        import sys
+                                                        subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
+                                                        from PIL import Image
+                                                    
+                                                    # Get image dimensions using PIL/Pillow
+                                                    print(f"📏 Reading image file: {actual_logo_path}")
                                                     with Image.open(actual_logo_path) as img:
                                                         img_width, img_height = img.size
                                                         aspect_ratio = img_width / img_height
                                                         calculated_width = int(target_height * aspect_ratio)
                                                         print(f"📏 Image dimensions: {img_width}x{img_height}, aspect ratio: {aspect_ratio:.2f}")
                                                         print(f"📏 Calculated width: {calculated_width} (for height {target_height})")
-                                                except ImportError:
-                                                    print("📏 PIL not available, trying alternative method")
-                                                    # Fallback: assume reasonable aspect ratio
-                                                    calculated_width = int(target_height * 2.5)  # Assume logo is wider than tall
+                                                        
+                                                except ImportError as ie:
+                                                    print(f"📏 PIL still not available after install attempt: {ie}")
+                                                    # Try using os.path.getsize as a basic check
+                                                    try:
+                                                        file_size = os.path.getsize(actual_logo_path)
+                                                        print(f"📏 Logo file size: {file_size} bytes")
+                                                        # Rough estimate based on file size (very approximate)
+                                                        if file_size > 50000:  # Larger file, probably wider
+                                                            calculated_width = int(target_height * 3.0)
+                                                        elif file_size > 20000:
+                                                            calculated_width = int(target_height * 2.5)
+                                                        else:
+                                                            calculated_width = int(target_height * 2.0)
+                                                        print(f"📏 Using file-size-based width estimate: {calculated_width}")
+                                                    except Exception:
+                                                        calculated_width = int(target_height * 2.5)  # Default fallback
+                                                        print(f"📏 Using default width estimate: {calculated_width}")
+                                                        
                                                 except Exception as e:
-                                                    print(f"📏 Could not read image dimensions: {e}, using fallback")
+                                                    print(f"📏 Could not read image dimensions: {e}")
+                                                    print(f"📏 File exists: {os.path.exists(actual_logo_path)}")
+                                                    print(f"📏 File path: {actual_logo_path}")
                                                     calculated_width = int(target_height * 2.5)
+                                                    print(f"📏 Using fallback width: {calculated_width}")
                                                 
                                                 # Set both width and height explicitly
                                                 graphic.setPropertyValue("Height", target_height)
@@ -790,21 +818,49 @@ def main():
                                                 calculated_width = target_height  # Default fallback
                                                 
                                                 try:
-                                                    # Try to get image dimensions using PIL/Pillow
-                                                    from PIL import Image
+                                                    # First try to install Pillow if not available
+                                                    try:
+                                                        from PIL import Image
+                                                    except ImportError:
+                                                        print("📏 Installing Pillow for image processing...")
+                                                        import subprocess
+                                                        import sys
+                                                        subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
+                                                        from PIL import Image
+                                                    
+                                                    # Get image dimensions using PIL/Pillow
+                                                    print(f"📏 Reading image file: {actual_logo_path}")
                                                     with Image.open(actual_logo_path) as img:
                                                         img_width, img_height = img.size
                                                         aspect_ratio = img_width / img_height
                                                         calculated_width = int(target_height * aspect_ratio)
                                                         print(f"📏 Image dimensions: {img_width}x{img_height}, aspect ratio: {aspect_ratio:.2f}")
                                                         print(f"📏 Calculated width: {calculated_width} (for height {target_height})")
-                                                except ImportError:
-                                                    print("📏 PIL not available, trying alternative method")
-                                                    # Fallback: assume reasonable aspect ratio
-                                                    calculated_width = int(target_height * 2.5)  # Assume logo is wider than tall
+                                                        
+                                                except ImportError as ie:
+                                                    print(f"📏 PIL still not available after install attempt: {ie}")
+                                                    # Try using os.path.getsize as a basic check
+                                                    try:
+                                                        file_size = os.path.getsize(actual_logo_path)
+                                                        print(f"📏 Logo file size: {file_size} bytes")
+                                                        # Rough estimate based on file size (very approximate)
+                                                        if file_size > 50000:  # Larger file, probably wider
+                                                            calculated_width = int(target_height * 3.0)
+                                                        elif file_size > 20000:
+                                                            calculated_width = int(target_height * 2.5)
+                                                        else:
+                                                            calculated_width = int(target_height * 2.0)
+                                                        print(f"📏 Using file-size-based width estimate: {calculated_width}")
+                                                    except Exception:
+                                                        calculated_width = int(target_height * 2.5)  # Default fallback
+                                                        print(f"📏 Using default width estimate: {calculated_width}")
+                                                        
                                                 except Exception as e:
-                                                    print(f"📏 Could not read image dimensions: {e}, using fallback")
+                                                    print(f"📏 Could not read image dimensions: {e}")
+                                                    print(f"📏 File exists: {os.path.exists(actual_logo_path)}")
+                                                    print(f"📏 File path: {actual_logo_path}")
                                                     calculated_width = int(target_height * 2.5)
+                                                    print(f"📏 Using fallback width: {calculated_width}")
                                                 
                                                 # Set both width and height explicitly
                                                 graphic.setPropertyValue("Height", target_height)
