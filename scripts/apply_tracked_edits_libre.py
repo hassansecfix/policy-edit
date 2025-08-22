@@ -324,38 +324,7 @@ def main():
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
 
-    # Clean highlighting from the loaded document BEFORE applying any edits
-    print("🎨 Cleaning highlighting from document before applying edits...")
-    try:
-        # Access the document's text content
-        text = doc.getText()
-        cursor = text.createTextCursor()
-        cursor.gotoStart(False)
-        cursor.gotoEnd(True)  # Select all text
-        
-        # Clear character highlighting
-        try:
-            cursor.setPropertyValue("CharBackColor", -1)  # -1 means no background color
-        except Exception:
-            pass
-        
-        # Clear paragraph highlighting  
-        try:
-            cursor.setPropertyValue("ParaBackColor", -1)  # -1 means no background color
-        except Exception:
-            pass
-            
-        # Also clear any highlight color property
-        try:
-            cursor.setPropertyValue("CharHighlight", 0)  # 0 means no highlight
-        except Exception:
-            pass
-        
-        print("✅ Successfully cleaned highlighting from document")
-        
-    except Exception as e:
-        print(f"⚠️ Warning: Could not clean highlighting from document: {e}")
-        # Continue anyway - not a critical failure
+
 
     # Set document properties for tracked changes (skip in fast mode)
     if not args.fast:
@@ -1083,6 +1052,39 @@ def main():
                 else:
                     print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
     finally:
+        # Clean highlighting from the document AFTER all edits and comments are applied
+        print("🎨 Cleaning highlighting from document after processing...")
+        try:
+            # Access the document's text content
+            text = doc.getText()
+            cursor = text.createTextCursor()
+            cursor.gotoStart(False)
+            cursor.gotoEnd(True)  # Select all text
+            
+            # Clear character highlighting
+            try:
+                cursor.setPropertyValue("CharBackColor", -1)  # -1 means no background color
+            except Exception:
+                pass
+            
+            # Clear paragraph highlighting  
+            try:
+                cursor.setPropertyValue("ParaBackColor", -1)  # -1 means no background color
+            except Exception:
+                pass
+                
+            # Also clear any highlight color property
+            try:
+                cursor.setPropertyValue("CharHighlight", 0)  # 0 means no highlight
+            except Exception:
+                pass
+            
+            print("✅ Successfully cleaned highlighting from processed document")
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Could not clean highlighting from document: {e}")
+            # Continue anyway - not a critical failure
+        
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)
         doc.storeToURL(to_url(out_path), out_props)
