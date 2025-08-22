@@ -575,40 +575,35 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - maintain aspect ratio by using Size struct
+                                            # Set logo size - calculate aspect ratio from actual image
                                             try:
-                                                # Import LibreOffice Size structure
-                                                from com.sun.star.awt import Size
-                                                
-                                                # Get original image dimensions to calculate proper aspect ratio
-                                                # Set height to 600 (6mm) and calculate proportional width
+                                                # Calculate proper width based on image aspect ratio
                                                 target_height = 600  # 6mm in 1/100mm units
+                                                calculated_width = target_height  # Default fallback
                                                 
-                                                # Create Size object with height set and width proportional
-                                                # Use a reasonable default width that will be auto-adjusted
-                                                size = Size()
-                                                size.Height = target_height
-                                                size.Width = 0  # Let LibreOffice calculate this
+                                                try:
+                                                    # Try to get image dimensions using PIL/Pillow
+                                                    from PIL import Image
+                                                    with Image.open(actual_logo_path) as img:
+                                                        img_width, img_height = img.size
+                                                        aspect_ratio = img_width / img_height
+                                                        calculated_width = int(target_height * aspect_ratio)
+                                                        print(f"📏 Image dimensions: {img_width}x{img_height}, aspect ratio: {aspect_ratio:.2f}")
+                                                        print(f"📏 Calculated width: {calculated_width} (for height {target_height})")
+                                                except ImportError:
+                                                    print("📏 PIL not available, trying alternative method")
+                                                    # Fallback: assume reasonable aspect ratio
+                                                    calculated_width = int(target_height * 2.5)  # Assume logo is wider than tall
+                                                except Exception as e:
+                                                    print(f"📏 Could not read image dimensions: {e}, using fallback")
+                                                    calculated_width = int(target_height * 2.5)
                                                 
-                                                # Set the size as a complete Size object
-                                                graphic.setPropertyValue("Size", size)
-                                                
-                                                # Ensure aspect ratio is preserved
+                                                # Set both width and height explicitly
+                                                graphic.setPropertyValue("Height", target_height)
+                                                graphic.setPropertyValue("Width", calculated_width)
                                                 graphic.setPropertyValue("SizeType", 1)   # Absolute size
-                                                graphic.setPropertyValue("IsSizeProtected", False)
                                                 
-                                                # Multiple attempts at aspect ratio preservation
-                                                try:
-                                                    graphic.setPropertyValue("KeepRatio", True)
-                                                except:
-                                                    pass
-                                                    
-                                                try:
-                                                    graphic.setPropertyValue("PreserveAspectRatio", True)
-                                                except:
-                                                    pass
-                                                
-                                                print(f"📏 Set logo height to 6mm using Size object (width auto-calculated for aspect ratio)")
+                                                print(f"📏 Set logo size to {calculated_width}x{target_height} (width x height in 1/100mm)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
@@ -788,40 +783,35 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - maintain aspect ratio by using Size struct
+                                            # Set logo size - calculate aspect ratio from actual image
                                             try:
-                                                # Import LibreOffice Size structure
-                                                from com.sun.star.awt import Size
-                                                
-                                                # Get original image dimensions to calculate proper aspect ratio
-                                                # Set height to 600 (6mm) and calculate proportional width
+                                                # Calculate proper width based on image aspect ratio
                                                 target_height = 600  # 6mm in 1/100mm units
+                                                calculated_width = target_height  # Default fallback
                                                 
-                                                # Create Size object with height set and width proportional
-                                                # Use a reasonable default width that will be auto-adjusted
-                                                size = Size()
-                                                size.Height = target_height
-                                                size.Width = 0  # Let LibreOffice calculate this
+                                                try:
+                                                    # Try to get image dimensions using PIL/Pillow
+                                                    from PIL import Image
+                                                    with Image.open(actual_logo_path) as img:
+                                                        img_width, img_height = img.size
+                                                        aspect_ratio = img_width / img_height
+                                                        calculated_width = int(target_height * aspect_ratio)
+                                                        print(f"📏 Image dimensions: {img_width}x{img_height}, aspect ratio: {aspect_ratio:.2f}")
+                                                        print(f"📏 Calculated width: {calculated_width} (for height {target_height})")
+                                                except ImportError:
+                                                    print("📏 PIL not available, trying alternative method")
+                                                    # Fallback: assume reasonable aspect ratio
+                                                    calculated_width = int(target_height * 2.5)  # Assume logo is wider than tall
+                                                except Exception as e:
+                                                    print(f"📏 Could not read image dimensions: {e}, using fallback")
+                                                    calculated_width = int(target_height * 2.5)
                                                 
-                                                # Set the size as a complete Size object
-                                                graphic.setPropertyValue("Size", size)
-                                                
-                                                # Ensure aspect ratio is preserved
+                                                # Set both width and height explicitly
+                                                graphic.setPropertyValue("Height", target_height)
+                                                graphic.setPropertyValue("Width", calculated_width)
                                                 graphic.setPropertyValue("SizeType", 1)   # Absolute size
-                                                graphic.setPropertyValue("IsSizeProtected", False)
                                                 
-                                                # Multiple attempts at aspect ratio preservation
-                                                try:
-                                                    graphic.setPropertyValue("KeepRatio", True)
-                                                except:
-                                                    pass
-                                                    
-                                                try:
-                                                    graphic.setPropertyValue("PreserveAspectRatio", True)
-                                                except:
-                                                    pass
-                                                
-                                                print(f"📏 Set logo height to 6mm using Size object (width auto-calculated for aspect ratio)")
+                                                print(f"📏 Set logo size to {calculated_width}x{target_height} (width x height in 1/100mm)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
