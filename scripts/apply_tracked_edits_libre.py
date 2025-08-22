@@ -626,17 +626,48 @@ def main():
                                                     calculated_width = int(target_height * 2.5)
                                                     print(f"📏 Using fallback width: {calculated_width}")
                                                 
-                                                # Set both width and height explicitly
+                                                # Try multiple approaches to set size
+                                                
+                                                # Method 1: Individual properties
                                                 graphic.setPropertyValue("Height", target_height)
                                                 graphic.setPropertyValue("Width", calculated_width)
                                                 graphic.setPropertyValue("SizeType", 1)   # Absolute size
+                                                
+                                                # Method 2: Try Size object approach
+                                                try:
+                                                    import uno
+                                                    from com.sun.star.awt import Size
+                                                    size_obj = Size()
+                                                    size_obj.Width = calculated_width
+                                                    size_obj.Height = target_height
+                                                    graphic.setPropertyValue("Size", size_obj)
+                                                    print(f"📏 Applied Size object: {calculated_width}x{target_height}")
+                                                except Exception as e:
+                                                    print(f"📏 Size object method failed: {e}")
+                                                
+                                                # Method 3: Try setting scaling to prevent override
+                                                try:
+                                                    graphic.setPropertyValue("RelativeHeight", 100)  # 100% of set height
+                                                    graphic.setPropertyValue("RelativeWidth", 100)   # 100% of set width
+                                                    graphic.setPropertyValue("IsSizeProtected", True)  # Lock the size
+                                                except Exception as e:
+                                                    print(f"📏 Protection method failed: {e}")
                                                 
                                                 print(f"📏 Set logo size to {calculated_width}x{target_height} (width x height in 1/100mm)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
-                                            # Insert the graphic
+                                            # Insert the graphic FIRST
                                             found_range.getText().insertTextContent(found_range, graphic, False)
+                                            
+                                            # NOW set the size after insertion (this might work better)
+                                            try:
+                                                graphic.setPropertyValue("Height", target_height)
+                                                graphic.setPropertyValue("Width", calculated_width)
+                                                print(f"📏 Post-insertion: Set size to {calculated_width}x{target_height}")
+                                            except Exception as e:
+                                                print(f"⚠️ Could not set size after insertion: {e}")
+                                            
                                             logo_count += 1
                                             print(f"✅ Logo #{logo_count} inserted successfully!")
                                             
@@ -862,17 +893,48 @@ def main():
                                                     calculated_width = int(target_height * 2.5)
                                                     print(f"📏 Using fallback width: {calculated_width}")
                                                 
-                                                # Set both width and height explicitly
+                                                # Try multiple approaches to set size
+                                                
+                                                # Method 1: Individual properties
                                                 graphic.setPropertyValue("Height", target_height)
                                                 graphic.setPropertyValue("Width", calculated_width)
                                                 graphic.setPropertyValue("SizeType", 1)   # Absolute size
+                                                
+                                                # Method 2: Try Size object approach
+                                                try:
+                                                    import uno
+                                                    from com.sun.star.awt import Size
+                                                    size_obj = Size()
+                                                    size_obj.Width = calculated_width
+                                                    size_obj.Height = target_height
+                                                    graphic.setPropertyValue("Size", size_obj)
+                                                    print(f"📏 Applied Size object: {calculated_width}x{target_height}")
+                                                except Exception as e:
+                                                    print(f"📏 Size object method failed: {e}")
+                                                
+                                                # Method 3: Try setting scaling to prevent override
+                                                try:
+                                                    graphic.setPropertyValue("RelativeHeight", 100)  # 100% of set height
+                                                    graphic.setPropertyValue("RelativeWidth", 100)   # 100% of set width
+                                                    graphic.setPropertyValue("IsSizeProtected", True)  # Lock the size
+                                                except Exception as e:
+                                                    print(f"📏 Protection method failed: {e}")
                                                 
                                                 print(f"📏 Set logo size to {calculated_width}x{target_height} (width x height in 1/100mm)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
-                                            # Insert the graphic
+                                            # Insert the graphic FIRST
                                             found_range.getText().insertTextContent(found_range, graphic, False)
+                                            
+                                            # NOW set the size after insertion (this might work better)
+                                            try:
+                                                graphic.setPropertyValue("Height", target_height)
+                                                graphic.setPropertyValue("Width", calculated_width)
+                                                print(f"📏 Post-insertion: Set size to {calculated_width}x{target_height}")
+                                            except Exception as e:
+                                                print(f"⚠️ Could not set size after insertion: {e}")
+                                            
                                             logo_count += 1
                                             print(f"✅ Logo #{logo_count} inserted successfully!")
                                             
