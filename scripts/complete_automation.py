@@ -143,7 +143,7 @@ def generate_edits_with_ai(policy_path, questionnaire_csv, prompt_path, policy_i
                 print(f"⚠️  Warning: Could not clean up temp file {temp_json_file.name}: {cleanup_error}")
         raise e
 
-def commit_and_push_json(edits_json, logo_file=None):
+def commit_and_push_json(edits_json, logo_file=None, additional_files=None):
     """Commit and push the generated JSON file and optional logo file to GitHub."""
     try:
         # Debug environment information
@@ -269,6 +269,25 @@ def commit_and_push_json(edits_json, logo_file=None):
                     files_to_commit.append(logo_file)
                 else:
                     print(f"⚠️  Logo file was not properly staged")
+        
+        # Add any additional files (like cleaned policy copies)
+        if additional_files:
+            for additional_file in additional_files:
+                if os.path.exists(additional_file):
+                    print(f"📄 Adding additional file to git: {additional_file}")
+                    result = subprocess.run(['git', 'add', additional_file], capture_output=True, text=True)
+                    if result.returncode != 0:
+                        print(f"⚠️  Warning: Failed to add additional file {additional_file}: {result.stderr}")
+                    else:
+                        # Verify additional file was staged
+                        file_status = subprocess.run(['git', 'status', '--porcelain', additional_file], capture_output=True, text=True)
+                        if file_status.returncode == 0 and file_status.stdout.strip():
+                            print(f"✅ Additional file staged for commit: {additional_file}")
+                            files_to_commit.append(additional_file)
+                        else:
+                            print(f"⚠️  Additional file was not properly staged: {additional_file}")
+                else:
+                    print(f"⚠️  Additional file does not exist: {additional_file}")
         
         # Check if there are actually files to commit
         staged_files = subprocess.run(['git', 'diff', '--cached', '--name-only'], capture_output=True, text=True)
@@ -500,12 +519,54 @@ def commit_and_push_json(edits_json, logo_file=None):
         return False, f"Git operations failed: {e}"
 
 def trigger_github_actions(policy_path, edits_json, output_name, github_token=None, logo_file=None, user_id=None):
+    # IMPORTANT: Create a clean copy of the policy for GitHub Actions
+    # This ensures GitHub Actions processes a highlight-free document
+    cleaned_policy_path = policy_path.replace('.docx', '_cleaned_for_github.docx')
+    
+    try:
+        import shutil
+        # Create clean copy for GitHub Actions
+        shutil.copy2(policy_path, cleaned_policy_path)
+        print(f"📄 Creating clean policy copy for GitHub Actions: {cleaned_policy_path}")
+        
+        # Remove highlighting from the GitHub Actions copy
+        import sys
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        if script_dir not in sys.path:
+            sys.path.append(script_dir)
+        
+        from ai_policy_processor import clean_docx_highlighting
+        success, message = clean_docx_highlighting(cleaned_policy_path)
+        
+        if success:
+            print(f"✅ Removed highlighting from GitHub Actions copy: {message}")
+            # Use the cleaned copy for GitHub Actions
+            github_policy_path = cleaned_policy_path
+        else:
+            print(f"⚠️ Could not clean GitHub Actions copy: {message}")
+            print("⚠️ GitHub Actions will use original file (may contain highlighting)")
+            github_policy_path = policy_path
+            
+    except Exception as e:
+        print(f"⚠️ Error creating clean copy for GitHub Actions: {e}")
+        print("⚠️ GitHub Actions will use original file (may contain highlighting)")
+        github_policy_path = policy_path
+    
     """Trigger GitHub Actions workflow (manual instructions if no token)."""
     import time
     
-    # First, commit and push the JSON file and logo file (if created)
+    # First, commit and push the JSON file, logo file, and cleaned policy file
     print("📤 Committing and pushing files to GitHub...")
-    success, message = commit_and_push_json(edits_json, logo_file)
+    files_to_commit = [edits_json]
+    if logo_file:
+        files_to_commit.append(logo_file)
+    if github_policy_path != policy_path:  # Only add if we created a cleaned copy
+        files_to_commit.append(github_policy_path)
+    
+    # Pass the cleaned policy file as an additional file to commit
+    additional_files = [github_policy_path] if github_policy_path != policy_path else []
+    success, message = commit_and_push_json(edits_json, logo_file, additional_files)
     if not success:
         print(f"❌ Failed to push files: {message}")
         print("💡 You'll need to manually commit and push the files")
@@ -520,7 +581,7 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
         print("3. Find 'Redline DOCX (LibreOffice headless)' workflow")
         print("4. Click 'Run workflow'")
         print("5. Fill in these values:")
-        print(f"   - Input DOCX path: {policy_path}")
+        print(f"   - Input DOCX path: {github_policy_path}")
         print(f"   - Edits CSV/JSON path: {edits_json}")
         output_prefix = user_id if user_id else f"run-{int(time.time())}"
         print(f"   - Output DOCX path: build/{output_prefix}_{output_name}.docx")
@@ -672,14 +733,14 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
         data = {
             'ref': 'main',
             'inputs': {
-                'input_docx': policy_path,
+                'input_docx': github_policy_path,
                 'edits_csv': edits_json,
                 'output_docx': f'build/{output_prefix}_{output_name}.docx'
             }
         }
         
         print(f"🚀 Triggering workflow with parameters:")
-        print(f"   - DOCX: {policy_path}")
+        print(f"   - DOCX: {github_policy_path}")
         print(f"   - JSON: {edits_json}")
         print(f"   - Output: build/{output_prefix}_{output_name}.docx")
         
@@ -688,12 +749,29 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
         if response.status_code == 204:
             print(f"✅ GitHub Actions workflow triggered successfully!")
             print(f"🔗 Check progress: https://github.com/{owner}/{repo}/actions")
+            
+            # Clean up the temporary GitHub Actions copy
+            if 'cleaned_policy_path' in locals() and github_policy_path == cleaned_policy_path and os.path.exists(cleaned_policy_path):
+                try:
+                    os.unlink(cleaned_policy_path)
+                    print(f"🧹 Cleaned up temporary GitHub Actions copy: {cleaned_policy_path}")
+                except Exception as e:
+                    print(f"⚠️ Could not clean up temporary file: {e}")
+            
             return True, "Workflow triggered"
         else:
             return False, f"GitHub API error: {response.status_code} - {response.text}"
             
     except Exception as e:
         return False, f"GitHub Actions trigger failed: {e}"
+    finally:
+        # Clean up the temporary GitHub Actions copy if it exists
+        if 'cleaned_policy_path' in locals() and 'github_policy_path' in locals() and github_policy_path == cleaned_policy_path and os.path.exists(cleaned_policy_path):
+            try:
+                os.unlink(cleaned_policy_path)
+                print(f"🧹 Cleaned up temporary GitHub Actions copy: {cleaned_policy_path}")
+            except Exception as e:
+                print(f"⚠️ Could not clean up temporary file: {e}")
 
 def main():
     # Ensure json module is available in function scope (avoid scoping issues)

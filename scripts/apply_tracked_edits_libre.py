@@ -394,11 +394,30 @@ def main():
 
 
 
+    # DEBUG: Print which file we're actually loading
+    print(f"🔍 DEBUG: Loading document from: {in_path}")
+    print(f"🔍 DEBUG: File exists: {os.path.exists(in_path)}")
+    print(f"🔍 DEBUG: File size: {os.path.getsize(in_path) if os.path.exists(in_path) else 'N/A'} bytes")
+    
     # Load hidden
     in_props = (mkprop("Hidden", True),)
     doc = desktop.loadComponentFromURL(to_url(in_path), "_blank", 0, in_props)
-
-
+    
+    print(f"✅ LibreOffice loaded document successfully")
+    
+    # DEBUG: Check if LibreOffice document has highlighting after loading
+    try:
+        print("🔍 DEBUG: Checking if LibreOffice sees any highlighting in the loaded document...")
+        # Simple check - count paragraphs to verify document is loaded
+        paragraphs = doc.getText().createEnumeration()
+        para_count = 0
+        while paragraphs.hasMoreElements():
+            para_count += 1
+            if para_count > 10:  # Don't count all paragraphs, just verify we can access content
+                break
+        print(f"🔍 DEBUG: Document has at least {para_count} paragraphs accessible to LibreOffice")
+    except Exception as e:
+        print(f"🔍 DEBUG: Error checking document content: {e}")
 
     # Set document properties for tracked changes (skip in fast mode)
     if not args.fast:
@@ -1126,12 +1145,46 @@ def main():
                 else:
                     print(f"Replaced {count_replaced} occurrence(s) of '{find}' with '{repl}' by {author_name}")
     finally:
+        # DEBUG: Check document state right before saving
+        print("🔍 DEBUG: About to save document - checking for any highlighting...")
+        
         # Save as DOCX (Word 2007+ XML)
         out_props = (mkprop("FilterName", "MS Word 2007 XML"),)
         doc.storeToURL(to_url(out_path), out_props)
         doc.close(True)
 
     print("Done. Wrote:", out_path)
+    
+    # DEBUG: Check the saved file with python-docx to see if highlighting is present
+    try:
+        print("🔍 DEBUG: Checking saved document for highlighting with python-docx...")
+        import sys
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        if script_dir not in sys.path:
+            sys.path.append(script_dir)
+        
+        from ai_policy_processor import clean_docx_highlighting
+        
+        # Create a test copy to check highlighting without modifying the output
+        test_path = out_path.replace('.docx', '_test_check.docx')
+        shutil.copy2(out_path, test_path)
+        
+        # Try to clean highlighting from the test copy (this will tell us if highlighting is present)
+        success, message = clean_docx_highlighting(test_path)
+        
+        if "Removed highlighting from" in message:
+            highlighting_count = message.split("Removed highlighting from ")[1].split(" text runs")[0]
+            print(f"⚠️ DEBUG: Found {highlighting_count} highlighted text runs in the final output!")
+            print("⚠️ DEBUG: This means LibreOffice processing restored highlighting somehow")
+        else:
+            print("✅ DEBUG: No highlighting found in final output - all clean!")
+        
+        # Clean up test file
+        if os.path.exists(test_path):
+            os.unlink(test_path)
+            
+    except Exception as e:
+        print(f"🔍 DEBUG: Could not check final document for highlighting: {e}")
     
     # Clean up temporary files
     if 'cleaned_input_path' in locals() and cleaned_input_path != args.in_path and os.path.exists(cleaned_input_path):
