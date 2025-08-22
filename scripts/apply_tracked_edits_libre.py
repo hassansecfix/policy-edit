@@ -575,13 +575,18 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - hardcoded values
+                                            # Set logo size - only height, width auto-calculated to maintain aspect ratio
                                             try:
+                                                # Don't set Width - let it be calculated automatically
                                                 graphic.setPropertyValue("Height", 1200)  # 12mm height
-                                                graphic.setPropertyValue("SizeType", 1)
+                                                graphic.setPropertyValue("SizeType", 1)   # Fixed size
+                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain original aspect ratio
+                                                
+                                                # Force LibreOffice to recalculate width based on aspect ratio
                                                 graphic.setPropertyValue("RelativeWidth", 0)
-                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
-                                                print(f"📏 Set logo height to 12mm (auto-width)")
+                                                graphic.setPropertyValue("RelativeHeight", 0)
+                                                
+                                                print(f"📏 Set logo height to 12mm (width auto-calculated from aspect ratio)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
@@ -761,13 +766,18 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - hardcoded values
+                                            # Set logo size - only height, width auto-calculated to maintain aspect ratio
                                             try:
+                                                # Don't set Width - let it be calculated automatically
                                                 graphic.setPropertyValue("Height", 1200)  # 12mm height
-                                                graphic.setPropertyValue("SizeType", 1)
+                                                graphic.setPropertyValue("SizeType", 1)   # Fixed size
+                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain original aspect ratio
+                                                
+                                                # Force LibreOffice to recalculate width based on aspect ratio
                                                 graphic.setPropertyValue("RelativeWidth", 0)
-                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
-                                                print(f"📏 Set logo height to 12mm (auto-width)")
+                                                graphic.setPropertyValue("RelativeHeight", 0)
+                                                
+                                                print(f"📏 Set logo height to 12mm (width auto-calculated from aspect ratio)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
