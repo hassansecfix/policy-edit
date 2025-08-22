@@ -581,6 +581,7 @@ def main():
                                                 graphic.setPropertyValue("Height", 600)   # 6mm height
                                                 graphic.setPropertyValue("SizeType", 1)   # Absolute size
                                                 graphic.setPropertyValue("RelativeHeight", 0)  # Not relative
+                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
                                                 
                                                 print(f"📏 Set logo height to 6mm (width will auto-adjust to maintain aspect ratio)")
                                             except Exception as e:
@@ -768,6 +769,7 @@ def main():
                                                 graphic.setPropertyValue("Height", 600)   # 6mm height
                                                 graphic.setPropertyValue("SizeType", 1)   # Absolute size
                                                 graphic.setPropertyValue("RelativeHeight", 0)  # Not relative
+                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain aspect ratio
                                                 
                                                 print(f"📏 Set logo height to 6mm (width will auto-adjust to maintain aspect ratio)")
                                             except Exception as e:
