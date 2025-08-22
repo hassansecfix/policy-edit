@@ -184,25 +184,36 @@ Analyze the data and generate JSON-formatted customization instructions based on
 **Data Field:** Look for access review frequency preference  
 **JSON Instruction to Generate:**
 
-- Find `quarterly basis` in the document
+- Find `a quarterly basis` in the document
 - **ALWAYS use "replace" action unless user explicitly selected "Quarterly"**
 
 **If user selected "Quarterly" (matches current text):**
 
-- target_text: `quarterly basis`
+- target_text: `a quarterly basis`
 - action: "comment"
 - comment: "You selected quarterly which matches the current quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
 - comment_author: "Secfix AI"
 
 **If ANY other selection (Monthly, Annually, Other, etc.):**
 
-- target_text: `quarterly basis`
+- target_text: `a quarterly basis`
 - action: "replace"
-- replacement: [user's exact response from CSV]
+- replacement: [grammatically correct article] + [user's response] + " basis"
 - comment: "You selected [original user response] instead of quarterly basis. We recommend quarterly reviews for most companies. If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
 - comment_author: "Secfix AI"
 
-**CRITICAL: Use the user's EXACT response as the replacement text. Do NOT interpret or convert it.**
+**Replacement Text Grammar Rules for RULE_08:**
+
+- If user response starts with vowel sound: use "an [response] basis"
+  - ✅ "an annual basis" (vowel sound)
+  - ✅ "an hourly basis" (vowel sound)
+- If user response starts with consonant sound: use "a [response] basis"
+  - ✅ "a monthly basis" (consonant sound)
+  - ✅ "a weekly basis" (consonant sound)
+  - ✅ "a daily basis" (consonant sound)
+  - ✅ "a yearly basis" (consonant sound)
+
+**CRITICAL: Apply proper grammar rules to construct the replacement text. Do NOT just use the raw user response.**
 
 ## RULE_09: Access Termination Timeframe
 
