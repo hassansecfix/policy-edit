@@ -225,6 +225,7 @@ def main():
     args = parse_args()
     import os
     import json
+    import shutil
     in_path = os.path.abspath(args.in_path)
     out_path = os.path.abspath(args.out_path)
     csv_path = os.path.abspath(args.csv_path)
@@ -233,6 +234,53 @@ def main():
         print("Input DOCX not found:", in_path, file=sys.stderr); sys.exit(2)
     if not os.path.exists(csv_path):
         print("CSV not found:", csv_path, file=sys.stderr); sys.exit(2)
+
+    # STEP 1: Create a clean copy of the input document with highlighting removed
+    # This ensures we start with a clean document before applying any edits
+    print("🎨 Pre-processing: Removing default highlighting from source document...")
+    
+    # Create a temporary cleaned copy for LibreOffice processing
+    cleaned_input_path = in_path.replace('.docx', '_cleaned_for_processing.docx')
+    
+    try:
+        # First copy the original to our temp location
+        shutil.copy2(in_path, cleaned_input_path)
+        print(f"📄 Created working copy: {cleaned_input_path}")
+        
+        # Clean highlighting using python-docx (safe method, not LibreOffice UNO API)
+        try:
+            import sys
+            # Add the scripts directory to Python path to import our cleaning function
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            if script_dir not in sys.path:
+                sys.path.append(script_dir)
+            
+            from ai_policy_processor import clean_docx_highlighting
+            
+            # Clean highlighting from the working copy
+            success, message = clean_docx_highlighting(cleaned_input_path)
+            
+            if success:
+                print("✅ Successfully removed highlighting from working copy")
+                # Update in_path to use the cleaned copy for all subsequent processing
+                in_path = cleaned_input_path
+            else:
+                print(f"⚠️ Could not clean highlighting: {message}")
+                print("⚠️ Proceeding with original document (may contain highlighting)")
+                # Clean up the failed copy
+                if os.path.exists(cleaned_input_path):
+                    os.unlink(cleaned_input_path)
+                    
+        except Exception as e:
+            print(f"⚠️ Error during highlighting cleanup: {e}")
+            print("⚠️ Proceeding with original document (may contain highlighting)")
+            # Clean up the failed copy
+            if os.path.exists(cleaned_input_path):
+                os.unlink(cleaned_input_path)
+                
+    except Exception as e:
+        print(f"⚠️ Could not create working copy: {e}")
+        print("⚠️ Proceeding with original document")
 
     if args.launch:
         ensure_listener(fast_mode=args.fast)
@@ -1058,6 +1106,14 @@ def main():
         doc.close(True)
 
     print("Done. Wrote:", out_path)
+    
+    # Clean up temporary files
+    if 'cleaned_input_path' in locals() and cleaned_input_path != args.in_path and os.path.exists(cleaned_input_path):
+        try:
+            os.unlink(cleaned_input_path)
+            print(f"🧹 Cleaned up temporary file: {cleaned_input_path}")
+        except Exception as e:
+            print(f"⚠️ Could not clean up temporary file: {e}")
 
 if __name__ == "__main__":
     main()

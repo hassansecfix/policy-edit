@@ -48,7 +48,7 @@ def clean_docx_highlighting(input_path, output_path=None):
         # Process all paragraphs
         for paragraph in doc.paragraphs:
             for run in paragraph.runs:
-                # Remove highlight color
+                # Remove highlight color (main highlighting property)
                 try:
                     if run.font.highlight_color is not None:
                         run.font.highlight_color = None
@@ -56,10 +56,23 @@ def clean_docx_highlighting(input_path, output_path=None):
                 except:
                     pass
                 
-                # Remove background color
+                # Remove all possible background/fill colors
                 try:
-                    if hasattr(run.font, 'fill'):
+                    if hasattr(run.font, 'fill') and run.font.fill is not None:
                         run.font.fill.fore_color.rgb = None
+                        run.font.fill.solid()  # Reset fill type
+                except:
+                    pass
+                
+                # Clear character background (another way highlighting can be applied)
+                try:
+                    # Clear character shading/background
+                    if hasattr(run._element, 'rPr') and run._element.rPr is not None:
+                        # Remove shading elements that can cause highlighting
+                        shading_elements = run._element.rPr.findall('.//{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd')
+                        for shd in shading_elements:
+                            run._element.rPr.remove(shd)
+                            highlighting_removed += 1
                 except:
                     pass
         
