@@ -575,18 +575,17 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - only height, width auto-calculated to maintain aspect ratio
+                                            # Set logo size - max bounds with aspect ratio preservation
                                             try:
-                                                # Don't set Width - let it be calculated automatically
-                                                graphic.setPropertyValue("Height", 1200)  # 12mm height
-                                                graphic.setPropertyValue("SizeType", 1)   # Fixed size
-                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain original aspect ratio
-                                                
-                                                # Force LibreOffice to recalculate width based on aspect ratio
+                                                # Set max bounds - logo will fit within these while keeping proportions
+                                                graphic.setPropertyValue("Width", 1800)   # Max 18mm width
+                                                graphic.setPropertyValue("Height", 600)   # Max 6mm height  
+                                                graphic.setPropertyValue("SizeType", 1)
                                                 graphic.setPropertyValue("RelativeWidth", 0)
                                                 graphic.setPropertyValue("RelativeHeight", 0)
+                                                graphic.setPropertyValue("KeepRatio", True)  # Fit within bounds, keep proportions
                                                 
-                                                print(f"📏 Set logo height to 12mm (width auto-calculated from aspect ratio)")
+                                                print(f"📏 Set logo max size to 18mm x 6mm (maintains aspect ratio)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
@@ -766,18 +765,17 @@ def main():
                                             except:
                                                 pass
                                             
-                                            # Set logo size - only height, width auto-calculated to maintain aspect ratio
+                                            # Set logo size - max bounds with aspect ratio preservation
                                             try:
-                                                # Don't set Width - let it be calculated automatically
-                                                graphic.setPropertyValue("Height", 1200)  # 12mm height
-                                                graphic.setPropertyValue("SizeType", 1)   # Fixed size
-                                                graphic.setPropertyValue("KeepRatio", True)  # Maintain original aspect ratio
-                                                
-                                                # Force LibreOffice to recalculate width based on aspect ratio
+                                                # Set max bounds - logo will fit within these while keeping proportions
+                                                graphic.setPropertyValue("Width", 1800)   # Max 18mm width
+                                                graphic.setPropertyValue("Height", 600)   # Max 6mm height  
+                                                graphic.setPropertyValue("SizeType", 1)
                                                 graphic.setPropertyValue("RelativeWidth", 0)
                                                 graphic.setPropertyValue("RelativeHeight", 0)
+                                                graphic.setPropertyValue("KeepRatio", True)  # Fit within bounds, keep proportions
                                                 
-                                                print(f"📏 Set logo height to 12mm (width auto-calculated from aspect ratio)")
+                                                print(f"📏 Set logo max size to 18mm x 6mm (maintains aspect ratio)")
                                             except Exception as e:
                                                 print(f"⚠️  Using default logo size: {e}")
                                             
