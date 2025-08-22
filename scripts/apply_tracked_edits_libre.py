@@ -282,6 +282,32 @@ def main():
         print(f"⚠️ Could not create working copy: {e}")
         print("⚠️ Proceeding with original document")
 
+    # Check for highlighting-only mode (for testing)
+    HIGHLIGHTING_ONLY = os.environ.get('HIGHLIGHTING_ONLY', '').lower() in ['true', '1', 'yes', 'on']
+    if HIGHLIGHTING_ONLY:
+        print("🧪 HIGHLIGHTING_ONLY mode enabled - skipping LibreOffice processing")
+        print("🎨 Only removing highlighting and saving clean document")
+        
+        # Just copy the cleaned input to output (or original if cleaning failed)
+        try:
+            shutil.copy2(in_path, out_path)
+            print(f"✅ Saved highlight-cleaned document to: {out_path}")
+            print("🔍 Please check if highlighting has been removed from the output document")
+            
+            # Clean up temporary files
+            if 'cleaned_input_path' in locals() and cleaned_input_path != args.in_path and os.path.exists(cleaned_input_path):
+                try:
+                    os.unlink(cleaned_input_path)
+                    print(f"🧹 Cleaned up temporary file: {cleaned_input_path}")
+                except Exception as e:
+                    print(f"⚠️ Could not clean up temporary file: {e}")
+            
+            return
+            
+        except Exception as e:
+            print(f"❌ Failed to copy document: {e}")
+            sys.exit(1)
+
     if args.launch:
         ensure_listener(fast_mode=args.fast)
 
