@@ -1,408 +1,252 @@
-# Policy Edit Automation (Lean Setup)
+# Policy Edit Automation
 
-Automate policy editing with AI and generate a DOCX with tracked changes you can accept/reject in Word or LibreOffice.
+🤖 **Automate policy editing with AI** - Generate DOCX files with tracked changes you can accept/reject in Word or LibreOffice.
 
-## Overview
+## 📊 How It Works
 
-Flow at a glance:
-
+```text
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Policy DOCX   │    │  Web Questionnaire │    │  Company Logo   │
+│                 │    │   (20 questions)   │    │   (optional)    │
+└─────────┬───────┘    └──────────┬───────────┘    └─────────┬───────┘
+          │                       │                          │
+          │                       ▼                          │
+          │              ┌─────────────────┐                 │
+          │              │  localStorage   │                 │
+          │              │   (JSON data)   │                 │
+          │              └─────────┬───────┘                 │
+          │                       │                          │
+          ▼                       ▼                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                   Claude AI Processing                          │
+│          (ai_policy_processor.py + Claude Sonnet 4)             │
+│   • Analyzes policy document                                    │
+│   • Processes questionnaire responses                           │
+│   • Detects [ADD COMPANY LOGO] placeholders                     │
+│   • Generates intelligent edits                                 │
+└─────────────────────────┬────────────────────────────────────────┘
+                          │
+                          ▼
+                ┌─────────────────┐
+                │   JSON Edits    │
+                │  Instructions   │
+                └─────────┬───────┘
+                          │
+                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│              LibreOffice Document Processing                     │
+│             (apply_tracked_edits_libre.py)                      │
+│   • Applies edits with tracked changes                          │
+│   • Inserts company logo in placeholders                        │
+│   • Maintains original formatting                               │
+└─────────────────────────┬────────────────────────────────────────┘
+                          │
+                          ▼
+                ┌─────────────────┐
+                │   Final DOCX    │
+                │ with Tracked    │
+                │    Changes      │
+                └─────────────────┘
 ```
-[Policy DOCX]        [Questionnaire XLSX/CSV]        [Logo Image]
-       \                 /                                /
-        \   (if XLSX)   /                                /
-         -> xlsx_to_csv_converter.py                    /
-                   |                                   /
-                   v                                  /
-          ai_policy_processor.py (Claude)            /
-                   |                                /
-                   v                               /
-         edits/*.json (AI detects logo           /
-         placeholders + generates operations)   /
-                   |                           /
-        (local) apply_tracked_edits_libre.py  /
-         (uses logo metadata if provided) ----
-                   |
-                   v
-     build/<output>.docx with tracked changes + logo replacements
 
-           (optional GitHub Actions path)
-                   |
-                   v
-               redline workflow
-                   |
-                   v
-     build/<output>.docx from CI artifacts
-```
+**Key Benefits:**
 
-- **Deletes and replaces** become real tracked changes.
-- **Comments on replacements** are attached to the deletion half for better Google Docs threading.
-- **Logo placeholders** are automatically detected by AI and replaced with your company logo.
+- **Tracked Changes** - Review and accept/reject each edit individually
+- **Logo Integration** - Automatically replaces `[ADD COMPANY LOGO]` placeholders
+- **Smart AI** - Context-aware edits based on your company details
+- **Professional Output** - Ready for legal/compliance review
 
-## Interactive Questionnaire Flow
+## 🚀 Quick Start (3 Steps)
 
-The system now includes an interactive web-based questionnaire that collects user responses before automation:
-
-### New Flow:
-
-1. **User accesses the web interface**
-2. **Interactive questionnaire appears** - 20 questions asked one by one
-3. **User answers are collected and validated**
-4. **Responses are saved** as `data/user_questionnaire_responses.csv`
-5. **Automation proceeds** using the user's responses instead of pre-filled data
-
-### Question Types Supported:
-
-- **Text input** - Company name, address, etc.
-- **Radio buttons** - Yes/No questions, policy choices
-- **Dropdown menus** - Tool selections, timeframes, approvers
-- **Number input** - Employee count, contractor count
-- **Email/User selector** - Policy owners, approvers
-- **Date picker** - Effective dates
-- **File upload** - Company logos
-
-### Key Features:
-
-- **Progress tracking** with visual progress bar
-- **Validation** - ensures all questions are answered before proceeding
-- **Navigation** - Previous/Next buttons for easy movement
-- **Auto-save** - Responses are saved when questionnaire is completed
-- **Smart fallback** - System uses user responses if available, falls back to default questionnaire if not
-
-### Files Added:
-
-- `data/questions.csv` - Question definitions extracted from original questionnaire
-- `web_app/src/components/Questionnaire.tsx` - Main questionnaire component
-- `web_app/src/components/QuestionInput.tsx` - Individual question input handlers
-- `web_app/src/app/api/questions/route.ts` - API endpoint to serve questions
-- `web_app/src/app/api/answers/route.ts` - API endpoint to save user responses
-
-## Quick start
-
-1. Set up your environment variables by copying the template:
+### 1. Setup API Key
 
 ```bash
 cp env.example .env
-# Edit .env and add your required variables
+# Edit .env and add your Claude API key:
+# CLAUDE_API_KEY=sk-ant-your-key-here
 ```
 
-**Required for all environments:**
-
-- `CLAUDE_API_KEY` - Your Anthropic Claude API key
-
-**Required for production deployment (Render, Railway, etc.):**
-
-- `GITHUB_TOKEN` - Your GitHub personal access token (for git push)
-- `GITHUB_REPO_OWNER` - Your GitHub username
-- `GITHUB_REPO_NAME` - Your repository name
-- `GIT_USER_NAME` - Your full name for git commits
-- `GIT_USER_EMAIL` - Your email for git commits
-
-See `env.example` for complete details and optional configuration.
-
-📋 **For detailed production setup instructions, see [PRODUCTION_SETUP.md](PRODUCTION_SETUP.md)**
-
-2. Run the default automation:
-
-```bash
-./quick_automation.sh
-```
-
-This uses:
-
-- Policy: `data/v5 Freya POL-11 Access Control.docx`
-- Questionnaire: `data/questionnaire_responses.csv`
-- Output name: `policy_tracked_changes_with_comments`
-
-## Configuration (Single Source of Truth)
-
-The system uses a priority-based configuration system:
-
-1. **Command line arguments** (highest priority)
-2. **Environment variables** in `.env` file
-3. **Built-in defaults** (lowest priority)
-
-### Environment Configuration
-
-Set these in your `.env` file to customize defaults:
-
-```bash
-# File paths
-POLICY_FILE=data/your_policy.docx
-OUTPUT_NAME=custom_output_name
-# NOTE: QUESTIONNAIRE_FILE removed - system now uses localStorage data only
-
-# Logo settings
-LOGO_PATH=data/company_logo.png
-LOGO_WIDTH_MM=35
-LOGO_HEIGHT_MM=0
-```
-
-### Custom runs
-
-- Use environment configuration:
-
-```bash
-./run_complete_automation.sh
-```
-
-- Override with command line arguments:
-
-```bash
-./run_custom_automation.sh <policy.docx> <questionnaire.{xlsx|csv}> <output_name>
-```
-
-- Mix approaches (CLI args override env vars):
-
-```bash
-# Use web UI for questionnaire data (localStorage approach)
-# Shell scripts are now deprecated - use web interface
-```
-
-## What the automation does
-
-- Converts questionnaire to CSV only if you pass an `.xlsx` file
-- Calls Claude via `ai_policy_processor.py` to:
-  - Analyze the policy document for the `[ADD COMPANY LOGO]` placeholder in the header
-  - Generate JSON operations for text replacements, deletions, and logo insertions
-  - Include logo operations when logo is provided (URL or local file)
-- If logo flags are provided, injects logo metadata into the JSON
-- Optionally triggers a GitHub Actions workflow to create the final DOCX
-- Prints paths to the generated files
-
-## Scripts in this repo
-
-- `scripts/complete_automation.py`: Orchestrates end-to-end flow (convert → AI → trigger CI)
-- `scripts/ai_policy_processor.py`: Calls Claude to generate policy edit instructions (JSON)
-- `scripts/xlsx_to_csv_converter.py`: Converts questionnaire XLSX → CSV when required
-- `scripts/apply_tracked_edits_libre.py`: Applies edits with tracked changes (local or in CI)
-- Runners: `quick_automation.sh`, `run_complete_automation.sh`, `run_custom_automation.sh`
-
-## Web UI Dashboard
-
-The project now includes a modern Next.js dashboard for monitoring and controlling the automation process.
-
-### Quick Start
-
-**🚀 Easy Way - Start Everything at Once:**
+### 2. Start the App
 
 ```bash
 ./start_app.sh
 ```
 
-This script automatically starts both the Flask API backend and Next.js frontend, then opens your browser to http://localhost:3000
+This starts both the backend and frontend, then opens your browser to <http://localhost:3000>
 
-**☁️ Deploy to Production:**
+### 3. Use the Web Interface
+
+1. **Fill out the questionnaire** (20 questions about your company/policy)
+2. **Upload your company logo** (optional)
+3. **Click "Start Automation"**
+4. **Download the result** - your policy with AI-generated tracked changes
+
+That's it! 🎉
+
+---
+
+## 📋 What You Get
+
+The system:
+
+- **Analyzes your policy document** and questionnaire responses
+- **Generates intelligent edits** using Claude AI
+- **Creates a DOCX with tracked changes** that you can review and accept/reject
+- **Automatically inserts your company logo** in placeholder locations
+- **Supports multi-user environments** with automatic file isolation
+
+## 🎯 Perfect For
+
+- **Policy teams** updating access control, security, or compliance policies
+- **Legal departments** customizing template policies for different entities
+- **Consultants** generating client-specific policy documents
+- **Organizations** maintaining consistent policy standards across teams
+
+---
+
+## 📁 What You Need
+
+**Required:**
+
+- Your policy document (DOCX format)
+- Claude API key from [Anthropic](https://console.anthropic.com/)
+
+**Optional:**
+
+- Company logo (PNG/JPG)
+- Custom questionnaire responses
+
+**Included:**
+
+- Sample policy: `data/v5 Freya POL-11 Access Control.docx`
+- Default questionnaire with 20 common questions
+- Example company logo
+
+---
+
+## ⚙️ Advanced Configuration
+
+### Environment Variables
+
+Set these in your `.env` file to customize defaults:
 
 ```bash
-./deploy.sh https://your-flask-api-url
+# Required
+CLAUDE_API_KEY=your_claude_api_key_here
+
+
+# Production deployment (see DEPLOYMENT.md)
+GITHUB_TOKEN=your_github_token_here
+GITHUB_REPO_OWNER=your_username
+GITHUB_REPO_NAME=your_repo
+GIT_USER_NAME=your_name
+GIT_USER_EMAIL=your_email
+LOGO_PATH="data/company_logo.png"
+POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
+QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
+OUTPUT_NAME="policy_tracked_changes_with_comments"
+SKIP_API_CALL=false
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide.
+### Command Line Alternative
 
-### 🔄 Multi-User Support
-
-The system now supports **multiple users running automation simultaneously** without conflicts:
-
-**🔑 Automatic User Isolation:**
-
-- Each automation run gets a unique user ID (e.g., `user-1703123456-7890`)
-- All generated files are prefixed with this ID to prevent conflicts
-- GitHub Actions artifacts are uniquely named per run
-
-**📋 User ID Examples:**
+If you prefer command line over web interface:
 
 ```bash
-# Auto-generated ID (default)
 ./quick_automation.sh
-# Output: User ID: user-1703123456-7890
-
-# Custom ID for easy tracking
-USER_ID="alice-policy-v1" ./quick_automation.sh
-# Output: User ID: alice-policy-v1
 ```
 
-**📄 Generated Files with User Isolation:**
+### Manual Setup
 
-```
-data/user-123_acme_questionnaire.csv
-data/user-123_company_logo.png
-edits/user-123_acme_edits.json
-build/user-123_acme.docx (via GitHub Actions)
-```
+If `./start_app.sh` doesn't work, you can start services manually:
 
-**🏷️ GitHub Actions Artifacts:**
+**Backend:**
 
-```
-Artifact Name: redlined-docx-789123-45
-Contains: build/user-123_acme.docx
+```bash
+cd web_ui
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 app.py
 ```
 
-This ensures that multiple users can run the automation simultaneously without overwriting each other's work.
+**Frontend:**
 
-**📖 Manual Way - Individual Services:**
-
-1. **Start the Flask API backend:**
-
-   ```bash
-   cd web_ui
-   source venv/bin/activate  # or create venv if needed
-   pip install -r requirements.txt
-   python3 app.py
-   ```
-
-   API runs on http://localhost:5001
-
-2. **Start the Next.js frontend:**
-   ```bash
-   cd web_app
-   npm install  # first time only
-   npm run dev
-   ```
-   Dashboard runs on http://localhost:3000
-
-### Features
-
-- Real-time automation monitoring with WebSocket connections
-- Live progress tracking and log streaming
-- Modern TypeScript + Tailwind CSS interface
-- File download management
-- Configuration status checking
-
-### Troubleshooting
-
-**Common Issues:**
-
-1. **"command not found: python"**
-
-   - Use `python3` instead of `python` on macOS
-   - Make sure you're in the `web_ui` directory and virtual environment is activated
-
-2. **"Port 5000 is in use"**
-
-   - This is usually macOS AirPlay Receiver
-   - The app is configured to use port 5001 instead
-   - Disable AirPlay Receiver in System Preferences if needed
-
-3. **CORS errors in browser**
-
-   - Make sure Flask backend is running on port 5001
-   - Check that both services are running before accessing the dashboard
-
-4. **Logo not appearing in GitHub Actions output** _(Fixed in latest version)_
-
-   - **Issue**: Previously, user-uploaded logos were created locally but not committed to git
-   - **Fix**: The automation now commits both JSON edits AND logo files together
-   - **What happens**: When you upload a logo via questionnaire, it's extracted from base64 data, saved as `data/{user-id}_company_logo.png`, and automatically committed with the JSON instructions
-   - **Verification**: Check your git history to see both files committed together after running automation
-
-5. **Multi-user conflicts in GitHub Actions** _(Fixed in latest version)_
-
-   - **Issue**: Multiple users running automation simultaneously could overwrite each other's files and artifacts
-   - **Fix**: Comprehensive user isolation system implemented
-   - **Features**:
-     - **Unique User IDs**: Auto-generated timestamp-based IDs (e.g., `user-1703123456-7890`)
-     - **Isolated File Names**: All files prefixed with user ID (e.g., `user-123_policy_edits.json`, `user-123_company_logo.png`)
-     - **Unique Artifacts**: GitHub Actions artifacts named `redlined-docx-{run_id}-{run_number}`
-     - **Isolated Output**: Final DOCX files named `build/{user_id}_{output_name}.docx`
-   - **Manual Override**: Set `USER_ID` environment variable for custom identification
-   - **Tracking**: Each run displays its User ID for easy identification of results
-
-6. **Git sync issues and "CSV/JSON missing" workflow errors** _(Fixed in latest version)_
-
-   - **Issue**: Production environments experienced git push failures and workflow failures due to timing/sync issues
-   - **Root Cause**:
-     - Git repository becoming out of sync with remote (causing push failures)
-     - Files not immediately available on GitHub after push (causing workflow failures)
-   - **Fix**: Enhanced git synchronization and file verification
-   - **Features**:
-     - **Automatic Sync**: Pulls latest changes before pushing to prevent conflicts
-     - **Rebase Recovery**: Automatically attempts `git pull --rebase` if standard push fails
-     - **File Verification**: Waits up to 30 seconds to verify files exist on GitHub before triggering workflow
-     - **Detailed Error Messages**: Specific troubleshooting steps for different git failure scenarios
-   - **Manual Recovery**: Use `fix_git_sync.sh` script for manual intervention when needed
-   - **Prevention**: Ensures single automation process per repository to avoid conflicts
-
-7. **"Failed to fetch" errors**
-   - Ensure Flask backend is running: `curl http://localhost:5001/api/status`
-   - Check that virtual environment is activated in Flask terminal
-
-## Current project structure
-
+```bash
+cd web_app
+npm install
+npm run dev
 ```
-.
-├── README.md
-├── start_app.sh                   # Start both Flask API and Next.js frontend
-├── config.sh                      # Shared configuration defaults (DRY)
-├── env.example                    # Configuration template
-├── quick_automation.sh            # Fastest setup
-├── run_complete_automation.sh     # Production automation
-├── run_custom_automation.sh       # Flexible configuration
-├── web_ui/                        # Flask API backend
-│   ├── app.py
-│   ├── requirements.txt
-│   └── README.md
-├── web_app/                       # Next.js frontend
-│   ├── src/
-│   ├── package.json
-│   └── next.config.ts
-├── edits/
-│   └── policy_tracked_changes_with_comments_edits.json
+
+---
+
+## 🏗️ Architecture
+
+**Simple flow:**
+
+```text
+Web Questionnaire → AI Processing → DOCX with Tracked Changes
+```
+
+**Technical details:**
+
+- **Frontend**: Next.js (React) dashboard
+- **Backend**: Flask API with real-time logging
+- **AI**: Claude Sonnet 4 for policy analysis
+- **Document Processing**: LibreOffice for DOCX manipulation
+- **Optional**: GitHub Actions for CI/CD workflows
+
+---
+
+## 📂 Project Structure
+
+```text
+├── start_app.sh              # 🚀 Main startup script
 ├── data/
-│   ├── company_logo.png
-│   ├── prompt.md
-│   ├── questionnaire_responses.csv
-│   ├── updated_policy_instructions_v4.0.md
-│   └── v5 Freya POL-11 Access Control.docx
-├── scripts/
-│   ├── ai_policy_processor.py
-│   ├── apply_tracked_edits_libre.py
-│   ├── complete_automation.py
-│   └── xlsx_to_csv_converter.py
-└── build/
+│   ├── v5 Freya POL-11 Access Control.docx
+│   ├── questions.csv
+│   └── company_logo_default.png
+├── web_app/                  # Next.js frontend
+├── web_ui/                   # Flask backend
+└── scripts/                  # Core automation scripts
 ```
 
-## Requirements
+---
 
-- **Python 3** - For running automation scripts
-- **LibreOffice** - For local generation and review
-- **Environment Variables** - Set up in `.env` file (see `env.example`):
-  - `CLAUDE_API_KEY` - Required for AI generation
-  - For production: `GITHUB_REPO_OWNER`, `GITHUB_REPO_NAME`, `GIT_USER_NAME`, `GIT_USER_EMAIL`
-- **Optional:** GitHub Actions workflow in your remote repo if you use CI path
+## 🔧 Troubleshooting
 
-## Logo Setup
+**App won't start?**
 
-Configure logo insertion using the single source of truth (`.env` file):
+- Check you have Python 3 and Node.js installed
+- Run from the project root directory
+- Make sure ports 3000 and 5001 are available
 
-1. **Place logo file** in the project (e.g., `data/company_logo.png`)
-2. **Add logo configuration to `.env`**:
-   ```bash
-   # Logo settings (single source of truth)
-   LOGO_PATH=data/company_logo.png
-   LOGO_WIDTH_MM=35
-   LOGO_HEIGHT_MM=0  # 0 = preserve aspect ratio
-   ```
-3. **Ensure your policy document** contains the `[ADD COMPANY LOGO]` placeholder in the header
+**API errors?**
 
-### Logo Priority System
+- Verify your `CLAUDE_API_KEY` in `.env`
+- Check you have API credits in your Anthropic account
 
-When you run automation, the system uses this priority order:
+**Can't generate DOCX?**
 
-1. **Questionnaire URL**: Automatically extracts and downloads logo from questionnaire CSV
-2. **Environment variable**: Uses `LOGO_PATH` from `.env` if questionnaire has no logo URL
-3. **Default fallback**: Uses `data/company_logo.png` if neither above is available
+- Install LibreOffice: `brew install libreoffice` (Mac) or `apt install libreoffice` (Linux)
 
-Claude will:
+**Need help?**
 
-- Detect the `[ADD COMPANY LOGO]` placeholder in your policy header
-- Generate a `"replace_with_logo"` operation for the placeholder
-- Apply the logo using the priority system above
-- Add tracking comments for the logo replacement
+- Check `DEPLOYMENT.md` for production setup
+- Look at sample files in the `data/` directory
+- Review the automation logs in the web interface
 
-## Tips
+---
 
-- **Configuration**: Use `.env` file as your single source of truth for all settings
-- **Flexibility**: Command line arguments can override any environment variable when needed
-- **Comments**: For replacements, comments are attached to the deletion redline so Google Docs shows them as replies to the suggestion
-- **Iteration**: You can run local generation to iterate quickly, then switch to CI when you want artifacted outputs
-- **Logo detection**: Automatic - the system detects `[ADD COMPANY LOGO]` and uses the configured logo source
+## 🚀 Production Deployment
+
+For production deployment to platforms like Render, Railway, or Vercel, see [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions.
+
+---
+
+## 📄 Requirements
+
+- **Python 3.8+** for automation scripts
+- **Node.js 18+** for web interface
+- **LibreOffice** for document processing
+- **Claude API key** for AI processing
