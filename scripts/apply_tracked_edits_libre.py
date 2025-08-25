@@ -41,8 +41,6 @@ def parse_args():
     p.add_argument("--out", dest="out_path", required=True, help="Output .docx (will be overwritten)")
     p.add_argument("--launch", action="store_true", help="Launch a headless LibreOffice UNO listener if not already running")
     p.add_argument("--logo", dest="logo_path", help="Optional path to company logo image (png/jpg) to insert in header")
-    p.add_argument("--logo-width-mm", dest="logo_width_mm", type=int, help="Optional logo width in millimeters")
-    p.add_argument("--logo-height-mm", dest="logo_height_mm", type=int, help="Optional logo height in millimeters")
     p.add_argument("--questionnaire", dest="questionnaire_csv", help="Optional path to questionnaire CSV for logo URL extraction")
     p.add_argument("--fast", action="store_true", help="Enable fast mode: use shorter timeouts, minimal retries, optimized logo downloads")
     return p.parse_args()

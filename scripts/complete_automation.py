@@ -787,8 +787,6 @@ def main():
     parser.add_argument('--skip-github', action='store_true', help='Skip GitHub Actions step')
     parser.add_argument('--skip-api', action='store_true', help='Skip API call and use existing JSON file (for testing/development)')
     parser.add_argument('--logo', help='Optional path to company logo image (png/jpg) to insert in header')
-    parser.add_argument('--logo-width-mm', type=int, help='Optional logo width in millimeters')
-    parser.add_argument('--logo-height-mm', type=int, help='Optional logo height in millimeters')
     parser.add_argument('--user-id', help='Unique user identifier for multi-user isolation (auto-generated if not provided)')
     
     args = parser.parse_args()
@@ -901,13 +899,8 @@ def main():
             data.setdefault('metadata', {})
             
             # Check if CLI logo provided
-            if args.logo or args.logo_width_mm or args.logo_height_mm:
-                if args.logo:
-                    data['metadata']['logo_path'] = args.logo
-                if args.logo_width_mm is not None:
-                    data['metadata']['logo_width_mm'] = args.logo_width_mm
-                if args.logo_height_mm is not None:
-                    data['metadata']['logo_height_mm'] = args.logo_height_mm
+            if args.logo:
+                data['metadata']['logo_path'] = args.logo
                 print("🖼️  Injected CLI logo metadata into edits JSON")
             else:
                 # Check if there are logo operations but no local logo path set
