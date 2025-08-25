@@ -701,8 +701,8 @@ def trigger_github_actions(policy_path, edits_json, output_name, github_token=No
                     
             return False
         
-        # Check both required files
-        files_to_verify = [policy_path, edits_json]
+        # Check both required files (use the actual files that will be passed to GitHub Actions)
+        files_to_verify = [github_policy_path, edits_json]
         all_files_verified = True
         
         for file_path in files_to_verify:
