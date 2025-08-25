@@ -77,9 +77,9 @@ This starts both the backend and frontend, then opens your browser to <http://lo
 ### 3. Use the Web Interface
 
 1. **Fill out the questionnaire** (20 questions about your company/policy)
-2. **Upload your company logo** (optional)
+2. **Upload your company logo** (optional - converted to base64 automatically)
 3. **Click "Start Automation"**
-4. **Download the result** - your policy with AI-generated tracked changes
+4. **Download the result** - your customized policy with tracked changes
 
 That's it! 🎉
 
@@ -108,19 +108,15 @@ The system:
 
 **Required:**
 
-- Your policy document (DOCX format)
 - Claude API key from [Anthropic](https://console.anthropic.com/)
-
-**Optional:**
-
-- Company logo (PNG/JPG)
-- Custom questionnaire responses
 
 **Included:**
 
-- Sample policy: `data/v5 Freya POL-11 Access Control.docx`
+- Sample policy document
 - Default questionnaire with 20 common questions
 - Example company logo
+
+**Note:** Everything else (your policy, logo, responses) is handled through the web interface!
 
 ---
 
@@ -128,24 +124,22 @@ The system:
 
 ### Environment Variables
 
-Set these in your `.env` file to customize defaults:
+Only one environment variable is required for basic use:
 
 ```bash
 # Required
 CLAUDE_API_KEY=your_claude_api_key_here
+```
 
+For **production deployment only** (see DEPLOYMENT.md):
 
-# Production deployment (see DEPLOYMENT.md)
-GITHUB_TOKEN=your_github_token_here
+```bash
+# Only needed for GitHub Actions and production deployment
 GITHUB_REPO_OWNER=your_username
 GITHUB_REPO_NAME=your_repo
 GIT_USER_NAME=your_name
 GIT_USER_EMAIL=your_email
-LOGO_PATH="data/company_logo.png"
-POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
-QUESTIONNAIRE_FILE="data/user_questionnaire_responses.csv"
-OUTPUT_NAME="policy_tracked_changes_with_comments"
-SKIP_API_CALL=false
+GITHUB_TOKEN=your_github_token_here
 ```
 
 ### Command Line Alternative
@@ -155,6 +149,8 @@ If you prefer command line over web interface:
 ```bash
 ./quick_automation.sh
 ```
+
+Note: Command line mode still uses legacy configuration files. The web interface is much simpler!
 
 ### Manual Setup
 
