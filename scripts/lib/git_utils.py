@@ -140,6 +140,22 @@ class GitManager:
         if status_check.returncode == 0 and "HEAD detached" in status_check.stdout:
             print("🚨 Repository is in detached HEAD state - fixing before commit...")
             
+            # Check for untracked files that might conflict with checkout
+            untracked_check = subprocess.run(['git', 'ls-files', '--others', '--exclude-standard'], 
+                                           capture_output=True, text=True)
+            if untracked_check.returncode == 0 and untracked_check.stdout.strip():
+                untracked_files = untracked_check.stdout.strip().split('\n')
+                print(f"📄 Found {len(untracked_files)} untracked files that might conflict with checkout")
+                
+                # Stage untracked files temporarily to avoid conflicts
+                for file in untracked_files:
+                    if file.strip():
+                        stage_result = subprocess.run(['git', 'add', file.strip()], capture_output=True, text=True)
+                        if stage_result.returncode == 0:
+                            print(f"📝 Staged untracked file: {file.strip()}")
+                        else:
+                            print(f"⚠️  Could not stage file {file.strip()}: {stage_result.stderr}")
+            
             # Try to checkout main branch
             checkout_main = subprocess.run(['git', 'checkout', 'main'], capture_output=True, text=True)
             if checkout_main.returncode == 0:
@@ -369,6 +385,22 @@ class GitManager:
         if commit_hash_result.returncode == 0:
             current_commit = commit_hash_result.stdout.strip()
             print(f"   Current commit: {current_commit}")
+            
+            # Check for untracked files that might conflict with checkout
+            untracked_check = subprocess.run(['git', 'ls-files', '--others', '--exclude-standard'], 
+                                           capture_output=True, text=True)
+            if untracked_check.returncode == 0 and untracked_check.stdout.strip():
+                untracked_files = untracked_check.stdout.strip().split('\n')
+                print(f"📄 Found {len(untracked_files)} untracked files that might conflict with checkout")
+                
+                # Stage untracked files temporarily to avoid conflicts
+                for file in untracked_files:
+                    if file.strip():
+                        stage_result = subprocess.run(['git', 'add', file.strip()], capture_output=True, text=True)
+                        if stage_result.returncode == 0:
+                            print(f"📝 Staged untracked file: {file.strip()}")
+                        else:
+                            print(f"⚠️  Could not stage file {file.strip()}: {stage_result.stderr}")
             
             # Try to switch to main branch and cherry-pick the commit
             checkout_result = subprocess.run(['git', 'checkout', 'main'], capture_output=True, text=True)
