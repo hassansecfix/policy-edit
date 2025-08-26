@@ -55,7 +55,7 @@ class EditFileReader:
             target_text = op.get('target_text', '')
             replacement = op.get('replacement', '')
             comment = op.get('comment', '')
-            author = op.get('comment_author', 'AI Assistant')
+            author = op.get('comment_author', 'Secfix AI')
             
             # Handle comment-only operations in main loop, not here
             if action == 'comment':
@@ -103,7 +103,7 @@ class EditFileReader:
                         "WholeWord": row[3] if len(row) > 3 else "",
                         "Wildcards": row[4] if len(row) > 4 else "",
                         "Comment": row[5] if len(row) > 5 else "",
-                        "Author": row[6] if len(row) > 6 else "AI Assistant",
+                        "Author": row[6] if len(row) > 6 else "Secfix AI",
                     }
             else:
                 # Has header: use DictReader with flexible column names
@@ -115,7 +115,7 @@ class EditFileReader:
                         "WholeWord": EditFileReader._get_column_value(rec, ["WholeWord", "wholeword", "WHOLEWORD"]),
                         "Wildcards": EditFileReader._get_column_value(rec, ["Wildcards", "wildcards", "WILDCARDS"]),
                         "Comment": EditFileReader._get_column_value(rec, ["Comment", "comment", "COMMENT"]),
-                        "Author": EditFileReader._get_column_value(rec, ["Author", "author", "AUTHOR"]) or "AI Assistant",
+                        "Author": EditFileReader._get_column_value(rec, ["Author", "author", "AUTHOR"]) or "Secfix AI",
                     }
     
     @staticmethod

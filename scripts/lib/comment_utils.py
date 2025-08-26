@@ -38,7 +38,12 @@ class CommentManager:
         for op in comment_operations:
             target_text = op.get('target_text', '')
             comment = op.get('comment', '')
-            author = op.get('comment_author', 'AI Assistant')
+            author = op.get('comment_author', 'Secfix AI')
+            
+            # SAFETY: Ensure author is always Secfix AI (override any other values)
+            if author != "Secfix AI":
+                print(f"⚠️ Comment author was '{author}', overriding to 'Secfix AI'")
+                author = "Secfix AI"
             
             self.add_comment_to_text(target_text, comment, author)
     

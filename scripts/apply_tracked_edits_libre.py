@@ -122,8 +122,8 @@ class TrackedChangesProcessor:
         # Check document content accessibility
         DocumentProcessor.check_document_content(doc)
         
-        # Setup document author and properties
-        self.lo_manager.setup_document_author(doc)
+        # Setup document author and properties - ALWAYS use Secfix AI
+        self.lo_manager.setup_document_author(doc, "Secfix AI")
         
         # Initially disable tracking - will be enabled after logo operations
         self.lo_manager.enable_tracking(doc, enabled=False)
@@ -185,7 +185,12 @@ class TrackedChangesProcessor:
             whole_word = bool_from_str(row.get("WholeWord"))
             wildcards = bool_from_str(row.get("Wildcards"))
             comment_text = (row.get("Comment") or "").strip()
-            author_name = (row.get("Author") or "AI Assistant").strip()
+            author_name = (row.get("Author") or "Secfix AI").strip()
+            
+            # SAFETY: Ensure author is always Secfix AI (override any other values)
+            if author_name != "Secfix AI":
+                print(f"⚠️ Author was '{author_name}', overriding to 'Secfix AI'")
+                author_name = "Secfix AI"
             
             # Update document author for this specific change
             comment_manager.update_document_author(author_name)
