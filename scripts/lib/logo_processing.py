@@ -28,7 +28,7 @@ class LogoProcessor:
             doc: LibreOffice document object
         """
         self.doc = doc
-        self.dynamic_spaces_to_remove = 0
+        self.dynamic_spaces_to_remove = None  # None means no calculation done yet
     
     def process_logo_operations(self, operations: List[Dict[str, Any]], metadata: Dict[str, Any]) -> None:
         """
@@ -62,6 +62,9 @@ class LogoProcessor:
         Args:
             operations: List of all operations
         """
+        print(f"🔍 Calculating dynamic spacing from {len(operations)} operations...")
+        company_replacement_found = False
+        
         # Look for company name replacement to calculate dynamic spacing
         for op in operations:
             if (op.get('action') == 'replace' and 
@@ -73,12 +76,33 @@ class LogoProcessor:
                     replacement_length = len(replacement_text)
                     length_difference = replacement_length - target_length
                     self.dynamic_spaces_to_remove = length_difference + LOGO_SPACES_THRESHOLD
+                    company_replacement_found = True
+                    
                     print(f"📏 Found company name replacement:")
                     print(f"📏   Target: '{target_text_op}' ({target_length} chars)")
                     print(f"📏   Replacement: '{replacement_text}' ({replacement_length} chars)")
                     print(f"📏   Difference: {replacement_length} - {target_length} = {length_difference}")
                     print(f"📏   Dynamic spaces to remove: {length_difference} + {LOGO_SPACES_THRESHOLD} = {self.dynamic_spaces_to_remove}")
+                    
+                    if self.dynamic_spaces_to_remove < 0:
+                        print(f"🔄 NEGATIVE value detected - will ADD {abs(self.dynamic_spaces_to_remove)} spaces")
+                    elif self.dynamic_spaces_to_remove > 0:
+                        print(f"🔄 POSITIVE value detected - will REMOVE {self.dynamic_spaces_to_remove} spaces")
+                    else:
+                        print(f"🔄 ZERO value detected - no spacing adjustment needed")
                     break
+        
+        if not company_replacement_found:
+            print(f"⚠️ No company name replacement operation found - will use default behavior (no spacing adjustment)")
+            print(f"📋 Available operations:")
+            for i, op in enumerate(operations):
+                action = op.get('action', 'unknown')
+                target = op.get('target_text', 'no target')[:50]
+                print(f"📋   {i+1}. Action: {action}, Target: '{target}...'")
+            # Set to 0 to indicate "no adjustment needed"
+            self.dynamic_spaces_to_remove = 0
+        else:
+            print(f"✅ Company name replacement found and processed")
     
     def _process_single_logo_operation(self, logo_op: Dict[str, Any], metadata: Dict[str, Any]) -> None:
         """
@@ -169,15 +193,25 @@ class LogoProcessor:
             logo_file_path: Path to the logo file
         """
         print(f"🖼️  Using logo file: {logo_file_path}")
+        print(f"🔧 DEBUGGING: Current dynamic_spaces_to_remove = {self.dynamic_spaces_to_remove}")
         
         # Handle spacing adjustments
-        if self.dynamic_spaces_to_remove >= 0:
-            print(f"🔄 Attempting to remove up to {self.dynamic_spaces_to_remove} spaces before '{target_text}' using multiple strategies")
+        if self.dynamic_spaces_to_remove is None:
+            print(f"⚠️ No spacing calculation performed - inserting logo directly without spacing adjustment")
+            logo_count = self._insert_logo_direct(target_text, logo_file_path)
+            print(f"🎉 Successfully replaced {logo_count} logo placeholder(s) with user's logo (no spacing adjustment)")
+        elif self.dynamic_spaces_to_remove > 0:
+            print(f"🔄 REMOVE PATH: Attempting to remove up to {self.dynamic_spaces_to_remove} spaces before '{target_text}' using multiple strategies")
             self._remove_spaces_and_insert_logo(target_text, logo_file_path)
-        else:
+        elif self.dynamic_spaces_to_remove < 0:
             spaces_to_add = abs(self.dynamic_spaces_to_remove)
-            print(f"🔄 Attempting to add {spaces_to_add} spaces before '{target_text}'")
+            print(f"🔄 ADD PATH: Attempting to add {spaces_to_add} spaces before '{target_text}'")
+            print(f"🔧 DEBUGGING: This means we detected a SHORT company name replacement!")
             self._add_spaces_and_insert_logo(target_text, logo_file_path, spaces_to_add)
+        else:  # dynamic_spaces_to_remove == 0
+            print(f"🔄 NO SPACING ADJUSTMENT: Company name length difference is balanced, inserting logo directly")
+            logo_count = self._insert_logo_direct(target_text, logo_file_path)
+            print(f"🎉 Successfully replaced {logo_count} logo placeholder(s) with user's logo (no spacing needed)")
     
     def _add_spaces_and_insert_logo(self, target_text: str, logo_file_path: str, spaces_to_add: int) -> None:
         """
@@ -190,16 +224,41 @@ class LogoProcessor:
         """
         print(f"🔄 Adding {spaces_to_add} spaces before ALL occurrences of '{target_text}'")
         
-        # Add spaces by finding ALL targets and inserting spaces before each one
+        # Safety check for reasonable space counts
+        if spaces_to_add <= 0:
+            print(f"⚠️ Invalid spaces_to_add value: {spaces_to_add}. Skipping space addition.")
+            logo_count = self._insert_logo_direct(target_text, logo_file_path)
+            print(f"🎉 Successfully replaced {logo_count} logo placeholder(s) without adding spaces")
+            return
+        elif spaces_to_add > 100:
+            print(f"⚠️ Excessive spaces_to_add value: {spaces_to_add}. Limiting to 50 spaces for safety.")
+            spaces_to_add = 50
+        
+        # First, let's verify the target text exists in the document
         search_desc = self.doc.createSearchDescriptor()
         search_desc.SearchString = target_text
         search_desc.SearchCaseSensitive = False
         search_desc.SearchWords = False
         
+        # Test if target text exists at all
+        test_range = self.doc.findFirst(search_desc)
+        if not test_range:
+            print(f"❌ CRITICAL: Target text '{target_text}' NOT FOUND in document!")
+            print(f"🔍 This might be the root cause of the spacing issue.")
+            print(f"🔍 This could happen if:")
+            print(f"    - Text replacements were already processed and changed the target text")
+            print(f"    - Document structure is different than expected")
+            print(f"    - Target text has different formatting or whitespace")
+            return
+        else:
+            print(f"✅ Target text '{target_text}' found in document - proceeding with space addition")
+        
         # Find ALL occurrences and add spaces before each one
         spaces_added_count = 0
         found_range = self.doc.findFirst(search_desc)
         spaces_to_insert = " " * spaces_to_add
+        
+        print(f"🔧 DEBUGGING: Will insert '{spaces_to_insert}' (length: {len(spaces_to_insert)}) before each occurrence")
         
         while found_range:
             try:
