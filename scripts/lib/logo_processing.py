@@ -188,20 +188,78 @@ class LogoProcessor:
             logo_file_path: Path to the logo file
             spaces_to_add: Number of spaces to add
         """
-        # Add spaces by finding target and inserting spaces before it
+        print(f"🔄 Adding {spaces_to_add} spaces before ALL occurrences of '{target_text}'")
+        
+        # Add spaces by finding ALL targets and inserting spaces before each one
         search_desc = self.doc.createSearchDescriptor()
         search_desc.SearchString = target_text
         search_desc.SearchCaseSensitive = False
         search_desc.SearchWords = False
         
+        # Find ALL occurrences and add spaces before each one
+        spaces_added_count = 0
         found_range = self.doc.findFirst(search_desc)
-        if found_range:
-            # Insert spaces before the target text
-            cursor = found_range.getText().createTextCursorByRange(found_range)
-            cursor.collapseToStart()
-            spaces_to_insert = " " * spaces_to_add
-            cursor.getText().insertString(cursor, spaces_to_insert, False)
-            print(f"✅ Added {spaces_to_add} spaces before logo placeholder")
+        spaces_to_insert = " " * spaces_to_add
+        
+        while found_range:
+            try:
+                # Validate the found range before proceeding
+                if not found_range or not found_range.getText():
+                    print(f"⚠️ Invalid range found for occurrence #{spaces_added_count + 1}")
+                    break
+                
+                # Get surrounding context for small content scenarios
+                text_obj = found_range.getText()
+                if not text_obj:
+                    print(f"⚠️ No text object available for occurrence #{spaces_added_count + 1}")
+                    found_range = self.doc.findNext(found_range, search_desc)
+                    continue
+                
+                # Insert spaces before the target text
+                cursor = text_obj.createTextCursorByRange(found_range)
+                if not cursor:
+                    print(f"⚠️ Could not create cursor for occurrence #{spaces_added_count + 1}")
+                    found_range = self.doc.findNext(found_range, search_desc)
+                    continue
+                    
+                # Collapse to start and validate cursor position
+                cursor.collapseToStart()
+                
+                # Insert spaces with additional validation
+                try:
+                    cursor.getText().insertString(cursor, spaces_to_insert, False)
+                    spaces_added_count += 1
+                    print(f"✅ Added {spaces_to_add} spaces before logo placeholder #{spaces_added_count}")
+                    
+                    # For small content, verify the insertion worked
+                    if spaces_added_count == 1:  # Only check first insertion to avoid too much output
+                        self._verify_space_insertion(target_text, spaces_to_add)
+                        
+                except Exception as insert_e:
+                    print(f"⚠️ Failed to insert spaces for occurrence #{spaces_added_count + 1}: {insert_e}")
+                    # Try alternative space insertion method for small content
+                    try:
+                        self._alternative_space_insertion(found_range, spaces_to_insert)
+                        spaces_added_count += 1
+                        print(f"✅ Added {spaces_to_add} spaces using alternative method for occurrence #{spaces_added_count}")
+                    except Exception as alt_e:
+                        print(f"❌ Alternative space insertion also failed: {alt_e}")
+                
+                # Find next occurrence (search from current position)
+                found_range = self.doc.findNext(found_range, search_desc)
+                
+            except Exception as e:
+                print(f"⚠️ Error processing occurrence #{spaces_added_count + 1}: {e}")
+                # Try to continue with next occurrence
+                try:
+                    found_range = self.doc.findNext(found_range, search_desc)
+                except:
+                    break
+        
+        if spaces_added_count == 0:
+            print(f"⚠️ No occurrences of '{target_text}' found - no spaces added")
+        else:
+            print(f"✅ Added spaces before {spaces_added_count} logo placeholder(s)")
         
         # Now insert the logo directly
         logo_count = self._insert_logo_direct(target_text, logo_file_path)
@@ -1190,3 +1248,90 @@ class LogoProcessor:
         except Exception as e:
             print(f"⚠️  Alternative anchor type testing failed: {e}")
             # Continue anyway - this is not critical for functionality
+    
+    def _verify_space_insertion(self, target_text: str, expected_spaces: int) -> None:
+        """
+        Verify that spaces were successfully inserted before the target text.
+        
+        Args:
+            target_text: The target text to check
+            expected_spaces: Number of spaces that should have been added
+        """
+        try:
+            print(f"🔍 Verifying space insertion for '{target_text}'...")
+            
+            # Search for the target text again to verify spacing
+            search_desc = self.doc.createSearchDescriptor()
+            search_desc.SearchString = target_text
+            search_desc.SearchCaseSensitive = False
+            search_desc.SearchWords = False
+            
+            found_range = self.doc.findFirst(search_desc)
+            if found_range:
+                # Get text before the target to check for spaces
+                cursor = found_range.getText().createTextCursorByRange(found_range)
+                cursor.goLeft(expected_spaces + 5, True)  # Go back further than expected
+                cursor.gotoRange(found_range.getStart(), True)
+                surrounding_text = cursor.getString()
+                
+                # Count trailing spaces in the surrounding text
+                trailing_spaces = len(surrounding_text) - len(surrounding_text.rstrip(' '))
+                
+                if trailing_spaces >= expected_spaces:
+                    print(f"✅ Space insertion verified: found {trailing_spaces} spaces before target")
+                else:
+                    print(f"⚠️ Space insertion may have failed: found only {trailing_spaces} spaces, expected {expected_spaces}")
+                    
+            else:
+                print(f"⚠️ Could not find target text for verification")
+                
+        except Exception as e:
+            print(f"⚠️ Space insertion verification failed: {e}")
+    
+    def _alternative_space_insertion(self, found_range: Any, spaces_to_insert: str) -> None:
+        """
+        Alternative method for inserting spaces, useful for small content scenarios.
+        
+        Args:
+            found_range: The range where the target text was found
+            spaces_to_insert: The spaces string to insert
+        """
+        try:
+            print(f"🔄 Trying alternative space insertion method...")
+            
+            # Method 1: Try to get parent paragraph and insert at beginning
+            try:
+                cursor = found_range.getText().createTextCursorByRange(found_range)
+                cursor.gotoStart(False)  # Go to start of text, don't expand selection
+                cursor.getText().insertString(cursor, spaces_to_insert, False)
+                print(f"✅ Alternative method 1 (paragraph start) succeeded")
+                return
+            except Exception as e:
+                print(f"⚠️ Alternative method 1 failed: {e}")
+            
+            # Method 2: Try direct text replacement approach
+            try:
+                target_text = found_range.getString()
+                replacement_text = spaces_to_insert + target_text
+                found_range.setString(replacement_text)
+                print(f"✅ Alternative method 2 (direct replacement) succeeded")
+                return
+            except Exception as e:
+                print(f"⚠️ Alternative method 2 failed: {e}")
+            
+            # Method 3: Try cursor positioning with different approach
+            try:
+                text_obj = found_range.getText()
+                cursor = text_obj.createTextCursor()
+                cursor.gotoRange(found_range.getStart(), False)
+                cursor.getText().insertString(cursor, spaces_to_insert, False)
+                print(f"✅ Alternative method 3 (new cursor) succeeded")
+                return
+            except Exception as e:
+                print(f"⚠️ Alternative method 3 failed: {e}")
+            
+            raise Exception("All alternative space insertion methods failed")
+            
+        except Exception as e:
+            print(f"❌ Alternative space insertion completely failed: {e}")
+            raise e
