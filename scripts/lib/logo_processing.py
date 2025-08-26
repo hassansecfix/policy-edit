@@ -439,6 +439,12 @@ class LogoProcessor:
             except Exception as e:
                 print(f"⚠️ Could not set size after insertion: {e}")
             
+            # CRITICAL: Clear any inherited highlighting after insertion
+            self._clear_inherited_highlighting(graphic, found_range)
+            
+            # EXTRA CRITICAL: Special cleanup for first page headers
+            self._clear_first_page_header_highlighting(graphic, found_range)
+            
             print(f"✅ Logo inserted successfully!")
             return True
             
@@ -490,6 +496,130 @@ class LogoProcessor:
             print(f"📏 Using fallback width: {calculated_width}")
         
         return calculated_width
+    
+    def _clear_inherited_highlighting(self, graphic: Any, found_range: Any) -> None:
+        """
+        Clear any highlighting that might have been inherited during logo insertion.
+        This is critical for first page headers where highlighting inheritance can occur.
+        
+        Args:
+            graphic: The inserted graphic object
+            found_range: The range where the graphic was inserted
+        """
+        try:
+            print(f"🎨 Clearing inherited highlighting from inserted logo...")
+            
+            # Method 1: Clear graphic object highlighting properties
+            try:
+                # Clear character background color
+                graphic.setPropertyValue("CharBackColor", -1)  # Transparent
+                graphic.setPropertyValue("CharBackTransparent", True)
+                print(f"🎨 Cleared graphic CharBackColor properties")
+            except Exception as e:
+                print(f"🎨 Note: Could not clear CharBackColor: {e}")
+            
+            # Method 2: Clear highlighting from the parent run that contains the graphic
+            try:
+                # Get the text cursor at the graphic position
+                cursor = found_range.getText().createTextCursorByRange(found_range)
+                cursor.gotoStart(False)  # Go to start of range
+                
+                # Get the run properties and clear highlighting
+                run_props = cursor.getPropertyValue("CharBackColor")
+                if run_props != -1:  # If not already transparent
+                    cursor.setPropertyValue("CharBackColor", -1)
+                    cursor.setPropertyValue("CharBackTransparent", True)
+                    print(f"🎨 Cleared run CharBackColor properties")
+                
+                # Also try to clear any shading
+                try:
+                    cursor.setPropertyValue("CharHighlight", 0)  # No highlighting
+                    print(f"🎨 Cleared run CharHighlight property")
+                except:
+                    pass
+                    
+            except Exception as e:
+                print(f"🎨 Note: Could not clear run highlighting: {e}")
+            
+            # Method 3: Clear highlighting from surrounding context (important for headers)
+            try:
+                # Get the paragraph containing the graphic
+                para_cursor = found_range.getText().createTextCursorByRange(found_range)
+                para_cursor.gotoStart(False)
+                para_cursor.gotoEnd(True)  # Select the paragraph
+                
+                # Clear paragraph-level highlighting that might affect the graphic
+                para_cursor.setPropertyValue("ParaBackColor", -1)
+                para_cursor.setPropertyValue("ParaBackTransparent", True)
+                print(f"🎨 Cleared paragraph background properties")
+                
+            except Exception as e:
+                print(f"🎨 Note: Could not clear paragraph highlighting: {e}")
+            
+            print(f"🎨 Highlighting cleanup completed for inserted logo")
+            
+        except Exception as e:
+            print(f"⚠️ Error during highlighting cleanup: {e}")
+            # Don't fail the logo insertion if highlighting cleanup fails
+    
+    def _clear_first_page_header_highlighting(self, graphic: Any, found_range: Any) -> None:
+        """
+        Special highlighting cleanup for first page headers where inheritance issues are common.
+        
+        Args:
+            graphic: The inserted graphic object
+            found_range: The range where the graphic was inserted
+        """
+        try:
+            print(f"🎨 Performing first page header specific highlighting cleanup...")
+            
+            # Method 1: Force clear all possible highlighting properties on the graphic
+            try:
+                # Clear all character-level highlighting properties
+                graphic.setPropertyValue("CharBackColor", -1)
+                graphic.setPropertyValue("CharBackTransparent", True)
+                graphic.setPropertyValue("CharHighlight", 0)
+                graphic.setPropertyValue("CharShadingValue", 0)
+                print(f"🎨 Cleared all graphic character highlighting properties")
+            except Exception as e:
+                print(f"🎨 Note: Could not clear some graphic properties: {e}")
+            
+            # Method 2: Clear highlighting from the immediate text context
+            try:
+                # Create a cursor that spans the graphic and a bit of surrounding text
+                cursor = found_range.getText().createTextCursorByRange(found_range)
+                cursor.gotoStart(False)
+                cursor.goLeft(1, True)  # Include one character to the left
+                cursor.goRight(1, True)  # Include one character to the right
+                
+                # Clear highlighting from this extended range
+                cursor.setPropertyValue("CharBackColor", -1)
+                cursor.setPropertyValue("CharBackTransparent", True)
+                cursor.setPropertyValue("CharHighlight", 0)
+                print(f"🎨 Cleared highlighting from extended context around graphic")
+                
+            except Exception as e:
+                print(f"🎨 Note: Could not clear extended context highlighting: {e}")
+            
+            # Method 3: Clear any inherited paragraph or section properties
+            try:
+                # Get the paragraph and clear its background
+                para_cursor = found_range.getText().createTextCursorByRange(found_range)
+                para_cursor.gotoStart(False)
+                para_cursor.gotoEnd(True)
+                
+                para_cursor.setPropertyValue("ParaBackColor", -1)
+                para_cursor.setPropertyValue("ParaBackTransparent", True)
+                print(f"🎨 Cleared paragraph background in first page header")
+                
+            except Exception as e:
+                print(f"🎨 Note: Could not clear paragraph background: {e}")
+            
+            print(f"🎨 First page header highlighting cleanup completed")
+            
+        except Exception as e:
+            print(f"⚠️ Error during first page header highlighting cleanup: {e}")
+            # Don't fail the logo insertion if this cleanup fails
     
     def _estimate_width_from_file_size(self, logo_file_path: str, target_height: int) -> int:
         """Estimate width based on file size (rough approximation)."""
