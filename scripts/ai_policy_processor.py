@@ -25,8 +25,8 @@ from pathlib import Path
 # Add the lib directory to Python path for imports
 sys.path.append(str(Path(__file__).parent))
 
-from lib.docx_utils import clean_docx_highlighting
-from lib.file_utils import load_file_content, load_questionnaire_from_environment
+from lib.highlighting_cleanup import clean_docx_highlighting
+from lib.content_loader import load_file_content, load_questionnaire_from_environment
 from lib.claude_api import call_claude_api
 from lib.json_utils import (
     extract_json_from_response, 

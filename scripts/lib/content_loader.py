@@ -1,17 +1,18 @@
 """
-File Processing Utilities
+Content Loading Utilities
 
-This module provides utilities for loading and processing various file types:
+This module provides utilities for loading and processing content from various file types:
 - Loading content from DOCX, CSV, JSON, and Markdown files
 - Filtering base64 data for API efficiency
 - Converting between formats
+- Environment variable data loading
 """
 
 import json
 from pathlib import Path
 from typing import Dict, Any
 
-from .docx_utils import extract_docx_content
+from .highlighting_cleanup import extract_docx_content
 
 
 def filter_base64_from_csv(csv_content: str) -> str:

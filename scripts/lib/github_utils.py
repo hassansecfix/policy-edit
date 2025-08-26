@@ -289,7 +289,7 @@ def clean_policy_for_github(policy_path: str) -> Tuple[str, bool]:
             if lib_path not in sys.path:
                 sys.path.append(lib_path)
             
-            from docx_utils import clean_docx_highlighting
+            from highlighting_cleanup import clean_docx_highlighting
             success, message = clean_docx_highlighting(cleaned_policy_path)
             
             if success:

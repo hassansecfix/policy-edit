@@ -1,5 +1,5 @@
 """
-Command Execution Utilities
+Shell Command Execution Utilities
 
 This module provides utilities for running shell commands and subprocess operations:
 - Command execution with proper error handling

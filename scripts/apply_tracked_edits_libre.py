@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 # Import our modular utilities
 from libre_office_utils import LibreOfficeManager
 from document_processing import DocumentProcessor, bool_from_str
-from file_readers import EditFileReader, OperationExtractor
+from instruction_parser import EditFileReader, OperationExtractor
 from logo_processing import LogoProcessor
 from comment_utils import CommentManager
 

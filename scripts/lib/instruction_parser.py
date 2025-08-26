@@ -1,8 +1,8 @@
 """
-File Reading Utilities
+Edit Instruction Parser
 
-This module provides utilities for reading edit instructions from CSV and JSON files,
-handling different formats and structures.
+This module provides utilities for parsing edit instructions from CSV and JSON files,
+handling different formats and extracting operation metadata.
 """
 
 import csv
