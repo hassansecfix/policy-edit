@@ -475,7 +475,7 @@ class LogoProcessor:
                 # NOW set dimensions after insertion (when graphic is "real")
                 print(f"📏 Setting dimensions AFTER insertion...")
                 calculated_width = self._calculate_logo_dimensions(logo_file_path)
-                target_height = 600  # 6mm in 1/100mm units
+                target_height = 800  # 8mm in 1/100mm units
                 
                 # Force dimensions multiple times
                 for attempt in range(3):
@@ -550,7 +550,7 @@ class LogoProcessor:
             
             # Calculate and set logo size
             calculated_width = self._calculate_logo_dimensions(logo_file_path)
-            target_height = 600  # 6mm in 1/100mm units
+            target_height = 800  # 8mm in 1/100mm units
             
             # Set size properties
             self._set_graphic_size(graphic, calculated_width, target_height)
@@ -592,7 +592,7 @@ class LogoProcessor:
         Returns:
             Calculated width in 1/100mm units
         """
-        target_height = 600  # 6mm in 1/100mm units
+        target_height = 800  # 8mm in 1/100mm units
         calculated_width = target_height  # Default fallback for square images
         
         # Method 1: Try PIL/Pillow for most accurate dimensions
