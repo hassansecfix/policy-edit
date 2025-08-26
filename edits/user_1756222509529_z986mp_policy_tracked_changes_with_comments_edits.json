@@ -34,7 +34,7 @@
         "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
         "action": "delete",
         "replacement": "",
-        "comment": "You indicated that you do not have an office, so guest network access section should be removed. No office = no guest network needed; Having office = visitors need controlled network access for security.",
+        "comment": "You indicated that you do not have an office, so this section should be removed. No office = no guest network needed; Having office = visitors need controlled network access for security.",
         "comment_author": "Secfix AI"
       },
       {
@@ -48,7 +48,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through ClickUp ticketing system",
-        "comment": "You indicated using ClickUp for ticket management. Ticketing system = proper audit trails and tracking of access requests.",
+        "comment": "You indicated you use ClickUp for ticketing, so access requests should go through this system. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
@@ -82,12 +82,6 @@
         "action": "replace",
         "replacement": "CEO",
         "comment": "You indicated that the CEO is responsible for handling policy violations, so the IT Manager placeholder should be updated. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
-        "comment_author": "Secfix AI"
-      },
-      {
-        "target_text": "Access to Program Source Code",
-        "action": "comment",
-        "comment": "You indicated you use Bitbucket for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       }
     ]
