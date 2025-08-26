@@ -1,0 +1,30 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+ALWAYS start response with `🐍 PYTHON RULES APPLIED`.
+
+### 🔄 Project Awareness & Context
+
+- **Always read `PLAN.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
+- **Use consistent naming conventions, file structure, and architecture patterns** as described in `PLAN.md`
+
+### ✅ Task Completion
+
+- **Mark completed tasks in `PLAN.md`** immediately after finishing them.
+- Add new sub-tasks or TODOs discovered during development to `PLAN.md` under a “Discovered During Work” section.
+
+### 🧠 AI Behavior Rules
+
+- **ALWAYS break down code into very small resusable chunks into separate files. No long files please**
+- **Never assume missing context. Ask questions if uncertain.**
+- **Never hallucinate libraries or functions** – only use known, verified packages.
+- **Always confirm file paths and module names** exist before referencing them in code or tests.
+- **Keep git commit messages very short**
+- **Always proceed with stuff without asking for my confirmation**
+
+### 📚 Documentation & Explainability
+
+- **Update `README.md`** when new features are added, dependencies change, or setup steps are modified.
