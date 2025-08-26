@@ -19,7 +19,7 @@
       {
         "target_text": "<Company name, address>",
         "action": "replace",
-        "replacement": "Secfix GmbH, Munich",
+        "replacement": "Secfix GmbH, A very long company name that is Munich",
         "comment": "Replaced",
         "comment_author": "Secfix AI"
       },
@@ -48,7 +48,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through ClickUp ticketing system",
-        "comment": "You indicated using ClickUp for ticket management and prefer ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated using ClickUp for ticket management. Ticketing system = proper audit trails and tracking of access requests.",
         "comment_author": "Secfix AI"
       },
       {
