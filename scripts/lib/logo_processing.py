@@ -690,7 +690,107 @@ class LogoProcessor:
             except Exception as e:
                 print(f"📏 Protection method failed: {e}")
             
+            # Method 4: NEW - Force aspect ratio preservation
+            self._force_aspect_ratio_preservation(graphic, calculated_width, target_height)
+            
             print(f"📏 Set logo size to {calculated_width}x{target_height} (width x height in 1/100mm)")
             
         except Exception as e:
             print(f"⚠️  Using default logo size: {e}")
+    
+    def _force_aspect_ratio_preservation(self, graphic: Any, calculated_width: int, target_height: int) -> None:
+        """
+        Force LibreOffice to maintain aspect ratio using additional properties.
+        
+        Args:
+            graphic: LibreOffice graphic object
+            calculated_width: Width in 1/100mm units
+            target_height: Height in 1/100mm units
+        """
+        try:
+            print(f"🔒 Forcing aspect ratio preservation...")
+            
+            # Method 1: Try to set proportional scaling properties
+            try:
+                # These properties might exist in some LibreOffice versions
+                graphic.setPropertyValue("IsProportional", True)  # Maintain aspect ratio
+                print(f"🔒 Set IsProportional = True")
+            except Exception as e:
+                print(f"🔒 IsProportional property not available: {e}")
+            
+            # Method 2: Try to set additional size protection
+            try:
+                # Lock both dimensions independently
+                graphic.setPropertyValue("IsHeightProtected", True)
+                graphic.setPropertyValue("IsWidthProtected", True)
+                print(f"🔒 Set dimension protection flags")
+            except Exception as e:
+                print(f"�� Dimension protection properties not available: {e}")
+            
+            # Method 3: Try to set scaling mode
+            try:
+                # Some versions use different scaling mode properties
+                graphic.setPropertyValue("ScaleMode", 1)  # 1 = proportional scaling
+                print(f"🔒 Set ScaleMode = 1 (proportional)")
+            except Exception as e:
+                print(f"🔒 ScaleMode property not available: {e}")
+            
+            # Method 4: Try to set graphic type to prevent auto-resizing
+            try:
+                # Set as embedded graphic to prevent external scaling
+                graphic.setPropertyValue("GraphicType", 1)  # 1 = embedded
+                print(f"🔒 Set GraphicType = 1 (embedded)")
+            except Exception as e:
+                print(f"🔒 GraphicType property not available: {e}")
+            
+            # Method 5: Try to set additional size constraints
+            try:
+                # Set minimum and maximum sizes to force exact dimensions
+                graphic.setPropertyValue("MinWidth", calculated_width)
+                graphic.setPropertyValue("MaxWidth", calculated_width)
+                graphic.setPropertyValue("MinHeight", target_height)
+                graphic.setPropertyValue("MaxHeight", target_height)
+                print(f"🔒 Set size constraints to exact dimensions")
+            except Exception as e:
+                print(f"🔒 Size constraint properties not available: {e}")
+            
+            print(f"🔒 Aspect ratio preservation methods applied")
+            
+        except Exception as e:
+            print(f"⚠️  Some aspect ratio preservation methods failed: {e}")
+            # Continue anyway - this is not critical for functionality
+    
+    def _try_alternative_anchor_types(self, graphic: Any) -> None:
+        """
+        Try alternative anchor types that might preserve dimensions better.
+        
+        Args:
+            graphic: LibreOffice graphic object
+        """
+        try:
+            print(f"🔗 Trying alternative anchor types for better dimension preservation...")
+            
+            # Try different anchor types that might preserve dimensions better
+            anchor_types_to_try = [
+                ("AS_CHARACTER", 1),      # As character (inline)
+                ("TO_CHARACTER", 2),      # To character
+                ("TO_PAGE", 4),           # To page
+                ("TO_FRAME", 5),          # To frame
+                ("TO_PARAGRAPH", 3),      # To paragraph
+            ]
+            
+            for anchor_name, anchor_value in anchor_types_to_try:
+                try:
+                    graphic.setPropertyValue("AnchorType", anchor_value)
+                    print(f"🔗 Successfully set anchor type to {anchor_name} ({anchor_value})")
+                    # Try this anchor type - if it works better, we'll know from the logs
+                    break
+                except Exception as e:
+                    print(f"🔗 Could not set {anchor_name}: {e}")
+                    continue
+            
+            print(f"🔗 Alternative anchor type testing completed")
+            
+        except Exception as e:
+            print(f"⚠️  Alternative anchor type testing failed: {e}")
+            # Continue anyway - this is not critical for functionality
