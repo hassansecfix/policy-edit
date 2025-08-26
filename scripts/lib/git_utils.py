@@ -287,21 +287,32 @@ class GitManager:
         """Handle push failures with various recovery strategies."""
         # Check if it's the "fetch first" error - try pulling and pushing again
         if 'fetch first' in result.stderr or 'rejected' in result.stderr:
-            print(f"🔄 Push rejected, trying pull with rebase...")
+            print(f"🔄 Push rejected, handling divergent branches...")
             
-            # Try pull with rebase to handle conflicts
-            rebase_result = subprocess.run(['git', 'pull', '--rebase', 'origin', current_branch], capture_output=True, text=True)
-            if rebase_result.returncode == 0:
-                print("✅ Successfully rebased local changes")
-                # Try push again
+            # First, configure pull strategy to avoid divergent branches error
+            subprocess.run(['git', 'config', 'pull.rebase', 'true'], capture_output=True)
+            print("⚙️  Configured pull strategy: rebase")
+            
+            # Check if this is a production environment (Render, Heroku, etc.)
+            is_production = any(env in os.environ for env in ['RENDER', 'HEROKU', 'CI', 'GITHUB_ACTIONS'])
+            
+            if is_production:
+                print("🏭 Detected production environment - using force sync strategy")
+                sync_success = self._handle_production_sync(current_branch)
+            else:
+                print("💻 Using local development sync strategy")
+                sync_success = self._handle_local_sync(current_branch)
+            
+            if sync_success:
+                # Try push again after successful sync
                 retry_result = subprocess.run(['git', 'push', 'origin', current_branch], capture_output=True, text=True)
                 if retry_result.returncode == 0:
-                    print(f"✅ Successfully pushed after rebase to origin/{current_branch}")
-                    return True, f"Successfully pushed after rebase"
+                    print(f"✅ Successfully pushed after sync to origin/{current_branch}")
+                    return True, f"Successfully pushed after sync"
                 else:
-                    print(f"❌ Push still failed after rebase: {retry_result.stderr.strip()}")
+                    print(f"❌ Push still failed after sync: {retry_result.stderr.strip()}")
             else:
-                print(f"❌ Rebase failed: {rebase_result.stderr.strip()}")
+                print("❌ Failed to sync with remote repository")
         
         # Fallback: try setting upstream and pushing
         print(f"⚠️  Initial push failed, trying to set upstream...")
@@ -316,6 +327,99 @@ class GitManager:
         else:
             print(f"✅ Set upstream branch and pushed to origin/{current_branch}")
             return True, f"Successfully set upstream and pushed"
+    
+    def _handle_production_sync(self, current_branch: str) -> bool:
+        """Handle Git sync in production environments with force strategies."""
+        print("📥 Fetching latest remote state...")
+        
+        # Fetch latest remote state
+        fetch_result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True)
+        if fetch_result.returncode != 0:
+            print(f"❌ Fetch failed: {fetch_result.stderr.strip()}")
+            return False
+        
+        # Get remote commit hash
+        remote_hash_result = subprocess.run(['git', 'rev-parse', f'origin/{current_branch}'], capture_output=True, text=True)
+        if remote_hash_result.returncode != 0:
+            print(f"❌ Could not get remote commit hash: {remote_hash_result.stderr.strip()}")
+            return False
+        
+        remote_hash = remote_hash_result.stdout.strip()
+        print(f"🎯 Remote commit: {remote_hash}")
+        
+        # Check if our files are already in remote
+        local_files_result = subprocess.run(['git', 'diff', '--name-only', 'HEAD'], capture_output=True, text=True)
+        if local_files_result.returncode == 0 and local_files_result.stdout.strip():
+            staged_files = local_files_result.stdout.strip().split('\n')
+            print(f"📋 Files to preserve: {staged_files}")
+            
+            # Create a temporary commit with our changes
+            temp_commit_result = subprocess.run(['git', 'stash', 'push', '-m', 'Production sync temp'], capture_output=True, text=True)
+            if temp_commit_result.returncode == 0:
+                print("💾 Temporarily stashed local changes")
+                
+                # Reset to remote state
+                reset_result = subprocess.run(['git', 'reset', '--hard', f'origin/{current_branch}'], capture_output=True, text=True)
+                if reset_result.returncode == 0:
+                    print(f"🔄 Reset to remote state: {remote_hash}")
+                    
+                    # Restore our changes
+                    stash_pop_result = subprocess.run(['git', 'stash', 'pop'], capture_output=True, text=True)
+                    if stash_pop_result.returncode == 0:
+                        print("♻️  Restored local changes on top of remote state")
+                        
+                        # Re-add and commit our files
+                        for file in staged_files:
+                            subprocess.run(['git', 'add', file.strip()], capture_output=True)
+                        
+                        commit_result = subprocess.run(['git', 'commit', '-m', 'Production sync: re-apply changes'], capture_output=True, text=True)
+                        if commit_result.returncode == 0:
+                            print("✅ Successfully re-applied changes after sync")
+                            return True
+                        else:
+                            print(f"❌ Failed to re-commit changes: {commit_result.stderr.strip()}")
+                    else:
+                        print(f"⚠️  Stash pop had conflicts - manual resolution needed")
+                        # Try to apply changes manually
+                        subprocess.run(['git', 'reset', '--hard'], capture_output=True)
+                        for file in staged_files:
+                            subprocess.run(['git', 'add', file.strip()], capture_output=True)
+                        commit_result = subprocess.run(['git', 'commit', '-m', 'Production sync: force apply changes'], capture_output=True, text=True)
+                        return commit_result.returncode == 0
+                else:
+                    print(f"❌ Failed to reset to remote: {reset_result.stderr.strip()}")
+            else:
+                print(f"❌ Failed to stash changes: {temp_commit_result.stderr.strip()}")
+        
+        return False
+    
+    def _handle_local_sync(self, current_branch: str) -> bool:
+        """Handle Git sync in local development with safer strategies."""
+        print("💻 Using gentle sync for local development...")
+        
+        # Try pull with rebase first
+        rebase_result = subprocess.run(['git', 'pull', '--rebase', 'origin', current_branch], capture_output=True, text=True)
+        if rebase_result.returncode == 0:
+            print("✅ Successfully rebased local changes")
+            return True
+        else:
+            print(f"❌ Rebase failed: {rebase_result.stderr.strip()}")
+            
+            # Check if it's a conflict that can be resolved
+            if 'conflict' in rebase_result.stderr.lower():
+                print("⚠️  Rebase conflicts detected - aborting rebase")
+                subprocess.run(['git', 'rebase', '--abort'], capture_output=True)
+                
+                # Try merge instead
+                print("🔀 Trying merge strategy instead...")
+                merge_result = subprocess.run(['git', 'pull', '--no-rebase', 'origin', current_branch], capture_output=True, text=True)
+                if merge_result.returncode == 0:
+                    print("✅ Successfully merged remote changes")
+                    return True
+                else:
+                    print(f"❌ Merge also failed: {merge_result.stderr.strip()}")
+            
+            return False
     
     def _provide_push_troubleshooting(self, error_msg: str) -> None:
         """Provide detailed troubleshooting information for push failures."""
