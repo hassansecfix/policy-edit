@@ -7,7 +7,7 @@
 ```text
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Policy DOCX   │    │  Web Questionnaire │    │  Company Logo   │
-│                 │    │   (20 questions)   │    │   (optional)    │
+│                 │    │   (13 questions)   │    │   (optional)    │
 └─────────┬───────┘    └──────────┬───────────┘    └─────────┬───────┘
           │                       │                          │
           │                       ▼                          │
