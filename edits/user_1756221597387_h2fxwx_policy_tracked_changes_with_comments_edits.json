@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_timestamp": "2024-02-13T10:00:00Z",
+    "generated_timestamp": "2024-01-09T12:00:00Z",
     "company_name": "Test - Company Name development changedv 2",
     "format_version": "operations",
     "total_operations": 12,
@@ -89,7 +89,7 @@
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
-        "comment": "You indicated you use Azure DevOps for version control, so this section should be retained. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Azure DevOps for version control, so this section should remain. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       }
     ]
