@@ -445,6 +445,9 @@ class LogoProcessor:
             # CRITICAL: Clear any inherited highlighting after insertion
             self._clear_inherited_highlighting(graphic, found_range)
             
+            # NUCLEAR OPTION: Force clear highlighting at XML level
+            self._nuclear_highlighting_cleanup(found_range)
+            
             print(f"✅ Logo inserted successfully!")
             return True
             
@@ -566,6 +569,68 @@ class LogoProcessor:
         except Exception as e:
             print(f"⚠️ Could not set graphic highlighting properties: {e}")
             # Continue anyway - this is not critical for functionality
+    
+    def _nuclear_highlighting_cleanup(self, found_range: Any) -> None:
+        """
+        NUCLEAR OPTION: Force clear highlighting at the deepest possible level.
+        This targets the XML structure directly to remove any highlighting that
+        LibreOffice might have applied during graphic insertion.
+        
+        Args:
+            found_range: The range where the graphic was inserted
+        """
+        try:
+            print(f"☢️  NUCLEAR OPTION: Force clearing highlighting at XML level...")
+            
+            # Method 1: Try to access the underlying XML and clear highlighting
+            try:
+                # Get the text cursor and try to access XML properties
+                cursor = found_range.getText().createTextCursorByRange(found_range)
+                
+                # Force clear ALL possible highlighting properties
+                cursor.setPropertyValue("CharBackColor", -1)
+                cursor.setPropertyValue("CharBackTransparent", True)
+                cursor.setPropertyValue("CharHighlight", 0)
+                cursor.setPropertyValue("CharShadingValue", 0)
+                cursor.setPropertyValue("CharColor", -1)  # Default text color
+                
+                print(f"☢️  Cleared all character-level highlighting properties")
+                
+            except Exception as e:
+                print(f"☢️  Note: Could not clear character properties: {e}")
+            
+            # Method 2: Clear paragraph-level properties that might affect the graphic
+            try:
+                # Get paragraph cursor
+                para_cursor = found_range.getText().createTextCursorByRange(found_range)
+                para_cursor.gotoStart(False)
+                para_cursor.gotoEnd(True)
+                
+                # Clear paragraph background
+                para_cursor.setPropertyValue("ParaBackColor", -1)
+                para_cursor.setPropertyValue("ParaBackTransparent", True)
+                print(f"☢️  Cleared paragraph background properties")
+                
+            except Exception as e:
+                print(f"☢️  Note: Could not clear paragraph properties: {e}")
+            
+            # Method 3: Try to clear any inherited section properties
+            try:
+                # Get the text and try to clear section-level properties
+                text = found_range.getText()
+                if hasattr(text, 'setPropertyValue'):
+                    text.setPropertyValue("BackColor", -1)
+                    text.setPropertyValue("BackTransparent", True)
+                    print(f"☢️  Cleared text-level background properties")
+                    
+            except Exception as e:
+                print(f"☢️  Note: Could not clear text properties: {e}")
+            
+            print(f"☢️  NUCLEAR highlighting cleanup completed")
+            
+        except Exception as e:
+            print(f"⚠️  Error during nuclear highlighting cleanup: {e}")
+            # Don't fail the logo insertion if this cleanup fails
     
             
         except Exception as e:
