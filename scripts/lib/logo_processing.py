@@ -396,7 +396,7 @@ class LogoProcessor:
     
     def _insert_graphic_at_range(self, found_range: Any, logo_file_path: str) -> bool:
         """
-        Insert graphic at the specified range.
+        Insert graphic at the specified range using a different approach.
         
         Args:
             found_range: LibreOffice text range where to insert
@@ -409,6 +409,92 @@ class LogoProcessor:
             # Clear the target text or placeholder
             found_range.setString("")
             
+            # CRITICAL: Use a different approach - insert graphic first, then set size
+            print(f"🔄 Using alternative logo insertion approach...")
+            
+            # Method 1: Try using the document's createTextContent method directly
+            try:
+                # Create graphic object
+                graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
+                logo_file_url = to_url(logo_file_path)
+                graphic.setPropertyValue("GraphicURL", logo_file_url)
+                
+                # Set anchor type
+                try:
+                    from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                    graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                    print(f"🔗 Set anchor type to AS_CHARACTER")
+                except:
+                    print(f"🔗 Could not set AS_CHARACTER anchor type")
+                
+                # INSERT FIRST - this is the key change!
+                print(f"📥 Inserting graphic BEFORE setting dimensions...")
+                found_range.getText().insertTextContent(found_range, graphic, False)
+                
+                # NOW set dimensions after insertion (when graphic is "real")
+                print(f"📏 Setting dimensions AFTER insertion...")
+                calculated_width = self._calculate_logo_dimensions(logo_file_path)
+                target_height = 600  # 6mm in 1/100mm units
+                
+                # Force dimensions multiple times
+                for attempt in range(3):
+                    try:
+                        graphic.setPropertyValue("Height", target_height)
+                        graphic.setPropertyValue("Width", calculated_width)
+                        graphic.setPropertyValue("SizeType", 1)  # Absolute size
+                        print(f"📏 Attempt {attempt + 1}: Set size to {calculated_width}x{target_height}")
+                        
+                        # Also try to force aspect ratio preservation
+                        self._force_aspect_ratio_preservation(graphic, calculated_width, target_height)
+                        
+                        # Verify the dimensions were set
+                        actual_height = graphic.getPropertyValue("Height")
+                        actual_width = graphic.getPropertyValue("Width")
+                        print(f"📏 Verification: Actual size is {actual_width}x{actual_height}")
+                        
+                        if actual_height == target_height and actual_width == calculated_width:
+                            print(f"✅ Dimensions successfully set and verified!")
+                            break
+                        else:
+                            print(f"⚠️ Dimensions not set correctly, retrying...")
+                            
+                    except Exception as e:
+                        print(f"⚠️ Attempt {attempt + 1} failed: {e}")
+                        if attempt == 2:  # Last attempt
+                            print(f"❌ All dimension setting attempts failed")
+                
+                # Set highlighting properties AFTER insertion
+                self._set_graphic_highlighting_properties(graphic)
+                
+                # Clear any inherited highlighting
+                self._clear_inherited_highlighting(graphic, found_range)
+                
+                print(f"✅ Logo inserted successfully using alternative approach!")
+                return True
+                
+            except Exception as e:
+                print(f"⚠️ Alternative approach failed: {e}")
+                print(f"🔄 Falling back to original method...")
+                
+                # Fallback to original method
+                return self._insert_graphic_original_method(found_range, logo_file_path)
+            
+        except Exception as e:
+            print(f"❌ Failed to insert logo: {e}")
+            return False
+    
+    def _insert_graphic_original_method(self, found_range: Any, logo_file_path: str) -> bool:
+        """
+        Original logo insertion method as fallback.
+        
+        Args:
+            found_range: LibreOffice text range where to insert
+            logo_file_path: Path to the logo file
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
             # Create and insert graphic
             graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
             logo_file_url = to_url(logo_file_path)
@@ -725,7 +811,7 @@ class LogoProcessor:
                 graphic.setPropertyValue("IsWidthProtected", True)
                 print(f"🔒 Set dimension protection flags")
             except Exception as e:
-                print(f"�� Dimension protection properties not available: {e}")
+                print(f"🔒 Dimension protection properties not available: {e}")
             
             # Method 3: Try to set scaling mode
             try:
