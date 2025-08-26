@@ -880,3 +880,221 @@ class LogoProcessor:
         except Exception as e:
             print(f"⚠️  Alternative anchor type testing failed: {e}")
             # Continue anyway - this is not critical for functionality
+
+    def _try_alternative_text_insertion(self, found_range: Any, logo_file_path: str) -> bool:
+        """
+        Try alternative text layer insertion approach.
+        
+        Args:
+            found_range: LibreOffice text range where to insert
+            logo_file_path: Path to the logo file
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            print(f"📝 Trying alternative text insertion...")
+            
+            # Method 1: Try using a different graphic service
+            try:
+                # Try using the text field service instead
+                graphic_field = self.doc.createInstance("com.sun.star.text.textfield.Graphic")
+                if graphic_field:
+                    print(f"📝 Created Graphic text field successfully")
+                    
+                    # Set the graphic URL
+                    logo_file_url = to_url(logo_file_path)
+                    graphic_field.setPropertyValue("GraphicURL", logo_file_url)
+                    
+                    # Set dimensions
+                    calculated_width = self._calculate_logo_dimensions(logo_file_path)
+                    target_height = 600
+                    
+                    graphic_field.setPropertyValue("Width", calculated_width)
+                    graphic_field.setPropertyValue("Height", target_height)
+                    
+                    # Insert the graphic field
+                    found_range.getText().insertTextContent(found_range, graphic_field, False)
+                    print(f"📝 Graphic text field insertion successful!")
+                    return True
+                    
+            except Exception as e:
+                print(f"⚠️ Graphic text field failed: {e}")
+            
+            # Method 2: Try using the alternative approach from before
+            try:
+                # Create graphic object
+                graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
+                logo_file_url = to_url(logo_file_path)
+                graphic.setPropertyValue("GraphicURL", logo_file_url)
+                
+                # Set anchor type
+                try:
+                    from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                    graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                    print(f"🔗 Set anchor type to AS_CHARACTER")
+                except:
+                    print(f"🔗 Could not set AS_CHARACTER anchor type")
+                
+                # INSERT FIRST - this is the key change!
+                print(f"📥 Inserting graphic BEFORE setting dimensions...")
+                found_range.getText().insertTextContent(found_range, graphic, False)
+                
+                # NOW set dimensions after insertion (when graphic is "real")
+                print(f"📏 Setting dimensions AFTER insertion...")
+                calculated_width = self._calculate_logo_dimensions(logo_file_path)
+                target_height = 600  # 6mm in 1/100mm units
+                
+                # Force dimensions multiple times
+                for attempt in range(3):
+                    try:
+                        graphic.setPropertyValue("Height", target_height)
+                        graphic.setPropertyValue("Width", calculated_width)
+                        graphic.setPropertyValue("SizeType", 1)  # Absolute size
+                        print(f"📏 Attempt {attempt + 1}: Set size to {calculated_width}x{target_height}")
+                        
+                        # Also try to force aspect ratio preservation
+                        self._force_aspect_ratio_preservation(graphic, calculated_width, target_height)
+                        
+                        # Verify the dimensions were set
+                        actual_height = graphic.getPropertyValue("Height")
+                        actual_width = graphic.getPropertyValue("Width")
+                        print(f"📏 Verification: Actual size is {actual_width}x{actual_height}")
+                        
+                        if actual_height == target_height and actual_width == calculated_width:
+                            print(f"✅ Dimensions successfully set and verified!")
+                            break
+                        else:
+                            print(f"⚠️ Dimensions not set correctly, retrying...")
+                            
+                    except Exception as e:
+                        print(f"⚠️ Attempt {attempt + 1} failed: {e}")
+                        if attempt == 2:  # Last attempt
+                            print(f"❌ All dimension setting attempts failed")
+                
+                # Set highlighting properties AFTER insertion
+                self._set_graphic_highlighting_properties(graphic)
+                
+                # Clear any inherited highlighting
+                self._clear_inherited_highlighting(graphic, found_range)
+                
+                print(f"✅ Logo inserted successfully using alternative approach!")
+                return True
+                
+            except Exception as e:
+                print(f"⚠️ Alternative approach failed: {e}")
+            
+            print(f"❌ Alternative text insertion failed")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Alternative text insertion error: {e}")
+            return False
+    
+    def _try_preprocessed_image_insertion(self, found_range: Any, logo_file_path: str) -> bool:
+        """
+        Try inserting a pre-processed image with exact dimensions.
+        
+        Args:
+            found_range: LibreOffice text range where to insert
+            logo_file_path: Path to the logo file
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            print(f"🖼️ Trying pre-processed image insertion...")
+            
+            # Create a new image with exact dimensions
+            processed_logo_path = self._create_resized_logo(logo_file_path)
+            if not processed_logo_path:
+                print(f"⚠️ Could not create resized logo")
+                return False
+            
+            try:
+                # Now insert the pre-processed image
+                graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
+                processed_logo_url = to_url(processed_logo_path)
+                graphic.setPropertyValue("GraphicURL", processed_logo_url)
+                
+                # Set anchor type
+                try:
+                    from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
+                    graphic.setPropertyValue("AnchorType", AS_CHARACTER)
+                except:
+                    pass
+                
+                # Insert the graphic
+                found_range.getText().insertTextContent(found_range, graphic, False)
+                
+                # The image should already be the right size, but try to set it anyway
+                calculated_width = self._calculate_logo_dimensions(logo_file_path)
+                target_height = 600
+                
+                graphic.setPropertyValue("Height", target_height)
+                graphic.setPropertyValue("Width", calculated_width)
+                
+                print(f"🖼️ Pre-processed image insertion successful!")
+                return True
+                
+            finally:
+                # Clean up the temporary file
+                try:
+                    if os.path.exists(processed_logo_path):
+                        os.remove(processed_logo_path)
+                        print(f"🧹 Cleaned up temporary processed logo")
+                except Exception as e:
+                    print(f"⚠️ Could not clean up temporary file: {e}")
+            
+        except Exception as e:
+            print(f"❌ Pre-processed image insertion error: {e}")
+            return False
+    
+    def _create_resized_logo(self, logo_file_path: str) -> Optional[str]:
+        """
+        Create a new logo image with exact dimensions.
+        
+        Args:
+            logo_file_path: Path to the original logo file
+            
+        Returns:
+            Path to the resized logo file or None if failed
+        """
+        try:
+            print(f"🖼️ Creating resized logo with exact dimensions...")
+            
+            # Try to use PIL/Pillow for image processing
+            try:
+                from PIL import Image
+            except ImportError:
+                print(f"📏 PIL not available, cannot resize image")
+                return None
+            
+            # Calculate target dimensions
+            calculated_width = self._calculate_logo_dimensions(logo_file_path)
+            target_height = 600
+            
+            # Open and resize the image
+            with Image.open(logo_file_path) as img:
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Resize to exact dimensions
+                resized_img = img.resize((calculated_width, target_height), Image.Resampling.LANCZOS)
+                
+                # Create temporary file path
+                import tempfile
+                temp_dir = tempfile.gettempdir()
+                temp_filename = f"resized_logo_{os.path.basename(logo_file_path)}"
+                temp_path = os.path.join(temp_dir, temp_filename)
+                
+                # Save the resized image
+                resized_img.save(temp_path, 'PNG', optimize=True)
+                print(f"🖼️ Created resized logo: {temp_path} ({calculated_width}x{target_height})")
+                
+                return temp_path
+                
+        except Exception as e:
+            print(f"❌ Failed to create resized logo: {e}")
+            return None
