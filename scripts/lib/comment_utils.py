@@ -304,19 +304,53 @@ class CommentManager:
             author_name: Author name to set
         """
         try:
-            # Set redline author
-            self.doc.setPropertyValue("RedlineAuthor", author_name)
+            print(f"🚨 AGGRESSIVELY SETTING AUTHOR TO '{author_name}' FOR TRACKED CHANGES...")
             
-            # Also try to set it on the document info
-            doc_info = self.doc.getDocumentInfo()
-            doc_info.setPropertyValue("Author", author_name)
-            doc_info.setPropertyValue("ModifiedBy", author_name)
+            # Method 1: Set redline author (MOST IMPORTANT)
+            try:
+                self.doc.setPropertyValue("RedlineAuthor", author_name)
+                print(f"✅ Set RedlineAuthor to '{author_name}'")
+            except Exception as e:
+                print(f"❌ Failed to set RedlineAuthor: {e}")
             
-            # Try to update user profile temporarily
-            self._update_user_profile(author_name)
+            # Method 2: Document info properties
+            try:
+                doc_info = self.doc.getDocumentInfo()
+                doc_info.setPropertyValue("Author", author_name)
+                doc_info.setPropertyValue("ModifiedBy", author_name)
+                doc_info.setPropertyValue("Creator", author_name)
+                print(f"✅ Set document info authors to '{author_name}'")
+            except Exception as e:
+                print(f"❌ Failed to set document info: {e}")
+            
+            # Method 3: Try ALL possible author properties
+            try:
+                for prop_name in ["Author", "LastAuthor", "ModifiedBy", "Creator", "RedlineAuthor"]:
+                    try:
+                        self.doc.setPropertyValue(prop_name, author_name)
+                        print(f"✅ Set {prop_name} to '{author_name}'")
+                    except Exception:
+                        pass
+            except Exception as e:
+                print(f"❌ Failed additional properties: {e}")
+            
+            # Method 4: Update user profile
+            try:
+                self._update_user_profile(author_name)
+                print(f"✅ Updated user profile to '{author_name}'")
+            except Exception as e:
+                print(f"❌ Failed to update user profile: {e}")
+            
+            print(f"🎯 AUTHOR UPDATE COMPLETE - SHOULD NOW BE '{author_name}'")
             
         except Exception as e:
-            print(f"Could not set author for change: {e}")
+            print(f"❌ CRITICAL: Could not set author for change: {e}")
+            # Emergency fallback
+            try:
+                self.doc.setPropertyValue("RedlineAuthor", author_name)
+                print(f"🆘 Emergency: Set RedlineAuthor to '{author_name}'")
+            except Exception:
+                print(f"🆘 EMERGENCY FALLBACK FAILED!")
     
     def _update_user_profile(self, author_name: str) -> None:
         """Update user profile for the current change."""

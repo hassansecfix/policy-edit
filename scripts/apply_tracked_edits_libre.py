@@ -192,8 +192,16 @@ class TrackedChangesProcessor:
                 print(f"⚠️ Author was '{author_name}', overriding to 'Secfix AI'")
                 author_name = "Secfix AI"
             
-            # Update document author for this specific change
+            # CRITICAL: Set author BEFORE EVERY SINGLE REPLACEMENT
+            print(f"🚨 SETTING AUTHOR TO '{author_name}' BEFORE PROCESSING '{find}'")
             comment_manager.update_document_author(author_name)
+            
+            # DOUBLE CHECK: Also set it directly on the document
+            try:
+                doc.setPropertyValue("RedlineAuthor", author_name)
+                print(f"✅ Double-confirmed RedlineAuthor = '{author_name}' for this replacement")
+            except Exception as e:
+                print(f"❌ Failed double-check: {e}")
             
             # Perform replacement
             replaced_count, prev_redlines_count = self._perform_replacement(

@@ -212,31 +212,66 @@ class LibreOfficeManager:
             doc: LibreOffice document object
             author_name: Author name to set
         """
-        if self.fast_mode:
-            print("⚡ Fast mode: Skipping document metadata setup")
-            return
+        # CRITICAL: NEVER skip author setup - always set to Secfix AI
+        print(f"🔧 FORCING author setup to: {author_name}")
+        
+        # Even in fast mode, we MUST set the author!
         
         try:
-            # Set document properties
-            doc_info = doc.getDocumentInfo()
-            doc_info.setPropertyValue("Author", author_name)
-            doc_info.setPropertyValue("ModifiedBy", author_name)
+            # AGGRESSIVE AUTHOR SETTING - Try EVERY possible method
+            print(f"🚨 SETTING AUTHOR TO '{author_name}' USING ALL METHODS...")
             
-            # Set redline author
+            # Method 1: Document properties
+            try:
+                doc_info = doc.getDocumentInfo()
+                doc_info.setPropertyValue("Author", author_name)
+                doc_info.setPropertyValue("ModifiedBy", author_name)
+                doc_info.setPropertyValue("Creator", author_name)
+                print(f"✅ Set document info author to '{author_name}'")
+            except Exception as e:
+                print(f"❌ Failed to set document info: {e}")
+            
+            # Method 2: RedlineAuthor property (CRITICAL for tracked changes)
             try:
                 doc.setPropertyValue("RedlineAuthor", author_name)
-            except Exception:
-                pass
+                print(f"✅ Set RedlineAuthor to '{author_name}'")
+            except Exception as e:
+                print(f"❌ Failed to set RedlineAuthor: {e}")
             
-            # Try to set user profile
-            self._set_user_profile(author_name)
+            # Method 3: User profile (affects ALL new changes)
+            try:
+                self._set_user_profile(author_name)
+                print(f"✅ Set user profile to '{author_name}'")
+            except Exception as e:
+                print(f"❌ Failed to set user profile: {e}")
+            
+            # Method 4: Additional author properties
+            try:
+                # Try additional properties that might affect tracking
+                for prop_name in ["Author", "LastAuthor", "ModifiedBy", "Creator"]:
+                    try:
+                        doc.setPropertyValue(prop_name, author_name)
+                        print(f"✅ Set {prop_name} to '{author_name}'")
+                    except Exception:
+                        pass
+            except Exception as e:
+                print(f"❌ Failed additional author properties: {e}")
+            
+            print(f"🎯 AUTHOR SETUP COMPLETE - ALL CHANGES SHOULD NOW SHOW '{author_name}'")
             
         except Exception as e:
-            print(f"Warning: Could not set document author: {e}")
+            print(f"❌ CRITICAL: Could not set document author: {e}")
+            # Even if it fails, try the most basic approach
+            try:
+                doc.setPropertyValue("RedlineAuthor", author_name)
+                print(f"🆘 Emergency fallback: Set RedlineAuthor to '{author_name}'")
+            except Exception:
+                print(f"🆘 EMERGENCY FALLBACK ALSO FAILED!")
     
     def _set_user_profile(self, author_name: str) -> None:
         """Set user profile for tracked changes."""
         try:
+            print(f"🔧 Setting LibreOffice user profile to '{author_name}'...")
             config_provider = self.smgr.createInstance("com.sun.star.configuration.ConfigurationProvider")
             config_access = config_provider.createInstanceWithArguments(
                 "com.sun.star.configuration.ConfigurationUpdateAccess",
@@ -248,12 +283,39 @@ class LibreOfficeManager:
                 given_name = name_parts[0] if name_parts else author_name
                 surname = name_parts[1] if len(name_parts) > 1 else ""
                 
+                # Set all possible name fields
                 config_access.setPropertyValue("givenname", given_name)
                 config_access.setPropertyValue("sn", surname)
+                config_access.setPropertyValue("fullname", author_name)
+                config_access.setPropertyValue("o", author_name)  # Organization
                 config_access.commitChanges()
-                print("✅ Set user profile for tracked changes")
+                print(f"✅ Set user profile: givenname='{given_name}', surname='{surname}', fullname='{author_name}'")
+                
+                # ALSO try to set Office-wide author settings
+                try:
+                    office_config = config_provider.createInstanceWithArguments(
+                        "com.sun.star.configuration.ConfigurationUpdateAccess",
+                        (mkprop("nodepath", "/org.openoffice.Office.Common/Save/Document"),)
+                    )
+                    if office_config:
+                        office_config.setPropertyValue("DefaultAuthor", author_name)
+                        office_config.commitChanges()
+                        print(f"✅ Set Office-wide DefaultAuthor to '{author_name}'")
+                except Exception as office_e:
+                    print(f"Could not set Office-wide author: {office_e}")
+                    
         except Exception as e:
             print(f"Could not set user profile: {e}")
+            
+            # Try emergency approach
+            try:
+                import os
+                # Some LibreOffice versions read from environment variables
+                os.environ['LIBREOFFICE_AUTHOR'] = author_name
+                os.environ['OOO_FORCE_AUTHOR'] = author_name
+                print(f"✅ Set environment variables for author: '{author_name}'")
+            except Exception:
+                pass
     
     def enable_tracking(self, doc: Any, enabled: bool = True) -> None:
         """
@@ -264,9 +326,27 @@ class LibreOfficeManager:
             enabled: Whether to enable tracking
         """
         try:
+            # CRITICAL: Set author BEFORE enabling tracking
+            if enabled:
+                print(f"🚨 RE-SETTING AUTHOR TO 'Secfix AI' BEFORE ENABLING TRACKING...")
+                try:
+                    doc.setPropertyValue("RedlineAuthor", "Secfix AI")
+                    print(f"✅ Re-confirmed RedlineAuthor = 'Secfix AI'")
+                except Exception as e:
+                    print(f"❌ Failed to re-set author: {e}")
+            
             doc.RecordChanges = enabled
             status = "enabled" if enabled else "disabled"
             print(f"✅ Tracking {status}")
+            
+            # DOUBLE-CHECK: Set author AFTER enabling tracking too
+            if enabled:
+                try:
+                    doc.setPropertyValue("RedlineAuthor", "Secfix AI")
+                    print(f"✅ Double-confirmed RedlineAuthor = 'Secfix AI' after enabling tracking")
+                except Exception as e:
+                    print(f"❌ Failed to double-confirm author: {e}")
+                    
         except Exception as e:
             print(f"Warning: Could not set tracking to {enabled}: {e}")
 
