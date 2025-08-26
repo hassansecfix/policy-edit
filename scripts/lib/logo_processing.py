@@ -104,20 +104,61 @@ class LogoProcessor:
         Get logo file path from metadata.
         
         Args:
-            metadata: Metadata dictionary
+            metadata: Metadata dictionary containing logo information
             
         Returns:
-            Path to logo file or None if not found
+            Logo file path if found, None otherwise
         """
         try:
-            meta_logo_path = metadata.get('logo_path', '').strip()
-            if meta_logo_path and os.path.exists(meta_logo_path):
-                print(f"🖼️  Using logo from metadata: {meta_logo_path}")
-                return meta_logo_path
+            # Check for logo_path in metadata (your existing structure)
+            if 'logo_path' in metadata:
+                logo_path = metadata['logo_path']
+                print(f"🔍 Found logo_path in metadata: {logo_path}")
+                
+                # Check if it's a relative path and make it absolute
+                if not os.path.isabs(logo_path):
+                    # Try to find it relative to the current working directory
+                    current_dir = os.getcwd()
+                    absolute_path = os.path.join(current_dir, logo_path)
+                    if os.path.exists(absolute_path):
+                        print(f"✅ Logo file found at: {absolute_path}")
+                        return absolute_path
+                    else:
+                        print(f"⚠️  Logo file not found at: {absolute_path}")
+                        
+                        # Try to find it in the edits directory
+                        edits_dir = os.path.join(current_dir, 'edits')
+                        edits_path = os.path.join(edits_dir, os.path.basename(logo_path))
+                        if os.path.exists(edits_path):
+                            print(f"✅ Logo file found in edits directory: {edits_path}")
+                            return edits_path
+                        else:
+                            print(f"⚠️  Logo file not found in edits directory: {edits_path}")
+                            
+                            # Try to find any PNG/JPG file in edits directory
+                            for file in os.listdir(edits_dir):
+                                if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                                    found_path = os.path.join(edits_dir, file)
+                                    print(f"🔍 Found image file in edits directory: {found_path}")
+                                    return found_path
+            
+            # Fallback: look for any image file in the edits directory
+            current_dir = os.getcwd()
+            edits_dir = os.path.join(current_dir, 'edits')
+            
+            if os.path.exists(edits_dir):
+                for file in os.listdir(edits_dir):
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        found_path = os.path.join(edits_dir, file)
+                        print(f"🔍 Found image file in edits directory: {found_path}")
+                        return found_path
+            
+            print(f"⚠️  No logo file found in metadata or edits directory")
+            return None
+            
         except Exception as e:
-            print(f"⚠️  Error reading metadata: {e}")
-        
-        return None
+            print(f"❌ Error getting logo file path: {e}")
+            return None
     
     def _insert_logo_with_spacing(self, target_text: str, logo_file_path: str) -> None:
         """
@@ -543,7 +584,7 @@ class LogoProcessor:
     
     def _calculate_logo_dimensions(self, logo_file_path: str) -> int:
         """
-        Calculate logo width based on aspect ratio.
+        Calculate logo width based on aspect ratio with improved fallback methods.
         
         Args:
             logo_file_path: Path to the logo file
@@ -552,39 +593,264 @@ class LogoProcessor:
             Calculated width in 1/100mm units
         """
         target_height = 600  # 6mm in 1/100mm units
-        calculated_width = target_height  # Default fallback
+        calculated_width = target_height  # Default fallback for square images
         
+        # Method 1: Try PIL/Pillow for most accurate dimensions
+        if self._try_pil_dimensions(logo_file_path, target_height):
+            return self._pil_calculated_width
+        
+        # Method 2: Try LibreOffice's built-in image reading capabilities
+        calculated_width = self._try_libreoffice_dimensions(logo_file_path, target_height)
+        if calculated_width:
+            return calculated_width
+        
+        # Method 3: Try basic file analysis for common formats
+        calculated_width = self._try_basic_image_analysis(logo_file_path, target_height)
+        if calculated_width:
+            return calculated_width
+        
+        # Method 4: Intelligent file size estimation (improved)
+        calculated_width = self._estimate_width_from_file_size(logo_file_path, target_height)
+        
+        # Final validation and debugging
+        aspect_ratio = calculated_width / target_height
+        print(f"📏 Final calculated width: {calculated_width} (for height {target_height})")
+        print(f"📏 Final aspect ratio: {aspect_ratio:.3f}")
+        
+        # Check if it's a square or near-square image
+        if abs(aspect_ratio - 1.0) < 0.1:
+            print(f"🔲 FINAL RESULT: Square image detected (aspect ratio ≈ 1.0)")
+            print(f"🔲 Logo will be rendered as {calculated_width}x{target_height} units")
+        elif aspect_ratio > 1.5:
+            print(f"📐 FINAL RESULT: Wide image detected (aspect ratio = {aspect_ratio:.2f})")
+        elif aspect_ratio < 0.7:
+            print(f"📐 FINAL RESULT: Tall image detected (aspect ratio = {aspect_ratio:.2f})")
+        else:
+            print(f"📐 FINAL RESULT: Rectangular image (aspect ratio = {aspect_ratio:.2f})")
+        
+        # Safety validation - ensure width is reasonable
+        if calculated_width <= 0:
+            print(f"⚠️  Invalid width calculated, using square fallback")
+            calculated_width = target_height
+        elif calculated_width > target_height * 10:  # Extremely wide
+            print(f"⚠️  Width too large ({calculated_width}), capping at 10x height")
+            calculated_width = target_height * 10
+        elif calculated_width < target_height * 0.1:  # Extremely narrow
+            print(f"⚠️  Width too small ({calculated_width}), setting to 0.1x height")
+            calculated_width = int(target_height * 0.1)
+        
+        return calculated_width
+    
+    def _try_pil_dimensions(self, logo_file_path: str, target_height: int) -> bool:
+        """
+        Try to get dimensions using PIL/Pillow.
+        
+        Args:
+            logo_file_path: Path to the logo file
+            target_height: Target height in 1/100mm units
+            
+        Returns:
+            True if successful, False otherwise
+        """
         try:
-            # Try to use PIL/Pillow for accurate dimensions
+            # Try to import PIL/Pillow
             try:
                 from PIL import Image
             except ImportError:
-                print("📏 Installing Pillow for image processing...")
+                print("📏 PIL/Pillow not available, trying to install...")
                 import subprocess
                 import sys
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
-                from PIL import Image
+                try:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"], 
+                                        capture_output=True, timeout=30)
+                    from PIL import Image
+                    print("📏 Successfully installed and imported Pillow")
+                except Exception as install_error:
+                    print(f"📏 Could not install Pillow: {install_error}")
+                    return False
             
             # Get image dimensions using PIL/Pillow
-            print(f"📏 Reading image file: {logo_file_path}")
+            print(f"📏 Reading image dimensions with PIL: {logo_file_path}")
             with Image.open(logo_file_path) as img:
                 img_width, img_height = img.size
-                aspect_ratio = img_width / img_height
-                calculated_width = int(target_height * aspect_ratio)
-                print(f"📏 Image dimensions: {img_width}x{img_height}, aspect ratio: {aspect_ratio:.2f}")
-                print(f"📏 Calculated width: {calculated_width} (for height {target_height})")
                 
-        except ImportError as ie:
-            print(f"📏 PIL not available: {ie}")
-            # Fallback to file size estimation
-            calculated_width = self._estimate_width_from_file_size(logo_file_path, target_height)
+                # Validate dimensions
+                if img_width <= 0 or img_height <= 0:
+                    print(f"📏 Invalid image dimensions: {img_width}x{img_height}")
+                    return False
+                
+                aspect_ratio = img_width / img_height
+                self._pil_calculated_width = int(target_height * aspect_ratio)
+                
+                print(f"📏 PIL - Image dimensions: {img_width}x{img_height}")
+                print(f"📏 PIL - Aspect ratio: {aspect_ratio:.3f}")
+                if abs(aspect_ratio - 1.0) < 0.1:
+                    print(f"📏 PIL - Detected SQUARE image (aspect ratio ≈ 1.0)")
+                print(f"📏 PIL - Calculated width: {self._pil_calculated_width} (for height {target_height})")
+                
+                return True
+                
+        except Exception as e:
+            print(f"📏 PIL method failed: {e}")
+            return False
+    
+    def _try_libreoffice_dimensions(self, logo_file_path: str, target_height: int) -> Optional[int]:
+        """
+        Try to get dimensions using LibreOffice's built-in capabilities.
+        
+        Args:
+            logo_file_path: Path to the logo file
+            target_height: Target height in 1/100mm units
+            
+        Returns:
+            Calculated width if successful, None otherwise
+        """
+        try:
+            print(f"📏 Trying LibreOffice built-in image reading...")
+            
+            # Create a temporary graphic object to read dimensions
+            temp_graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
+            logo_file_url = to_url(logo_file_path)
+            temp_graphic.setPropertyValue("GraphicURL", logo_file_url)
+            
+            # Try to get the actual size from the graphic
+            try:
+                # Get size in 1/100mm units
+                actual_size = temp_graphic.getPropertyValue("ActualSize")
+                if actual_size and hasattr(actual_size, 'Width') and hasattr(actual_size, 'Height'):
+                    actual_width = actual_size.Width
+                    actual_height = actual_size.Height
+                    
+                    if actual_width > 0 and actual_height > 0:
+                        aspect_ratio = actual_width / actual_height
+                        calculated_width = int(target_height * aspect_ratio)
+                        
+                        print(f"📏 LibreOffice - Actual size: {actual_width}x{actual_height}")
+                        print(f"📏 LibreOffice - Aspect ratio: {aspect_ratio:.3f}")
+                        if abs(aspect_ratio - 1.0) < 0.1:
+                            print(f"📏 LibreOffice - Detected SQUARE image (aspect ratio ≈ 1.0)")
+                        print(f"📏 LibreOffice - Calculated width: {calculated_width}")
+                        
+                        return calculated_width
+            except Exception as e:
+                print(f"📏 Could not get ActualSize: {e}")
+            
+            # Alternative: try to get OriginalSize
+            try:
+                original_size = temp_graphic.getPropertyValue("OriginalSize")
+                if original_size and hasattr(original_size, 'Width') and hasattr(original_size, 'Height'):
+                    orig_width = original_size.Width
+                    orig_height = original_size.Height
+                    
+                    if orig_width > 0 and orig_height > 0:
+                        aspect_ratio = orig_width / orig_height
+                        calculated_width = int(target_height * aspect_ratio)
+                        
+                        print(f"📏 LibreOffice - Original size: {orig_width}x{orig_height}")
+                        print(f"📏 LibreOffice - Aspect ratio: {aspect_ratio:.3f}")
+                        if abs(aspect_ratio - 1.0) < 0.1:
+                            print(f"📏 LibreOffice - Detected SQUARE image (aspect ratio ≈ 1.0)")
+                        print(f"📏 LibreOffice - Calculated width: {calculated_width}")
+                        
+                        return calculated_width
+            except Exception as e:
+                print(f"📏 Could not get OriginalSize: {e}")
             
         except Exception as e:
-            print(f"📏 Could not read image dimensions: {e}")
-            calculated_width = int(target_height * 2.5)  # Default fallback
-            print(f"📏 Using fallback width: {calculated_width}")
+            print(f"📏 LibreOffice image reading failed: {e}")
         
-        return calculated_width
+        return None
+    
+    def _try_basic_image_analysis(self, logo_file_path: str, target_height: int) -> Optional[int]:
+        """
+        Try basic image format analysis for common formats.
+        
+        Args:
+            logo_file_path: Path to the logo file
+            target_height: Target height in 1/100mm units
+            
+        Returns:
+            Calculated width if successful, None otherwise
+        """
+        try:
+            print(f"📏 Trying basic image format analysis...")
+            
+            with open(logo_file_path, 'rb') as f:
+                # Read first few bytes to determine format and try to extract dimensions
+                header = f.read(24)
+                
+                if header.startswith(b'\xff\xd8\xff'):
+                    # JPEG format
+                    return self._analyze_jpeg_dimensions(f, target_height)
+                elif header.startswith(b'\x89PNG\r\n\x1a\n'):
+                    # PNG format
+                    return self._analyze_png_dimensions(f, target_height)
+                else:
+                    print(f"📏 Unknown image format, header: {header[:8].hex()}")
+                    
+        except Exception as e:
+            print(f"📏 Basic image analysis failed: {e}")
+        
+        return None
+    
+    def _analyze_png_dimensions(self, file_obj, target_height: int) -> Optional[int]:
+        """Extract dimensions from PNG file header."""
+        try:
+            # PNG IHDR chunk starts at byte 16
+            file_obj.seek(16)
+            width_bytes = file_obj.read(4)
+            height_bytes = file_obj.read(4)
+            
+            if len(width_bytes) == 4 and len(height_bytes) == 4:
+                width = int.from_bytes(width_bytes, 'big')
+                height = int.from_bytes(height_bytes, 'big')
+                
+                if width > 0 and height > 0:
+                    aspect_ratio = width / height
+                    calculated_width = int(target_height * aspect_ratio)
+                    
+                    print(f"📏 PNG analysis - Dimensions: {width}x{height}")
+                    print(f"📏 PNG analysis - Aspect ratio: {aspect_ratio:.3f}")
+                    if abs(aspect_ratio - 1.0) < 0.1:
+                        print(f"📏 PNG analysis - Detected SQUARE image (aspect ratio ≈ 1.0)")
+                    print(f"📏 PNG analysis - Calculated width: {calculated_width}")
+                    
+                    return calculated_width
+        except Exception as e:
+            print(f"📏 PNG analysis failed: {e}")
+        
+        return None
+    
+    def _analyze_jpeg_dimensions(self, file_obj, target_height: int) -> Optional[int]:
+        """Extract dimensions from JPEG file header."""
+        try:
+            # Look for SOF0 or SOF2 markers in JPEG
+            file_obj.seek(0)
+            data = file_obj.read(1024)  # Read first 1KB to find SOF marker
+            
+            # Find SOF0 (0xFFC0) or SOF2 (0xFFC2) markers
+            for i in range(len(data) - 9):
+                if data[i:i+2] in [b'\xff\xc0', b'\xff\xc2']:
+                    # Found SOF marker, dimensions are at offset +5 and +7
+                    height = int.from_bytes(data[i+5:i+7], 'big')
+                    width = int.from_bytes(data[i+7:i+9], 'big')
+                    
+                    if width > 0 and height > 0:
+                        aspect_ratio = width / height
+                        calculated_width = int(target_height * aspect_ratio)
+                        
+                        print(f"📏 JPEG analysis - Dimensions: {width}x{height}")
+                        print(f"📏 JPEG analysis - Aspect ratio: {aspect_ratio:.3f}")
+                        if abs(aspect_ratio - 1.0) < 0.1:
+                            print(f"📏 JPEG analysis - Detected SQUARE image (aspect ratio ≈ 1.0)")
+                        print(f"📏 JPEG analysis - Calculated width: {calculated_width}")
+                        
+                        return calculated_width
+                    break
+        except Exception as e:
+            print(f"📏 JPEG analysis failed: {e}")
+        
+        return None
     
     def _clear_inherited_highlighting(self, graphic: Any, found_range: Any) -> None:
         """
@@ -724,21 +990,65 @@ class LogoProcessor:
             # Don't fail the logo insertion if this cleanup fails
     
     def _estimate_width_from_file_size(self, logo_file_path: str, target_height: int) -> int:
-        """Estimate width based on file size (rough approximation)."""
+        """
+        Intelligent estimation based on file size and file extension.
+        This method assumes square images for better aspect ratio preservation.
+        """
         try:
             file_size = os.path.getsize(logo_file_path)
-            print(f"📏 Logo file size: {file_size} bytes")
-            if file_size > 50000:  # Larger file, probably wider
-                calculated_width = int(target_height * 3.0)
-            elif file_size > 20000:
-                calculated_width = int(target_height * 2.5)
+            file_ext = os.path.splitext(logo_file_path)[1].lower()
+            
+            print(f"📏 Logo file size: {file_size} bytes, extension: {file_ext}")
+            
+            # Default to square aspect ratio (1:1) as a safe assumption
+            # This is much better than arbitrary multipliers for unknown images
+            calculated_width = target_height
+            
+            # Adjust based on file size and format for better estimation
+            if file_ext in ['.png', '.gif']:
+                # PNG/GIF files with transparency or logos tend to be more square
+                if file_size > 100000:  # Very large file, might be wide
+                    calculated_width = int(target_height * 1.5)
+                elif file_size > 50000:  # Medium file, slightly wider
+                    calculated_width = int(target_height * 1.2)
+                else:
+                    calculated_width = target_height  # Assume square
+                    
+            elif file_ext in ['.jpg', '.jpeg']:
+                # JPEG photos can vary more in aspect ratio
+                if file_size > 200000:  # Very large JPEG, might be wide photo
+                    calculated_width = int(target_height * 1.8)
+                elif file_size > 100000:  # Medium JPEG
+                    calculated_width = int(target_height * 1.4)
+                elif file_size > 30000:   # Small-medium JPEG
+                    calculated_width = int(target_height * 1.1)
+                else:
+                    calculated_width = target_height  # Small JPEG, likely square logo
+                    
             else:
-                calculated_width = int(target_height * 2.0)
-            print(f"📏 Using file-size-based width estimate: {calculated_width}")
+                # Unknown format - be conservative and assume square
+                calculated_width = target_height
+                print(f"📏 Unknown image format - assuming square aspect ratio")
+            
+            print(f"📏 File-size-based estimate: {calculated_width} (aspect ratio: {calculated_width/target_height:.2f})")
+            
+            # Safety check: ensure width is reasonable (between 0.5x and 4x height)
+            min_width = int(target_height * 0.5)
+            max_width = int(target_height * 4.0)
+            if calculated_width < min_width:
+                calculated_width = min_width
+                print(f"📏 Adjusted width to minimum: {calculated_width}")
+            elif calculated_width > max_width:
+                calculated_width = max_width
+                print(f"📏 Adjusted width to maximum: {calculated_width}")
+            
             return calculated_width
-        except Exception:
-            calculated_width = int(target_height * 2.5)  # Default fallback
-            print(f"📏 Using default width estimate: {calculated_width}")
+            
+        except Exception as e:
+            print(f"📏 Error in file size estimation: {e}")
+            # Ultimate fallback - square aspect ratio
+            calculated_width = target_height
+            print(f"📏 Using safe fallback (square): {calculated_width}")
             return calculated_width
     
     def _set_graphic_size(self, graphic: Any, calculated_width: int, target_height: int) -> None:
@@ -880,221 +1190,3 @@ class LogoProcessor:
         except Exception as e:
             print(f"⚠️  Alternative anchor type testing failed: {e}")
             # Continue anyway - this is not critical for functionality
-
-    def _try_alternative_text_insertion(self, found_range: Any, logo_file_path: str) -> bool:
-        """
-        Try alternative text layer insertion approach.
-        
-        Args:
-            found_range: LibreOffice text range where to insert
-            logo_file_path: Path to the logo file
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            print(f"📝 Trying alternative text insertion...")
-            
-            # Method 1: Try using a different graphic service
-            try:
-                # Try using the text field service instead
-                graphic_field = self.doc.createInstance("com.sun.star.text.textfield.Graphic")
-                if graphic_field:
-                    print(f"📝 Created Graphic text field successfully")
-                    
-                    # Set the graphic URL
-                    logo_file_url = to_url(logo_file_path)
-                    graphic_field.setPropertyValue("GraphicURL", logo_file_url)
-                    
-                    # Set dimensions
-                    calculated_width = self._calculate_logo_dimensions(logo_file_path)
-                    target_height = 600
-                    
-                    graphic_field.setPropertyValue("Width", calculated_width)
-                    graphic_field.setPropertyValue("Height", target_height)
-                    
-                    # Insert the graphic field
-                    found_range.getText().insertTextContent(found_range, graphic_field, False)
-                    print(f"📝 Graphic text field insertion successful!")
-                    return True
-                    
-            except Exception as e:
-                print(f"⚠️ Graphic text field failed: {e}")
-            
-            # Method 2: Try using the alternative approach from before
-            try:
-                # Create graphic object
-                graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
-                logo_file_url = to_url(logo_file_path)
-                graphic.setPropertyValue("GraphicURL", logo_file_url)
-                
-                # Set anchor type
-                try:
-                    from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
-                    graphic.setPropertyValue("AnchorType", AS_CHARACTER)
-                    print(f"🔗 Set anchor type to AS_CHARACTER")
-                except:
-                    print(f"🔗 Could not set AS_CHARACTER anchor type")
-                
-                # INSERT FIRST - this is the key change!
-                print(f"📥 Inserting graphic BEFORE setting dimensions...")
-                found_range.getText().insertTextContent(found_range, graphic, False)
-                
-                # NOW set dimensions after insertion (when graphic is "real")
-                print(f"📏 Setting dimensions AFTER insertion...")
-                calculated_width = self._calculate_logo_dimensions(logo_file_path)
-                target_height = 600  # 6mm in 1/100mm units
-                
-                # Force dimensions multiple times
-                for attempt in range(3):
-                    try:
-                        graphic.setPropertyValue("Height", target_height)
-                        graphic.setPropertyValue("Width", calculated_width)
-                        graphic.setPropertyValue("SizeType", 1)  # Absolute size
-                        print(f"📏 Attempt {attempt + 1}: Set size to {calculated_width}x{target_height}")
-                        
-                        # Also try to force aspect ratio preservation
-                        self._force_aspect_ratio_preservation(graphic, calculated_width, target_height)
-                        
-                        # Verify the dimensions were set
-                        actual_height = graphic.getPropertyValue("Height")
-                        actual_width = graphic.getPropertyValue("Width")
-                        print(f"📏 Verification: Actual size is {actual_width}x{actual_height}")
-                        
-                        if actual_height == target_height and actual_width == calculated_width:
-                            print(f"✅ Dimensions successfully set and verified!")
-                            break
-                        else:
-                            print(f"⚠️ Dimensions not set correctly, retrying...")
-                            
-                    except Exception as e:
-                        print(f"⚠️ Attempt {attempt + 1} failed: {e}")
-                        if attempt == 2:  # Last attempt
-                            print(f"❌ All dimension setting attempts failed")
-                
-                # Set highlighting properties AFTER insertion
-                self._set_graphic_highlighting_properties(graphic)
-                
-                # Clear any inherited highlighting
-                self._clear_inherited_highlighting(graphic, found_range)
-                
-                print(f"✅ Logo inserted successfully using alternative approach!")
-                return True
-                
-            except Exception as e:
-                print(f"⚠️ Alternative approach failed: {e}")
-            
-            print(f"❌ Alternative text insertion failed")
-            return False
-            
-        except Exception as e:
-            print(f"❌ Alternative text insertion error: {e}")
-            return False
-    
-    def _try_preprocessed_image_insertion(self, found_range: Any, logo_file_path: str) -> bool:
-        """
-        Try inserting a pre-processed image with exact dimensions.
-        
-        Args:
-            found_range: LibreOffice text range where to insert
-            logo_file_path: Path to the logo file
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            print(f"🖼️ Trying pre-processed image insertion...")
-            
-            # Create a new image with exact dimensions
-            processed_logo_path = self._create_resized_logo(logo_file_path)
-            if not processed_logo_path:
-                print(f"⚠️ Could not create resized logo")
-                return False
-            
-            try:
-                # Now insert the pre-processed image
-                graphic = self.doc.createInstance("com.sun.star.text.GraphicObject")
-                processed_logo_url = to_url(processed_logo_path)
-                graphic.setPropertyValue("GraphicURL", processed_logo_url)
-                
-                # Set anchor type
-                try:
-                    from com.sun.star.text.TextContentAnchorType import AS_CHARACTER
-                    graphic.setPropertyValue("AnchorType", AS_CHARACTER)
-                except:
-                    pass
-                
-                # Insert the graphic
-                found_range.getText().insertTextContent(found_range, graphic, False)
-                
-                # The image should already be the right size, but try to set it anyway
-                calculated_width = self._calculate_logo_dimensions(logo_file_path)
-                target_height = 600
-                
-                graphic.setPropertyValue("Height", target_height)
-                graphic.setPropertyValue("Width", calculated_width)
-                
-                print(f"🖼️ Pre-processed image insertion successful!")
-                return True
-                
-            finally:
-                # Clean up the temporary file
-                try:
-                    if os.path.exists(processed_logo_path):
-                        os.remove(processed_logo_path)
-                        print(f"🧹 Cleaned up temporary processed logo")
-                except Exception as e:
-                    print(f"⚠️ Could not clean up temporary file: {e}")
-            
-        except Exception as e:
-            print(f"❌ Pre-processed image insertion error: {e}")
-            return False
-    
-    def _create_resized_logo(self, logo_file_path: str) -> Optional[str]:
-        """
-        Create a new logo image with exact dimensions.
-        
-        Args:
-            logo_file_path: Path to the original logo file
-            
-        Returns:
-            Path to the resized logo file or None if failed
-        """
-        try:
-            print(f"🖼️ Creating resized logo with exact dimensions...")
-            
-            # Try to use PIL/Pillow for image processing
-            try:
-                from PIL import Image
-            except ImportError:
-                print(f"📏 PIL not available, cannot resize image")
-                return None
-            
-            # Calculate target dimensions
-            calculated_width = self._calculate_logo_dimensions(logo_file_path)
-            target_height = 600
-            
-            # Open and resize the image
-            with Image.open(logo_file_path) as img:
-                # Convert to RGB if necessary
-                if img.mode in ('RGBA', 'LA', 'P'):
-                    img = img.convert('RGB')
-                
-                # Resize to exact dimensions
-                resized_img = img.resize((calculated_width, target_height), Image.Resampling.LANCZOS)
-                
-                # Create temporary file path
-                import tempfile
-                temp_dir = tempfile.gettempdir()
-                temp_filename = f"resized_logo_{os.path.basename(logo_file_path)}"
-                temp_path = os.path.join(temp_dir, temp_filename)
-                
-                # Save the resized image
-                resized_img.save(temp_path, 'PNG', optimize=True)
-                print(f"🖼️ Created resized logo: {temp_path} ({calculated_width}x{target_height})")
-                
-                return temp_path
-                
-        except Exception as e:
-            print(f"❌ Failed to create resized logo: {e}")
-            return None
