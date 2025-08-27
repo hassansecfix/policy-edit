@@ -34,7 +34,7 @@
         "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
         "action": "delete",
         "replacement": "",
-        "comment": "You indicated that you do not have an office, so this section should be removed. No office = no guest network needed; Having office = visitors need controlled network access for security.",
+        "comment": "You indicated that you do not have an office, so this section about guest network access is not applicable. No office = no guest network needed; Having office = visitors need controlled network access for security.",
         "comment_author": "Secfix AI"
       },
       {
@@ -48,7 +48,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through ClickUp ticketing system",
-        "comment": "You indicated you use ClickUp for ticketing, so access requests should go through this system. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated using ClickUp for ticket management and prefer ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
