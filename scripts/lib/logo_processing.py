@@ -12,7 +12,7 @@ from libre_office_utils import to_url
 
 
 # Configuration constants
-LOGO_SPACES_THRESHOLD = -14  # Additional spaces to remove on top of replacement text length
+LOGO_SPACES_THRESHOLD = -5  # Additional spaces to remove on top of replacement text length
 
 
 class LogoProcessor:
