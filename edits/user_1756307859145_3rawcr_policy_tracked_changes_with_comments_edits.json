@@ -55,7 +55,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through the ticketing system (Clickup)",
-        "comment": "You indicated you use ticketing system for access requests and Clickup as your ticket management tool. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated you prefer using a ticketing system and use Clickup for ticket management. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
@@ -83,14 +83,14 @@
         "target_text": "<Exceptions: IT Manager>",
         "action": "comment",
         "replacement": "",
-        "comment": "You indicated that the IT Manager is responsible for approving exceptions to this policy, so no change is needed. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment": "You indicated that the IT Manager is responsible for approving exceptions to this policy, so the placeholder matches your selection. Can be the same person as violations reporting section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Violations: IT Manager>",
         "action": "comment",
         "replacement": "",
-        "comment": "You indicated that the IT Manager is responsible for handling policy violations, so no change is needed. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
+        "comment": "You indicated that the IT Manager is responsible for handling policy violations, so the placeholder matches your selection. Can be the same person as exception approval section. Acceptable roles: CISO, CEO, CTO, IT Manager, or even HR Manager. For audit it's only important to define it. Auditors will not issue a non-conformity for wrong selection - select what works best for you here. But it needs to be consistently done by this person.",
         "comment_author": "Secfix AI"
       }
     ]
