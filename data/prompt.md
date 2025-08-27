@@ -33,6 +33,7 @@ Read the processing instructions v4.2 to understand all customization rules and 
 - Extract tool names properly (remove parenthetical text like "(recommended)")
 - Include company size context for termination timeframe when <50 employees
 - **CRITICAL: Ensure all replacement text is grammatically correct in context** - follow the grammatical correctness requirements in the processing instructions
+- **CRITICAL: ALL placeholders (< >, [ ], { }) must be replaced with clean text, even if user selects default option - NEVER use "comment" action for placeholder removal**
 
 ## Expected JSON Output:
 
@@ -84,6 +85,7 @@ Generate a complete JSON structure as specified in processing instructions v4.2,
 6. **Simplified Termination Timeframe**: Use `<24 business hours>` placeholder format
 7. **NO ACTION REQUIRED Cases**: Use "comment" action with appropriate reasoning
 8. **Tool Name Extraction**: Remove parenthetical text like "(recommended)" from tool names
+9. **MANDATORY PLACEHOLDER REMOVAL**: ALL placeholders must be replaced with clean text using "replace" action, even for default selections
 
 **IMPORTANT**: Output ONLY the clean JSON structure. Do NOT include any internal validation results, processing details, or explanatory text outside the JSON. The response should start directly with the opening brace `{` and end with the closing brace `}`.
 
