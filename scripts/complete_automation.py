@@ -253,6 +253,27 @@ class AutomationOrchestrator:
         
         print("\n🏆 Your policy is ready for review with automated suggestions!")
     
+    def _should_stop_after_json(self) -> bool:
+        """Check if automation should stop after generating JSON edits."""
+        return os.getenv('STOP_AFTER_JSON', '').lower() in ('true', '1', 'yes', 'on')
+    
+    def _show_json_only_completion(self) -> None:
+        """Show completion message when stopping after JSON generation only."""
+        print("\n🛑 AUTOMATION STOPPED AFTER JSON GENERATION")
+        print("=" * 50)
+        print("✅ Generated Files:")
+        print(f"   📋 JSON Instructions: {self.file_paths['edits_json']}")
+        if self.created_logo_file:
+            print(f"   🖼️  Logo File: {self.created_logo_file}")
+        
+        print("\n💡 Environment Variable STOP_AFTER_JSON=true detected")
+        print("🔍 Next Steps:")
+        print("1. Review the generated JSON file")
+        print("2. Test the JSON with the tracked changes system")
+        print("3. Set STOP_AFTER_JSON=false to continue full automation")
+        print(f"\n📁 JSON Location: {self.file_paths['edits_json']}")
+        print("🚀 Ready for manual processing or continued automation!")
+    
     def cleanup(self) -> None:
         """Clean up temporary files and resources."""
         # Clean up user-specific logo file
@@ -279,6 +300,11 @@ class AutomationOrchestrator:
             # Step 2: Generate AI edits
             if not self.generate_ai_edits(questionnaire_csv, questionnaire_json_data):
                 sys.exit(1)
+            
+            # Check if we should stop after JSON generation
+            if self._should_stop_after_json():
+                self._show_json_only_completion()
+                return
             
             # Process logo operations
             self.process_logo_operations_step(questionnaire_json_data, questionnaire_csv)

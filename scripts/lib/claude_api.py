@@ -57,7 +57,7 @@ def call_claude_api(prompt_content: str, questionnaire_content: str,
 
     try:
         message = client.messages.create(
-            model="claude-3-5-sonnet-20241022",  # Claude Sonnet model
+            model="claude-sonnet-4-20250514",  # Claude Sonnet model
             max_tokens=4000,
             temperature=0.1,  # Low temperature for consistent, accurate output
             messages=[{
