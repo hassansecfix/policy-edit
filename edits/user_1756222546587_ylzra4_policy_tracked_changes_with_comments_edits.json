@@ -41,21 +41,21 @@
         "target_text": "Access to Program Source Code",
         "action": "delete",
         "replacement": "",
-        "comment": "You indicated 'Crazyyyy' which suggests no formal version control system, so source code access section should be removed. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated 'Crazyyyy' which suggests no formal version control system, so this section should be removed. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Password management systems should be user-friendly",
         "action": "replace",
         "replacement": "Password management systems, specifically the custom password management system, should be user-friendly",
-        "comment": "You indicated you use a custom password management system, so the generic reference should be updated to reflect your specific tool. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
+        "comment": "You indicated you use a custom password management system, so the generic text should reference your specific tool. No password tool = section removed; Using specific tool = policy references actual system rather than generic language.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be submitted through the custom system management system",
-        "comment": "You indicated using a custom system for access requests. Ticketing system = proper audit trails; Email = simple but no tracking; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "replacement": "All requests will be submitted through the custom system",
+        "comment": "You indicated using a custom system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Custom system = organization-specific workflow.",
         "comment_author": "Secfix AI"
       },
       {
