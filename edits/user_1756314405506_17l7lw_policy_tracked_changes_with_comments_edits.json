@@ -1,0 +1,122 @@
+{
+  "metadata": {
+    "generated_timestamp": "2024-12-19T15:30:00Z",
+    "company_name": "Secfix GmbH",
+    "format_version": "context_aware_operations",
+    "total_operations": 12,
+    "generator": "PolicyWorkflow v5.0",
+    "logo_path": "edits/user_1756314405506_17l7lw_company_logo.png"
+  },
+  "instructions": {
+    "operations": [
+      {
+        "target_text": "<Company Name>",
+        "action": "replace",
+        "replacement": "Secfix GmbH",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Company Address>",
+        "action": "replace",
+        "replacement": "Salvatorplatz, 8033, Munich",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "company_logo_default.png",
+        "action": "replace_with_logo",
+        "replacement": "company_logo_default.png",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Guest network access should be segregated from the main corporate network and require separate authentication credentials.",
+        "action": "delete",
+        "replacement": "",
+        "comment": "You indicated no physical office. Companies without offices typically don't need guest network policies since there are no on-site visitors requiring network access.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Version Control System>",
+        "context": "All code changes must be tracked through <Version Control System>.",
+        "placeholder": "<Version Control System>",
+        "user_response": "Clickup",
+        "action": "smart_replace",
+        "replacement": "Clickup",
+        "comment": "You selected Clickup as your version control tool. This will be integrated into your access control requirements for development workflows.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Password management systems should be user-friendly",
+        "context": "Password management systems should be user-friendly and integrated with existing workflows.",
+        "placeholder": "Password management systems should be user-friendly",
+        "user_response": "1Password",
+        "action": "smart_replace",
+        "replacement": "1Password should be user-friendly",
+        "comment": "You selected 1Password as your password management tool. This ensures consistent password policy enforcement across your organization.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Ticketing System>",
+        "context": "Access requests must be submitted through <Ticketing System>.",
+        "placeholder": "<Ticketing System>",
+        "user_response": "Clickup",
+        "action": "smart_replace",
+        "replacement": "Clickup",
+        "comment": "You selected Clickup as your ticketing system. This centralizes access requests and provides proper audit trails for compliance.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Policy Owner>",
+        "context": "This policy is owned and maintained by <Policy Owner>.",
+        "placeholder": "<Policy Owner>",
+        "user_response": "Hassan Tayyab",
+        "action": "smart_replace",
+        "replacement": "Hassan Tayyab",
+        "comment": "You designated Hassan Tayyab as the policy owner. This person will be responsible for policy maintenance and updates.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "a quarterly basis",
+        "context": "Access reviews will be conducted on a quarterly basis.",
+        "placeholder": "quarterly",
+        "user_response": "Quarterly",
+        "action": "smart_replace",
+        "replacement": "Quarterly",
+        "comment": "You selected quarterly review frequency. Regular access reviews ensure users maintain appropriate permissions and help identify access creep.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<24 business hours>",
+        "context": "User access will be terminated within <24 business hours> of employment termination.",
+        "placeholder": "<24 business hours>",
+        "user_response": "24 business hours",
+        "action": "smart_replace",
+        "replacement": "24 business hours",
+        "comment": "You selected 24 business hours for access termination timeframe. This provides adequate time for proper handover while maintaining security.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Exceptions: IT Manager>",
+        "context": "Policy exceptions must be approved by <Exceptions: IT Manager>.",
+        "placeholder": "<Exceptions: IT Manager>",
+        "user_response": "IT Manager",
+        "action": "smart_replace",
+        "replacement": "IT Manager",
+        "comment": "You designated IT Manager as the exception approver. This role ensures technical expertise is applied when evaluating access control exceptions.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Violations: IT Manager>",
+        "context": "Policy violations should be reported to <Violations: IT Manager>.",
+        "placeholder": "<Violations: IT Manager>",
+        "user_response": "IT Manager",
+        "action": "smart_replace",
+        "replacement": "IT Manager",
+        "comment": "You designated IT Manager as the violations reporter. This ensures technical violations are handled by someone with appropriate system knowledge and authority.",
+        "comment_author": "Secfix AI"
+      }
+    ]
+  }
+}
