@@ -42,6 +42,7 @@ export type LogLevel = 'info' | 'success' | 'error' | 'warning';
 export interface Question {
   questionNumber: number;
   questionText: string;
+  questionDescription?: string;
   field: string;
   responseType:
     | 'Text input'

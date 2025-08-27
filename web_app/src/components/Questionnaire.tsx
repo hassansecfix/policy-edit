@@ -215,6 +215,11 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
           <h2 className='text-xl font-semibold text-gray-900 mb-2'>
             {currentQuestion.questionText}
           </h2>
+          {currentQuestion.questionDescription && (
+            <p className='text-gray-600 text-sm leading-relaxed'>
+              {currentQuestion.questionDescription}
+            </p>
+          )}
         </div>
 
         <QuestionInput
