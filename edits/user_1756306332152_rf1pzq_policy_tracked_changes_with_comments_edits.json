@@ -41,7 +41,7 @@
         "target_text": "Access to Program Source Code",
         "action": "comment",
         "replacement": "",
-        "comment": "You indicated you use Clickup for version control, so this section should be retained. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Clickup for version control, so this section should be kept. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -55,7 +55,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through the ticketing system (Clickup)",
-        "comment": "You indicated you use ticketing system (Clickup) for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You indicated you prefer using a ticketing system and use Clickup for ticket management. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
@@ -66,10 +66,10 @@
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<24 business hours>",
+        "target_text": "The maximum time frame for access termination is set at <24 business hours>",
         "action": "replace",
-        "replacement": "immediately",
-        "comment": "You selected immediately instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
+        "replacement": "Access will be terminated immediately",
+        "comment": "You selected immediate termination instead of 24 business hours. The sentence has been restructured for grammatical correctness. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
         "comment_author": "Secfix AI"
       },
       {
