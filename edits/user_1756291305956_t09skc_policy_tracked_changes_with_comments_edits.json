@@ -39,7 +39,7 @@
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
-        "comment": "You indicated you use Bitbucket for version control, so this section should be maintained. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Bitbucket for version control, so source code access controls are required. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -53,7 +53,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be sent by email to the IT team",
-        "comment": "You selected email-based access requests using Clickup for tracking. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "comment": "You selected email-based access requests and use Clickup for ticket management. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
@@ -67,7 +67,7 @@
         "target_text": "<24 business hours>",
         "action": "replace",
         "replacement": "immediately",
-        "comment": "You selected immediate termination instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
+        "comment": "You selected immediate termination timeframe instead of 24 business hours. We recommend 24 business hours for most companies. Consider shorter timelines if customers request it. Longer than 1 week looks suspicious to auditors. You only get a non-conformity for not meeting your documented timeframe, not for choosing the wrong timeframe.",
         "comment_author": "Secfix AI"
       },
       {
