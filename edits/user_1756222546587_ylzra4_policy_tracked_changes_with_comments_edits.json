@@ -41,7 +41,7 @@
         "target_text": "Access to Program Source Code",
         "action": "delete",
         "replacement": "",
-        "comment": "You indicated 'Crazyyyy' which suggests no formal version control system, so this section should be removed. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated a non-standard version control response 'Crazyyyy' which suggests no formal version control system, so this section should be removed. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -55,7 +55,7 @@
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
         "replacement": "All requests will be submitted through the custom system",
-        "comment": "You indicated using a custom system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Custom system = organization-specific workflow.",
+        "comment": "You indicated using a custom system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
