@@ -222,7 +222,7 @@ def setup_file_paths(user_id: str, output_name: str) -> dict:
         'questionnaire_csv': f"data/{user_id}_{output_name}_questionnaire.csv",
         'edits_json': f"edits/{user_id}_{output_name}_edits.json",
         'prompt_path': "data/prompt.md",
-        'policy_instructions_path': "data/updated_policy_instructions_v4.0.md"
+        'policy_instructions_path': "data/updated_policy_instructions_v4.2.md"
     }
 
 
