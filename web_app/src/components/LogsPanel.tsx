@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils';
 import type { LogEntry } from '@/types';
 import { Terminal } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface LogsPanelProps {
   logs: LogEntry[];
@@ -14,12 +14,12 @@ export function LogsPanel({ logs, logCount }: LogsPanelProps) {
   const logsEndRef = useRef<HTMLDivElement>(null);
   const logsContainerRef = useRef<HTMLDivElement>(null);
 
-  // useEffect(() => {
-  //   // Auto-scroll to bottom when new logs are added
-  //   if (logsEndRef.current) {
-  //     logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  //   }
-  // }, [logs]);
+  useEffect(() => {
+    // Auto-scroll to bottom when new logs are added
+    if (logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [logs]);
 
   return (
     <div className='bg-white rounded-lg shadow-sm border'>
