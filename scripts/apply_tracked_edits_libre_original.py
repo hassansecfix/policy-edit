@@ -82,6 +82,20 @@ def rows_from_file(path):
 def rows_from_json(path):
     """Load edits from JSON operations format"""
     import json
+    import sys
+    from pathlib import Path
+    
+    # Add lib directory to path for grammar analyzer import
+    lib_path = Path(__file__).parent / 'lib'
+    if str(lib_path) not in sys.path:
+        sys.path.append(str(lib_path))
+    
+    try:
+        from grammar_analyzer import analyze_smart_replace_operation
+    except ImportError:
+        print("⚠️  Grammar analyzer not available, smart_replace operations will use basic processing")
+        analyze_smart_replace_operation = None
+    
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
@@ -101,6 +115,25 @@ def rows_from_json(path):
         # Handle delete operations (empty replacement)
         if action == 'delete':
             replacement = ''
+        
+        # Handle smart_replace operations with grammar analysis
+        if action == 'smart_replace' and analyze_smart_replace_operation:
+            context = op.get('context', '')
+            user_response = op.get('user_response', replacement)
+            placeholder = op.get('placeholder', '')
+            
+            # Use grammar analyzer to determine optimal replacement
+            analysis = analyze_smart_replace_operation(target_text, context, user_response, placeholder)
+            recommended = analysis['recommended_operation']
+            
+            # Use the analyzer's recommendation
+            target_text = recommended['target_text']
+            replacement = recommended['replacement']
+            
+            # Enhance comment with grammar analysis
+            original_comment = comment
+            grammar_explanation = recommended['explanation']
+            comment = f"{original_comment} [Grammar Analysis: {grammar_explanation}]"
         
         yield {
             "Find": target_text,

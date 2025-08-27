@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "generated_timestamp": "2024-12-19T16:00:00Z",
+    "company_name": "Demo Corp",
+    "format_version": "context_aware_operations",
+    "total_operations": 8,
+    "generator": "PolicyWorkflow v5.0",
+    "description": "Demonstration of context-aware grammar analysis with smart_replace operations"
+  },
+  "instructions": {
+    "operations": [
+      {
+        "target_text": "<Company Name>",
+        "action": "replace",
+        "replacement": "Demo Corp",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<24 business hours>",
+        "context": "Access will be terminated within <24 business hours> of the termination notice.",
+        "placeholder": "<24 business hours>",
+        "user_response": "immediately",
+        "action": "smart_replace",
+        "replacement": "immediately",
+        "comment": "You selected 'immediately' for access termination. The grammar analyzer detects that 'immediately' doesn't fit in 'within [timeframe]' context and will restructure the sentence for natural flow.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "quarterly",
+        "context": "Access reviews will be conducted on a quarterly basis.",
+        "placeholder": "quarterly",
+        "user_response": "annual",
+        "action": "smart_replace",
+        "replacement": "annual",
+        "comment": "You selected 'annual' frequency instead of quarterly. The grammar analyzer detects article incompatibility ('a annual' is incorrect) and will transform to 'an annual basis'.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<IT Manager>",
+        "context": "Policy exceptions must be approved by <IT Manager>.",
+        "placeholder": "<IT Manager>",
+        "user_response": "john smith",
+        "action": "smart_replace",
+        "replacement": "john smith",
+        "comment": "You indicated 'john smith' is responsible for approving exceptions. The grammar analyzer detects this is a person name and will ensure proper capitalization to 'John Smith'.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Violations: IT Manager>",
+        "context": "Policy violations should be reported to <Violations: IT Manager>.",
+        "placeholder": "<Violations: IT Manager>",
+        "user_response": "Jane Doe",
+        "action": "smart_replace",
+        "replacement": "Jane Doe",
+        "comment": "You indicated 'Jane Doe' handles policy violations. The grammar analyzer detects proper name formatting is already correct and will perform direct replacement.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Password management systems should be user-friendly",
+        "context": "Password management systems should be user-friendly and accessible to all employees.",
+        "placeholder": "Password management systems",
+        "user_response": "1Password",
+        "action": "smart_replace",
+        "replacement": "Password management systems",
+        "comment": "You indicated you use '1Password' for password management. The grammar analyzer will replace the generic reference with your specific tool while maintaining sentence structure.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<48 hours>",
+        "context": "Emergency access requests must be processed within <48 hours>.",
+        "placeholder": "<48 hours>",
+        "user_response": "24 hours",
+        "action": "smart_replace",
+        "replacement": "24 hours",
+        "comment": "You selected '24 hours' for emergency access processing. The grammar analyzer detects this is a compatible duration that fits the existing sentence structure and will perform direct replacement.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<access duration>",
+        "context": "Temporary access will be granted for <access duration>.",
+        "placeholder": "<access duration>",
+        "user_response": "as long as needed",
+        "action": "smart_replace",
+        "replacement": "as long as needed",
+        "comment": "You selected 'as long as needed' for temporary access duration. The grammar analyzer will determine if this complex phrase fits the sentence structure or requires adjustment.",
+        "comment_author": "Secfix AI"
+      }
+    ]
+  }
+}

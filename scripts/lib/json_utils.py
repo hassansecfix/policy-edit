@@ -152,12 +152,12 @@ def _validate_operation(operation: Dict[str, Any], operation_number: int) -> Non
             raise ValueError(f"Operation {operation_number} missing required field: {field}")
     
     # Check action is valid
-    valid_actions = ['replace', 'delete', 'comment', 'replace_with_logo']
+    valid_actions = ['replace', 'delete', 'comment', 'replace_with_logo', 'smart_replace']
     if operation['action'] not in valid_actions:
         raise ValueError(f"Operation {operation_number} has invalid action: {operation['action']}")
     
     # Replacement field is optional for 'comment' and 'replace_with_logo' actions, required for others
-    if operation['action'] in ['replace', 'delete']:
+    if operation['action'] in ['replace', 'delete', 'smart_replace']:
         if 'replacement' not in operation:
             raise ValueError(f"Operation {operation_number} with action '{operation['action']}' missing required field: replacement")
     

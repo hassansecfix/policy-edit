@@ -4,13 +4,13 @@ I need you to analyze customer data and generate JSON-formatted customization in
 
 ## What I'm Providing:
 
-- **Processing Instructions v4.2** (markdown file) - Contains all the rules and guidelines for generating JSON instructions
+- **Processing Instructions v5.0** (markdown file) - Contains all the rules and guidelines for generating JSON instructions with context-aware grammar analysis
 - **Customer Responses** (Excel/CSV file) - Contains the customer's answers to configuration questions
 - **Policy Template** (document) - The base policy document that needs customization
 
 ## Your Task:
 
-Read the processing instructions v4.2 to understand all customization rules and JSON output format requirements. Analyze the customer data to extract their responses and preferences. Generate a structured JSON file following the exact format specified in the processing instructions.
+Read the processing instructions v5.0 to understand all customization rules and JSON output format requirements. Analyze the customer data to extract their responses and preferences. Generate a structured JSON file following the exact format specified in the processing instructions.
 
 ## CRITICAL Requirements:
 
@@ -23,7 +23,7 @@ Read the processing instructions v4.2 to understand all customization rules and 
 
 ## Important Guidelines:
 
-- Follow the processing instructions v4.2 exactly - use the specified JSON output format
+- Follow the processing instructions v5.0 exactly - use the specified JSON output format with context-aware smart_replace operations
 - **Include detailed comments for all rules except company name, address, and logo** (which use "Replaced")
 - Remove markdown asterisks from target_text and replacement fields (Word doesn't understand \*\* formatting)
 - Provide exact "target_text" and "replacement" values for each operation
@@ -37,7 +37,7 @@ Read the processing instructions v4.2 to understand all customization rules and 
 
 ## Expected JSON Output:
 
-Generate a complete JSON structure as specified in processing instructions v4.2, including:
+Generate a complete JSON structure as specified in processing instructions v5.0, including:
 
 ```json
 {
@@ -89,4 +89,4 @@ Generate a complete JSON structure as specified in processing instructions v4.2,
 
 **IMPORTANT**: Output ONLY the clean JSON structure. Do NOT include any internal validation results, processing details, or explanatory text outside the JSON. The response should start directly with the opening brace `{` and end with the closing brace `}`.
 
-Please analyze the provided files and generate the JSON customization instructions following the processing instructions v4.2 format.
+Please analyze the provided files and generate the JSON customization instructions following the processing instructions v5.0 format.

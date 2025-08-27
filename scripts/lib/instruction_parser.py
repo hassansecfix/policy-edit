@@ -9,6 +9,11 @@ import csv
 import json
 from pathlib import Path
 from typing import Iterator, Dict, Any
+try:
+    from .grammar_analyzer import analyze_smart_replace_operation
+except ImportError:
+    # Fallback for direct script execution
+    from grammar_analyzer import analyze_smart_replace_operation
 
 
 class EditFileReader:
@@ -64,6 +69,25 @@ class EditFileReader:
             # Handle delete operations (empty replacement)
             if action == 'delete':
                 replacement = ''
+            
+            # Handle smart_replace operations with grammar analysis
+            if action == 'smart_replace':
+                context = op.get('context', '')
+                user_response = op.get('user_response', replacement)
+                placeholder = op.get('placeholder', '')
+                
+                # Use grammar analyzer to determine optimal replacement
+                analysis = analyze_smart_replace_operation(target_text, context, user_response, placeholder)
+                recommended = analysis['recommended_operation']
+                
+                # Use the analyzer's recommendation
+                target_text = recommended['target_text']
+                replacement = recommended['replacement']
+                
+                # Enhance comment with grammar analysis
+                original_comment = comment
+                grammar_explanation = recommended['explanation']
+                comment = f"{original_comment} [Grammar Analysis: {grammar_explanation}]"
             
             yield {
                 "Find": target_text,
