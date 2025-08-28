@@ -34,6 +34,7 @@ Read the processing instructions v4.2 to understand all customization rules and 
 - Include company size context for termination timeframe when <50 employees
 - **CRITICAL: Ensure all replacement text is grammatically correct in context** - follow the grammatical correctness requirements in the processing instructions
 - **CRITICAL: ALL placeholders (< >, [ ], { }) must be replaced with clean text, even if user selects default option - NEVER use "comment" action for placeholder removal**
+- **CRITICAL: target_text must EXACTLY match text from the policy document - NEVER invent or make up target_text that doesn't exist**
 
 ## Expected JSON Output:
 
@@ -86,6 +87,7 @@ Generate a complete JSON structure as specified in processing instructions v4.2,
 7. **NO ACTION REQUIRED Cases**: Use "comment" action with appropriate reasoning
 8. **Tool Name Extraction**: Remove parenthetical text like "(recommended)" from tool names
 9. **MANDATORY PLACEHOLDER REMOVAL**: ALL placeholders must be replaced with clean text using "replace" action, even for default selections
+10. **TARGET TEXT ACCURACY**: target_text must EXACTLY match actual text from the provided policy document - do not invent text
 
 **IMPORTANT**: Output ONLY the clean JSON structure. Do NOT include any internal validation results, processing details, or explanatory text outside the JSON. The response should start directly with the opening brace `{` and end with the closing brace `}`.
 
