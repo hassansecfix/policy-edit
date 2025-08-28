@@ -5,9 +5,9 @@
 # Default file paths
 DEFAULT_POLICY_FILE="data/v5 Freya POL-11 Access Control.docx"
 DEFAULT_OUTPUT_NAME="policy_tracked_changes_with_comments"
-DEFAULT_POLICY_INSTRUCTIONS="data/updated_policy_instructions_v5.2_universal_ai.md"
+DEFAULT_POLICY_INSTRUCTIONS="data/updated_policy_instructions_v6.0.md"
 # To change policy instructions version, update the path above
-# Available versions: v4.0, v4.1, v4.2, v5.0_context_aware, v5.2_universal_ai
+# Available versions: v4.0, v4.1, v4.2, v5.0_context_aware, v5.2_universal_ai, v6.0
 # NOTE: Questionnaire data now comes from localStorage only - no file needed
 
 # Function to show configuration being used
