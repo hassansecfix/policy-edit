@@ -249,9 +249,20 @@ Analyze the data and generate JSON-formatted customization instructions based on
 
 - Examples: "immediately", "instantly", "right away", "as soon as possible"
 - Strategy: Sentence restructuring for grammatical flow
-- target_text: `[identify full sentence containing placeholder]`
+
+**CRITICAL EXAMPLE for "immediately":**
+
+- **FIND**: The full sentence containing the placeholder (e.g., "Access will be terminated within <24 business hours> of termination.")
+- target_text: "Access will be terminated within <24 business hours> of termination"
 - action: "replace"
-- replacement: `[Restructured sentence with proper grammar]`
+- replacement: "Access will be terminated immediately upon termination"
+- comment: "You selected immediately instead of the default timeframe. The sentence has been restructured for grammatical correctness. Faster termination = better security but requires responsive processes."
+
+**Generic Template:**
+
+- target_text: `[full sentence containing placeholder]`
+- action: "replace"
+- replacement: `[Restructured sentence with proper grammar - see example above]`
 - comment: "You selected [response]. The sentence has been restructured for grammatical correctness. [Include business logic]"
 
 **If user response is a COMPLEX PHRASE (requires analysis):**
