@@ -28,6 +28,10 @@ import time
 import json
 import base64
 from pathlib import Path
+
+# Add the lib directory to Python path for imports
+sys.path.append(str(Path(__file__).parent))
+from lib.config import get_policy_instructions_path
 import requests
 
 # Import our other scripts
@@ -833,7 +837,7 @@ def main():
     questionnaire_csv = f"data/{user_id}_{args.output_name}_questionnaire.csv"
     edits_json = f"edits/{user_id}_{args.output_name}_edits.json"
     prompt_path = "data/prompt.md"
-    policy_instructions_path = "data/updated_policy_instructions_v4.2.md"
+    policy_instructions_path = get_policy_instructions_path()
     
     try:
         # Note: Highlighting cleanup is now handled in the LibreOffice processing script

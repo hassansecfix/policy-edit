@@ -15,6 +15,7 @@ import time
 import random
 from typing import Tuple, Optional
 from pathlib import Path
+from .config import get_policy_instructions_path
 
 
 def run_command(cmd: str, description: str) -> Tuple[bool, str]:
@@ -222,7 +223,7 @@ def setup_file_paths(user_id: str, output_name: str) -> dict:
         'questionnaire_csv': f"data/{user_id}_{output_name}_questionnaire.csv",
         'edits_json': f"edits/{user_id}_{output_name}_edits.json",
         'prompt_path': "data/prompt.md",
-        'policy_instructions_path': "data/updated_policy_instructions_v4.2.md"
+        'policy_instructions_path': get_policy_instructions_path()
     }
 
 

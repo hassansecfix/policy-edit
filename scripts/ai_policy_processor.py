@@ -9,7 +9,8 @@ Usage:
     python3 ai_policy_processor.py \
         --policy data/policy.docx \
         --questionnaire data/questionnaire.csv \
-        --prompt data/updated_policy_instructions_v4.2.md \
+        --prompt data/prompt.md \
+        --policy-instructions [AUTO-DETECTED FROM CONFIG] \
         --output edits/ai_generated_edits.json \
         --api-key YOUR_CLAUDE_API_KEY
 
@@ -28,6 +29,7 @@ sys.path.append(str(Path(__file__).parent))
 from lib.highlighting_cleanup import clean_docx_highlighting
 from lib.content_loader import load_file_content, load_questionnaire_from_environment
 from lib.claude_api import call_claude_api
+from lib.config import get_policy_instructions_path
 from lib.json_utils import (
     extract_json_from_response, 
     validate_json_content, 
@@ -208,8 +210,9 @@ def create_argument_parser() -> argparse.ArgumentParser:
     # Required arguments
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
     parser.add_argument('--prompt', required=True, help='Path to AI prompt markdown file (prompt.md)')
-    parser.add_argument('--policy-instructions', required=True, 
-                       help='Path to policy processing instructions (updated_policy_instructions_v4.2.md)')
+    parser.add_argument('--policy-instructions', 
+                       help='Path to policy processing instructions (defaults to centralized config)',
+                       default=get_policy_instructions_path())
     parser.add_argument('--output', required=True, help='Output path for generated JSON file')
     
     # Questionnaire input (mutually exclusive)
