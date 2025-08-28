@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "generated_timestamp": "2024-12-19T16:45:00Z",
+    "company_name": "Demo Corp",
+    "format_version": "context_aware_operations",
+    "total_operations": 6,
+    "generator": "PolicyWorkflow v5.0",
+    "description": "CORRECTED example showing proper placeholders and password management handling"
+  },
+  "instructions": {
+    "operations": [
+      {
+        "target_text": "<Company Name>",
+        "action": "replace",
+        "replacement": "Demo Corp",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Company name, address>",
+        "action": "replace",
+        "replacement": "Demo Corp, 123 Main Street, New York, NY 10001",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "[ADD COMPANY LOGO]",
+        "action": "replace_with_logo",
+        "replacement": "",
+        "comment": "Company logo inserted from questionnaire upload",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "Password management systems should be user-friendly",
+        "context": "Password management systems should be user-friendly and accessible to all employees.",
+        "placeholder": "Password management systems should be user-friendly",
+        "user_response": "1Password",
+        "action": "smart_replace",
+        "replacement": "Password management systems, specifically 1Password, should be user-friendly",
+        "comment": "You indicated you use 1Password for password management. Grammar analysis integrates your specific tool while maintaining proper sentence structure.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<24 business hours>",
+        "context": "Access will be terminated within <24 business hours> of the termination notice.",
+        "placeholder": "<24 business hours>",
+        "user_response": "immediately",
+        "action": "smart_replace",
+        "replacement": "immediately",
+        "comment": "You selected 'immediately' for access termination. Grammar analysis will restructure sentence for natural flow: 'Access will be terminated immediately'.",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<IT Manager>",
+        "context": "Policy exceptions must be approved by <IT Manager>.",
+        "placeholder": "<IT Manager>",
+        "user_response": "john smith",
+        "action": "smart_replace",
+        "replacement": "john smith",
+        "comment": "You indicated john smith is responsible for approving exceptions. Grammar analysis will ensure proper name capitalization to 'John Smith'.",
+        "comment_author": "Secfix AI"
+      }
+    ]
+  }
+}

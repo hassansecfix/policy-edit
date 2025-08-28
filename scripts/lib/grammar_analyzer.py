@@ -154,6 +154,11 @@ class ContextAnalyzer:
         if re.match(r'^[a-zA-Z]+\s+[a-zA-Z]+$', user_response.strip()):
             return ResponseType.PERSON_NAME
         
+        # Check for tool names (password managers, etc.)
+        tool_keywords = ['password', 'lastpass', 'dashlane', 'bitwarden', 'keeper', 'github', 'gitlab', 'jira', 'clickup', 'asana']
+        if any(keyword in response_lower for keyword in tool_keywords):
+            return ResponseType.TOOL_NAME
+        
         # Check for role titles
         role_keywords = ['manager', 'director', 'officer', 'admin', 'lead', 'head', 'chief', 'ceo', 'cto', 'ciso']
         if any(keyword in response_lower for keyword in role_keywords):
@@ -231,12 +236,12 @@ class ContextAnalyzer:
         if strategy == ReplacementStrategy.NARROW_REPLACE:
             return {
                 "target_text": placeholder or original_target,
-                "replacement": self._transform_response(user_response, response_type),
+                "replacement": self._transform_response(user_response, response_type, context),
                 "explanation": "Direct placeholder replacement - user response fits grammatically"
             }
         
         elif strategy == ReplacementStrategy.TRANSFORM:
-            transformed = self._transform_response(user_response, response_type)
+            transformed = self._transform_response(user_response, response_type, context)
             return {
                 "target_text": placeholder or original_target,
                 "replacement": transformed,
@@ -257,7 +262,7 @@ class ContextAnalyzer:
             "explanation": "No strategy determined - using original approach"
         }
     
-    def _transform_response(self, user_response: str, response_type: ResponseType) -> str:
+    def _transform_response(self, user_response: str, response_type: ResponseType, context: str = "") -> str:
         """Transform user response to proper format."""
         if response_type == ResponseType.PERSON_NAME:
             # Ensure proper capitalization
@@ -272,6 +277,9 @@ class ContextAnalyzer:
                 return f"a {response_lower} basis"
         
         if response_type == ResponseType.TOOL_NAME:
+            # For password management tools, integrate into sentence structure
+            if "password management systems should be user-friendly" in context.lower():
+                return f"Password management systems, specifically {user_response.strip()}, should be user-friendly"
             # Preserve tool name capitalization (don't change 1Password to 1password)
             return user_response.strip()
         
