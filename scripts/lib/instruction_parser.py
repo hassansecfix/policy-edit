@@ -1,54 +1,37 @@
 """
-Edit Instruction Parser
+Simple Edit Instruction Parser
 
-This module provides utilities for parsing edit instructions from CSV and JSON files,
-handling different formats and extracting operation metadata.
+This module provides a streamlined parser for JSON operations where
+AI has already made ALL grammar decisions upfront.
+
+No grammar analyzer needed - just apply the AI decisions directly.
 """
 
-import csv
 import json
 from pathlib import Path
 from typing import Iterator, Dict, Any
-try:
-    from .grammar_analyzer import analyze_smart_replace_operation
-except ImportError:
-    # Fallback for direct script execution
-    from grammar_analyzer import analyze_smart_replace_operation
 
 
 class EditFileReader:
     """
-    Reads edit instructions from CSV or JSON files.
+    Simplified reader for JSON operations.
+    
+    Assumes AI has already made all grammar decisions upfront:
+    - target_text is final (placeholder OR full sentence)
+    - replacement is final (user response OR restructured sentence)
+    - No downstream analysis needed
     """
     
     @staticmethod
     def read_edits(file_path: str) -> Iterator[Dict[str, str]]:
         """
-        Load edits from either CSV or JSON format.
-        
-        Args:
-            file_path: Path to the CSV or JSON file
-            
-        Yields:
-            Dictionary containing edit instructions with standardized keys
-        """
-        file_ext = Path(file_path).suffix.lower()
-        
-        if file_ext == '.json':
-            yield from EditFileReader._read_json_edits(file_path)
-        else:
-            yield from EditFileReader._read_csv_edits(file_path)
-    
-    @staticmethod
-    def _read_json_edits(file_path: str) -> Iterator[Dict[str, str]]:
-        """
-        Load edits from JSON operations format.
+        Load edits from JSON format.
         
         Args:
             file_path: Path to the JSON file
             
         Yields:
-            Dictionary containing edit instructions
+            Dictionary containing edit instructions ready for direct application
         """
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -62,7 +45,7 @@ class EditFileReader:
             comment = op.get('comment', '')
             author = op.get('comment_author', 'Secfix AI')
             
-            # Handle comment-only operations in main loop, not here
+            # Skip comment-only operations (handled separately)
             if action == 'comment':
                 continue
                 
@@ -70,142 +53,29 @@ class EditFileReader:
             if action == 'delete':
                 replacement = ''
             
-            # Handle smart_replace operations with grammar analysis
-            if action == 'smart_replace':
-                context = op.get('context', '')
-                user_response = op.get('user_response', replacement)
-                placeholder = op.get('placeholder', '')
-                
-                # Debug information
-                print(f"🔍 SMART_REPLACE DEBUG:")
-                print(f"  Original target_text: {target_text}")
-                print(f"  Context: {context}")
-                print(f"  User response: {user_response}")
-                print(f"  Placeholder: {placeholder}")
-                
-                # Use simplified grammar analyzer (v5.2 approach)
-                # The analyzer now provides basic framework, real AI analysis happens downstream
-                analysis = analyze_smart_replace_operation(target_text, context, user_response, placeholder)
-                recommended = analysis['recommended_operation']
-                
-                # Debug the analysis result
-                print(f"  Strategy: {analysis['strategy']}")
-                print(f"  Recommended target: {recommended['target_text']}")
-                print(f"  Recommended replacement: {recommended['replacement']}")
-                print(f"  Explanation: {recommended['explanation']}")
-                
-                # Note: In v5.2, the analyzer provides raw data for downstream AI processing
-                # The actual intelligent grammar analysis happens when the document is processed
-                target_text = recommended['target_text']
-                replacement = recommended['replacement']
-                
-                # Enhance comment with grammar analysis
-                original_comment = comment
-                grammar_explanation = recommended['explanation']
-                comment = f"{original_comment} [Framework Analysis: {grammar_explanation}]"
+            # Handle replace operations - AI has already decided everything
+            elif action == 'replace':
+                # No processing needed - AI has already determined:
+                # - target_text (placeholder OR full sentence)
+                # - replacement (user response OR restructured sentence)
+                pass
+            
+            # Handle logo replacement
+            elif action == 'replace_with_logo':
+                replacement = ''  # Logo will be handled by LibreOffice automation
+            
+            # Unknown action - skip with warning
+            else:
+                print(f"⚠️  Unknown action '{action}' - skipping operation")
+                continue
             
             yield {
-                "Find": target_text,
-                "Replace": replacement,
-                "MatchCase": "",  # Default to False
-                "WholeWord": "",  # Default to False  
-                "Wildcards": "",  # Default to False
-                "Comment": comment,
-                "Author": author,
+                'target_text': target_text,
+                'replacement': replacement,
+                'comment': comment,
+                'comment_author': author,
+                'action': action
             }
-    
-    @staticmethod
-    def _read_csv_edits(file_path: str) -> Iterator[Dict[str, str]]:
-        """
-        Load edits from CSV format with flexible column handling.
-        
-        Args:
-            file_path: Path to the CSV file
-            
-        Yields:
-            Dictionary containing edit instructions
-        """
-        with open(file_path, newline="", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            
-            if not reader.fieldnames or len(reader.fieldnames) < 2:
-                # No header: assume simple CSV
-                f.seek(0)
-                reader2 = csv.reader(f)
-                for row in reader2:
-                    if not row:
-                        continue
-                    yield {
-                        "Find": row[0],
-                        "Replace": row[1] if len(row) > 1 else "",
-                        "MatchCase": row[2] if len(row) > 2 else "",
-                        "WholeWord": row[3] if len(row) > 3 else "",
-                        "Wildcards": row[4] if len(row) > 4 else "",
-                        "Comment": row[5] if len(row) > 5 else "",
-                        "Author": row[6] if len(row) > 6 else "Secfix AI",
-                    }
-            else:
-                # Has header: use DictReader with flexible column names
-                for rec in reader:
-                    yield {
-                        "Find": EditFileReader._get_column_value(rec, ["Find", "find", "FIND"]).strip(),
-                        "Replace": EditFileReader._get_column_value(rec, ["Replace", "replace", "REPLACE"]),
-                        "MatchCase": EditFileReader._get_column_value(rec, ["MatchCase", "matchcase", "MATCHCASE"]),
-                        "WholeWord": EditFileReader._get_column_value(rec, ["WholeWord", "wholeword", "WHOLEWORD"]),
-                        "Wildcards": EditFileReader._get_column_value(rec, ["Wildcards", "wildcards", "WILDCARDS"]),
-                        "Comment": EditFileReader._get_column_value(rec, ["Comment", "comment", "COMMENT"]),
-                        "Author": EditFileReader._get_column_value(rec, ["Author", "author", "AUTHOR"]) or "Secfix AI",
-                    }
-    
-    @staticmethod
-    def _get_column_value(record: Dict[str, str], possible_keys: list) -> str:
-        """
-        Get column value with case-insensitive key matching.
-        
-        Args:
-            record: CSV record dictionary
-            possible_keys: List of possible column names to try
-            
-        Returns:
-            Column value or empty string if not found
-        """
-        for key in possible_keys:
-            value = record.get(key)
-            if value is not None:
-                return value
-        return ""
-
-
-class OperationExtractor:
-    """
-    Extracts specific operation types from JSON data.
-    """
-    
-    @staticmethod
-    def get_operations_by_type(file_path: str, operation_type: str) -> list:
-        """
-        Extract operations of a specific type from JSON file.
-        
-        Args:
-            file_path: Path to the JSON file
-            operation_type: Type of operation to extract (e.g., 'replace_with_logo', 'comment')
-            
-        Returns:
-            List of operations matching the specified type
-        """
-        if not file_path.endswith('.json'):
-            return []
-        
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            operations = data.get('instructions', {}).get('operations', [])
-            return [op for op in operations if op.get('action') == operation_type]
-            
-        except Exception as e:
-            print(f"Error reading operations from {file_path}: {e}")
-            return []
     
     @staticmethod
     def get_metadata(file_path: str) -> Dict[str, Any]:
@@ -216,41 +86,103 @@ class OperationExtractor:
             file_path: Path to the JSON file
             
         Returns:
-            Metadata dictionary
+            Dictionary containing metadata
         """
-        if not file_path.endswith('.json'):
-            return {}
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            return data.get('metadata', {})
-            
-        except Exception as e:
-            print(f"Error reading metadata from {file_path}: {e}")
-            return {}
+        return data.get('metadata', {})
     
     @staticmethod
-    def get_all_operations(file_path: str) -> list:
+    def get_comment_operations(file_path: str) -> Iterator[Dict[str, str]]:
         """
-        Get all operations from JSON file.
+        Get comment-only operations from JSON file.
         
         Args:
             file_path: Path to the JSON file
             
-        Returns:
-            List of all operations
+        Yields:
+            Dictionary containing comment-only operations
         """
-        if not file_path.endswith('.json'):
-            return []
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+        operations = data.get('instructions', {}).get('operations', [])
+        
+        for op in operations:
+            if op.get('action') == 'comment':
+                yield {
+                    'target_text': op.get('target_text', ''),
+                    'comment': op.get('comment', ''),
+                    'comment_author': op.get('comment_author', 'Secfix AI'),
+                    'action': 'comment'
+                }
+
+
+def validate_format(file_path: str) -> bool:
+    """
+    Validate that the JSON file follows the expected format.
+    
+    Args:
+        file_path: Path to the JSON file
+        
+    Returns:
+        True if valid format, False otherwise
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        # Check required structure
+        if 'metadata' not in data:
+            print("❌ Missing 'metadata' section")
+            return False
+        
+        if 'instructions' not in data:
+            print("❌ Missing 'instructions' section")
+            return False
+        
+        if 'operations' not in data['instructions']:
+            print("❌ Missing 'operations' array")
+            return False
+        
+        # Check format version
+        format_version = data['metadata'].get('format_version', '')
+        if 'ai_decision' not in format_version:
+            print(f"⚠️  Format version '{format_version}' may not be fully compatible")
+        
+        # Check operations format
+        operations = data['instructions']['operations']
+        for i, op in enumerate(operations):
+            required_fields = ['target_text', 'action', 'replacement', 'comment']
+            for field in required_fields:
+                if field not in op:
+                    print(f"❌ Operation {i}: Missing required field '{field}'")
+                    return False
             
-            return data.get('instructions', {}).get('operations', [])
-            
-        except Exception as e:
-            print(f"Error reading operations from {file_path}: {e}")
-            return []
+            # Check for deprecated fields
+            deprecated_fields = ['context', 'placeholder', 'user_response']
+            for field in deprecated_fields:
+                if field in op:
+                    print(f"⚠️  Operation {i}: Contains deprecated field '{field}' - old format")
+        
+        print("✅ Valid format")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Validation error: {e}")
+        return False
+
+
+# Backward compatibility function
+def read_edits(file_path: str) -> Iterator[Dict[str, str]]:
+    """
+    Backward compatibility function for existing code.
+    
+    Args:
+        file_path: Path to the JSON file
+        
+    Yields:
+        Dictionary containing edit instructions
+    """
+    return EditFileReader.read_edits(file_path)

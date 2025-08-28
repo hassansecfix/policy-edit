@@ -1,8 +1,8 @@
 """
-V5.2 Simplified Edit Instruction Parser
+Simple Edit Instruction Parser
 
-This module provides a streamlined parser for v5.2 JSON operations where
-AI (Claude) has already made ALL grammar decisions upfront.
+This module provides a streamlined parser for JSON operations where
+AI has already made ALL grammar decisions upfront.
 
 No grammar analyzer needed - just apply the AI decisions directly.
 """
@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Iterator, Dict, Any
 
 
-class V52EditFileReader:
+class EditFileReader:
     """
-    Simplified reader for v5.2 JSON operations.
+    Simplified reader for JSON operations.
     
     Assumes AI has already made all grammar decisions upfront:
     - target_text is final (placeholder OR full sentence)
@@ -25,10 +25,10 @@ class V52EditFileReader:
     @staticmethod
     def read_edits(file_path: str) -> Iterator[Dict[str, str]]:
         """
-        Load edits from v5.2 JSON format.
+        Load edits from JSON format.
         
         Args:
-            file_path: Path to the v5.2 JSON file
+            file_path: Path to the JSON file
             
         Yields:
             Dictionary containing edit instructions ready for direct application
@@ -80,10 +80,10 @@ class V52EditFileReader:
     @staticmethod
     def get_metadata(file_path: str) -> Dict[str, Any]:
         """
-        Extract metadata from v5.2 JSON file.
+        Extract metadata from JSON file.
         
         Args:
-            file_path: Path to the v5.2 JSON file
+            file_path: Path to the JSON file
             
         Returns:
             Dictionary containing metadata
@@ -96,10 +96,10 @@ class V52EditFileReader:
     @staticmethod
     def get_comment_operations(file_path: str) -> Iterator[Dict[str, str]]:
         """
-        Get comment-only operations from v5.2 JSON file.
+        Get comment-only operations from JSON file.
         
         Args:
-            file_path: Path to the v5.2 JSON file
+            file_path: Path to the JSON file
             
         Yields:
             Dictionary containing comment-only operations
@@ -119,15 +119,15 @@ class V52EditFileReader:
                 }
 
 
-def validate_v52_format(file_path: str) -> bool:
+def validate_format(file_path: str) -> bool:
     """
-    Validate that the JSON file follows v5.2 format.
+    Validate that the JSON file follows the expected format.
     
     Args:
         file_path: Path to the JSON file
         
     Returns:
-        True if valid v5.2 format, False otherwise
+        True if valid format, False otherwise
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -149,7 +149,7 @@ def validate_v52_format(file_path: str) -> bool:
         # Check format version
         format_version = data['metadata'].get('format_version', '')
         if 'ai_decision' not in format_version:
-            print(f"⚠️  Format version '{format_version}' may not be v5.2 compatible")
+            print(f"⚠️  Format version '{format_version}' may not be fully compatible")
         
         # Check operations format
         operations = data['instructions']['operations']
@@ -164,9 +164,9 @@ def validate_v52_format(file_path: str) -> bool:
             deprecated_fields = ['context', 'placeholder', 'user_response']
             for field in deprecated_fields:
                 if field in op:
-                    print(f"⚠️  Operation {i}: Contains deprecated field '{field}' - not true v5.2 format")
+                    print(f"⚠️  Operation {i}: Contains deprecated field '{field}' - old format")
         
-        print("✅ Valid v5.2 format")
+        print("✅ Valid format")
         return True
         
     except Exception as e:
@@ -185,4 +185,4 @@ def read_edits(file_path: str) -> Iterator[Dict[str, str]]:
     Yields:
         Dictionary containing edit instructions
     """
-    return V52EditFileReader.read_edits(file_path)
+    return EditFileReader.read_edits(file_path)
