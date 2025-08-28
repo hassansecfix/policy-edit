@@ -205,7 +205,7 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 ### **RULE_04: Office Presence (No Office)**
 
-**Target:** "Company does not have a physical office..." → Action: `comment`
+**Target:** `"Company does not have a physical office, all employees work remotely."` → Action: `comment`
 
 ### **RULE_05: Version Control Tool**
 
@@ -213,7 +213,9 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 ### **RULE_06: Password Management Tool**
 
-**Target:** `<Password Management Tool>` → AI applies universal logic
+**Target:** `"Password management systems should be user-friendly"` → AI applies universal logic
+
+- **Note**: Use this exact text to avoid duplicate matches
 
 ### **RULE_07: Ticket Management Tool**
 
@@ -221,7 +223,7 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 ### **RULE_08: Access Review Frequency**
 
-**Target:** `<Review Frequency>` → AI applies universal logic + default check
+**Target:** `"a quarterly basis"` → AI applies universal logic + default check
 
 - If user selection MATCHES current → use `comment` action
 - If user selection DIFFERENT → apply universal AI decision logic
@@ -238,11 +240,11 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 ### **RULE_11: Exception Approver**
 
-**Target:** `<Exception Approver>` → AI applies universal logic + name capitalization
+**Target:** `<Exceptions: IT Manager>` → AI applies universal logic + name capitalization
 
 ### **RULE_12: Violations Reporter**
 
-**Target:** `<Violations Reporter>` → AI applies universal logic + name capitalization
+**Target:** `<Violations: IT Manager>` → AI applies universal logic + name capitalization
 
 ## 🧠 **Universal AI Decision Framework**
 
@@ -285,9 +287,9 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 ```json
 {
-  "target_text": "<Review Frequency>",
+  "target_text": "a quarterly basis",
   "action": "replace",
-  "replacement": "quarterly"
+  "replacement": "a quarterly basis"
 }
 ```
 
@@ -297,7 +299,7 @@ Result: "quarterly basisa quarterly basis" (duplication!)
 
 ```json
 {
-  "target_text": "<Review Frequency>",
+  "target_text": "a quarterly basis",
   "action": "comment",
   "replacement": "",
   "comment": "Customer selected quarterly frequency which matches the current default. No change needed.",
@@ -392,7 +394,13 @@ Result: "quarterly basisa quarterly basis" (duplication!)
 8. **Tool Name Extraction:** Remove parenthetical text like "(recommended)" from user responses
 9. **Name Capitalization:** Properly capitalize person names (e.g., "john smith" → "John Smith")
 10. **AI Grammar Decisions:** AI makes upfront decisions about narrow vs sentence replacement based on grammatical compatibility
-11. **Exact Placeholder Matching:** Look for EXACT placeholders as specified in rules (e.g., `<24 business hours>`, not generic terms)
+11. **Exact Placeholder Matching:** Look for EXACT placeholders as specified in rules:
+    - `<24 business hours>` (RULE_09)
+    - `"a quarterly basis"` (RULE_08)
+    - `"Password management systems should be user-friendly"` (RULE_06)
+    - `<Exceptions: IT Manager>` (RULE_11)
+    - `<Violations: IT Manager>` (RULE_12)
+    - Other exact placeholders as specified
 12. **Universal Sentence Analysis:** For ALL rules, analyze the actual sentence structure containing any placeholder to determine if user response fits grammatically - choose Scenario A (narrow) or Scenario B (full sentence) accordingly
 
 ## Final Output Requirements
