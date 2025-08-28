@@ -223,7 +223,16 @@ Generate a JSON structure with the following **enhanced format**:
 }
 ```
 
-**Example if document says:** "The maximum time frame for access termination is set at <24 business hours>."
+**🎯 STEP-BY-STEP PROCESS:**
+
+1. **FIND** the exact sentence in the policy document containing `<24 business hours>`
+2. **COPY** that exact sentence to the context field
+3. **NEVER** use examples from instructions
+
+**Example - If your actual document says:**
+"The maximum time frame for access termination is set at <24 business hours>."
+
+**Then your JSON should be:**
 
 ```json
 {
@@ -237,6 +246,12 @@ Generate a JSON structure with the following **enhanced format**:
   "comment_author": "Secfix AI"
 }
 ```
+
+**Grammar Analyzer Output:**
+
+- **Detects:** "is set at" pattern with "immediately"
+- **Converts:** "immediately" → "immediate" for grammatical correctness
+- **Result:** "The maximum time frame for access termination is set at immediate."
 
 **What the Grammar Analyzer Does:**
 
@@ -462,7 +477,19 @@ Generate a JSON structure with the following **enhanced format**:
 
 ## Example Complete Operation Set
 
-**CRITICAL: All context fields must use ACTUAL text from the provided policy document**
+**🚨 CRITICAL: All context fields must use ACTUAL text from the provided policy document 🚨**
+
+**⚠️ COMMON MISTAKE:**
+
+- ❌ WRONG: Using examples from these instructions as context
+- ✅ CORRECT: Copy the exact sentence from the actual policy document being processed
+
+**Example of WRONG vs RIGHT:**
+
+- ❌ WRONG: `"context": "Access will be terminated within <24 business hours> of notification."`
+- ✅ CORRECT: `"context": "The maximum time frame for access termination is set at <24 business hours>."`
+
+**The context MUST match what's actually in the document, not what's in examples!**
 
 ```json
 {

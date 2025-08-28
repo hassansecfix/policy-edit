@@ -76,18 +76,33 @@ class EditFileReader:
                 user_response = op.get('user_response', replacement)
                 placeholder = op.get('placeholder', '')
                 
-                # Use grammar analyzer to determine optimal replacement
+                # Debug information
+                print(f"🔍 SMART_REPLACE DEBUG:")
+                print(f"  Original target_text: {target_text}")
+                print(f"  Context: {context}")
+                print(f"  User response: {user_response}")
+                print(f"  Placeholder: {placeholder}")
+                
+                # Use simplified grammar analyzer (v5.2 approach)
+                # The analyzer now provides basic framework, real AI analysis happens downstream
                 analysis = analyze_smart_replace_operation(target_text, context, user_response, placeholder)
                 recommended = analysis['recommended_operation']
                 
-                # Use the analyzer's recommendation
+                # Debug the analysis result
+                print(f"  Strategy: {analysis['strategy']}")
+                print(f"  Recommended target: {recommended['target_text']}")
+                print(f"  Recommended replacement: {recommended['replacement']}")
+                print(f"  Explanation: {recommended['explanation']}")
+                
+                # Note: In v5.2, the analyzer provides raw data for downstream AI processing
+                # The actual intelligent grammar analysis happens when the document is processed
                 target_text = recommended['target_text']
                 replacement = recommended['replacement']
                 
                 # Enhance comment with grammar analysis
                 original_comment = comment
                 grammar_explanation = recommended['explanation']
-                comment = f"{original_comment} [Grammar Analysis: {grammar_explanation}]"
+                comment = f"{original_comment} [Framework Analysis: {grammar_explanation}]"
             
             yield {
                 "Find": target_text,
