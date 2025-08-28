@@ -232,6 +232,16 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 **Target:** `"All requests will be sent by email to <email>"` → AI applies universal logic
 
+**Replacement Logic:**
+
+- Based on user's selection and ticket tool
+- **Comment format:** "[Customer-specific context]. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks."
+
+**Special handling for "Other" responses:**
+
+- **Ticket Management "Other":** If custom text indicates actual ticketing tool (e.g., "ServiceNow", "Zendesk", "Custom system"), use that tool name in replacement text
+- **Access Request Method "Other":** If custom text describes a workflow (e.g., "Slack requests", "Manager approval only", "Direct database access"), create appropriate replacement text that reflects their process
+
 - **Additional Target:** `<Ticket Management Tool>` → AI applies universal logic
 
 ### **RULE_08: Access Review Frequency**
