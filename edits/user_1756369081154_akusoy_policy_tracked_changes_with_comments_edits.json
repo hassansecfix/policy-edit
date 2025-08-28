@@ -2,7 +2,7 @@
   "metadata": {
     "generated_timestamp": "2024-12-19T10:30:00Z",
     "company_name": "Secfix GmbH",
-    "format_version": "universal_ai_operations",
+    "format_version": "ai_decision_operations",
     "total_operations": 12,
     "generator": "PolicyWorkflow v5.2",
     "logo_path": "edits/user_1756369081154_akusoy_company_logo.png"
@@ -11,122 +11,86 @@
     "operations": [
       {
         "target_text": "<Company Name>",
-        "context": "For the purposes of this document, <Company Name> will be referred to as \"Company\" in all subsequent mentions.",
-        "placeholder": "<Company Name>",
-        "user_response": "Secfix GmbH",
         "action": "replace",
         "replacement": "Secfix GmbH",
         "comment": "Replaced",
         "comment_author": "Secfix AI"
       },
       {
+        "target_text": "For the purposes of this document, <Company Name> will be referred to as \"Company\" in all subsequent mentions. This terminology is utilized for simplicity and ease of reading. Please interpret all mentions of \"Company\" as direct references to <Company Name>.",
+        "action": "replace",
+        "replacement": "For the purposes of this document, Secfix GmbH will be referred to as \"Company\" in all subsequent mentions. This terminology is utilized for simplicity and ease of reading. Please interpret all mentions of \"Company\" as direct references to Secfix GmbH.",
+        "comment": "Replaced",
+        "comment_author": "Secfix AI"
+      },
+      {
         "target_text": "<Company Address>",
-        "context": "Company address placeholder for policy documentation.",
-        "placeholder": "<Company Address>",
-        "user_response": "Salvatorplatz, 8033, Munich",
         "action": "replace",
         "replacement": "Salvatorplatz, 8033, Munich",
         "comment": "Replaced",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "company_logo_default.png",
-        "context": "Company logo placeholder in policy header.",
-        "placeholder": "company_logo_default.png",
-        "user_response": "company_logo_default.png",
+        "target_text": "<Company Logo>",
         "action": "replace_with_logo",
         "replacement": "",
-        "comment": "Company logo will be inserted using the default logo file provided during onboarding.",
+        "comment": "Company logo available: company_logo_default.png",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<office location>",
-        "context": "Physical office location reference in access control policy.",
-        "placeholder": "<office location>",
-        "user_response": "No",
-        "action": "smart_replace",
-        "replacement": "remote work environment",
-        "comment": "You indicated no physical office. AI analysis will adapt office-related language to reflect remote work operations.",
+        "target_text": "Company does not have a physical office, all employees work remotely.",
+        "action": "comment",
+        "replacement": "",
+        "comment": "Customer confirmed: No physical office, remote work setup",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<version control system>",
-        "context": "Version control system reference for code access management.",
-        "placeholder": "<version control system>",
-        "user_response": "Other: Clickup",
-        "action": "smart_replace",
+        "target_text": "<Version Control Tool>",
+        "action": "replace",
         "replacement": "Clickup",
-        "comment": "You selected 'Other: Clickup' as your version control tool. AI analysis will ensure proper integration of this custom tool into access control procedures.",
+        "comment": "Customer uses other tool: Clickup for version control",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<password management tool>",
-        "context": "Password management tool specification for security requirements.",
-        "placeholder": "<password management tool>",
-        "user_response": "1Password",
+        "target_text": "<Password Management Tool>",
         "action": "replace",
         "replacement": "1Password",
-        "comment": "You selected 1Password as your password management solution. This tool will be referenced in password policy requirements.",
+        "comment": "Customer selected 1Password for password management",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<ticketing system>",
-        "context": "Ticketing system reference for access request procedures.",
-        "placeholder": "<ticketing system>",
-        "user_response": "Other: Clickup",
-        "action": "smart_replace",
+        "target_text": "<Ticket Management Tool>",
+        "action": "replace",
         "replacement": "Clickup",
-        "comment": "You selected 'Other: Clickup' as your ticket management tool and 'Ticketing system' as your access request method. AI analysis will ensure consistent integration of Clickup for both ticketing and access request workflows.",
+        "comment": "Customer uses other tool: Clickup for ticket management. Access requests will be submitted through ticketing system",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<quarterly>",
-        "context": "Access review frequency specification in policy procedures.",
-        "placeholder": "<quarterly>",
-        "user_response": "Quarterly (Recommended)",
+        "target_text": "<Review Frequency>",
         "action": "replace",
         "replacement": "quarterly",
-        "comment": "You selected 'Quarterly (Recommended)' for access review frequency. This establishes regular review cycles for maintaining access control effectiveness.",
+        "comment": "Customer selected quarterly review frequency (recommended option)",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<24 business hours>",
-        "context": "Access termination timeframe specification for employee departures.",
-        "placeholder": "<24 business hours>",
-        "user_response": "Immediately",
-        "action": "smart_replace",
+        "target_text": "<Termination Timeframe>",
+        "action": "replace",
         "replacement": "immediately",
-        "comment": "You selected 'Immediately' for termination timeframe. AI analysis will determine optimal replacement strategy for any sentence structure containing timeframe references.",
+        "comment": "Customer selected immediate termination timeframe for access revocation",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Policy Owner>",
-        "context": "Policy owner designation for governance and accountability.",
-        "placeholder": "<Policy Owner>",
-        "user_response": "Hassan Tayyab",
         "action": "replace",
         "replacement": "Hassan Tayyab",
-        "comment": "You designated Hassan Tayyab as the policy owner. This person will be responsible for policy maintenance and updates.",
+        "comment": "Customer designated Hassan Tayyab as policy owner",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Exception Approver>",
-        "context": "Exception approver designation for policy deviation requests.",
-        "placeholder": "<Exception Approver>",
-        "user_response": "IT Manager",
         "action": "replace",
         "replacement": "IT Manager",
-        "comment": "You designated IT Manager as the exception approver. This role will handle requests for policy deviations and special access requirements.",
-        "comment_author": "Secfix AI"
-      },
-      {
-        "target_text": "<Violations Reporter>",
-        "context": "Violations reporter designation for security incident reporting.",
-        "placeholder": "<Violations Reporter>",
-        "user_response": "IT Manager",
-        "action": "replace",
-        "replacement": "IT Manager",
-        "comment": "You designated IT Manager as the violations reporter. This role will handle reporting and investigation of policy violations and security incidents.",
+        "comment": "Customer designated IT Manager as exception approver and violations reporter",
         "comment_author": "Secfix AI"
       }
     ]
