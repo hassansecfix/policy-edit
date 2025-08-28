@@ -140,6 +140,10 @@ Extract and confirm ALL data needed for the 12 customization rules:
 }
 ```
 
+**🎯 AI determines optimal restructuring for grammatical correctness**
+
+**IMPORTANT: When restructuring sentences, only fix grammar - do not add new words or concepts**
+
 **🎯 APPLIES TO ALL RULES - RULE_01 through RULE_12**
 
 ## Action Types
