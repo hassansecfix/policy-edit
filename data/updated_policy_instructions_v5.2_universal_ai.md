@@ -203,23 +203,32 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 **Target:** `[ADD COMPANY LOGO]` → Special action: `replace_with_logo`
 
-### **RULE_04: Office Presence (No Office)**
+### **RULE_04: Guest Network Access**
 
-**Target:** `"Company does not have a physical office, all employees work remotely."` → Action: `comment`
+**Target:** `"Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request."` → AI applies universal logic
 
-### **RULE_05: Version Control Tool**
+- If no office → Action: `delete`
+- If has office → Action: `comment`
 
-**Target:** `<Version Control Tool>` → AI applies universal logic
+### **RULE_05: Version Control Tool / Source Code Access**
+
+**Target:** `"Access to Program Source Code"` → AI applies universal logic
+
+- If no version control → Action: `delete`
+- If has version control → Action: `comment`
 
 ### **RULE_06: Password Management Tool**
 
 **Target:** `"Password management systems should be user-friendly"` → AI applies universal logic
 
 - **Note**: Use this exact text to avoid duplicate matches
+- **Additional Target:** `"Password Management System"` → For section deletion when no tool
 
-### **RULE_07: Ticket Management Tool**
+### **RULE_07: Ticket Management Tool / Access Request Method**
 
-**Target:** `<Ticket Management Tool>` → AI applies universal logic
+**Target:** `"All requests will be sent by email to <email>"` → AI applies universal logic
+
+- **Additional Target:** `<Ticket Management Tool>` → AI applies universal logic
 
 ### **RULE_08: Access Review Frequency**
 
@@ -236,7 +245,7 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 ### **RULE_10: Policy Owner**
 
-**Target:** `<Policy Owner>` → AI applies universal logic + name capitalization
+**Target:** `<owner>` → AI applies universal logic + name capitalization
 
 ### **RULE_11: Exception Approver**
 
@@ -261,9 +270,9 @@ Extract and confirm ALL data needed for the 12 customization rules:
 ### **Example Applications:**
 
 **RULE_09**: `<24 business hours>` + "immediately" → Scenario B (grammar incompatibility)  
-**RULE_05**: `<Version Control Tool>` + "GitHub" → Scenario A (fits perfectly)  
-**RULE_06**: `<Password Management Tool>` + "custom solution" → Scenario A or B (AI decides)  
-**RULE_10**: `<Policy Owner>` + "john smith" → Scenario A + name capitalization
+**RULE_07**: `"All requests will be sent by email to <email>"` + "ticketing system" → Scenario B (restructuring)  
+**RULE_06**: `"Password management systems should be user-friendly"` + "1Password" → Scenario A or B (AI decides)  
+**RULE_10**: `<owner>` + "john smith" → Scenario A + name capitalization
 
 ## Critical Examples from v5.0 Rules
 
@@ -395,12 +404,20 @@ Result: "quarterly basisa quarterly basis" (duplication!)
 9. **Name Capitalization:** Properly capitalize person names (e.g., "john smith" → "John Smith")
 10. **AI Grammar Decisions:** AI makes upfront decisions about narrow vs sentence replacement based on grammatical compatibility
 11. **Exact Placeholder Matching:** Look for EXACT placeholders as specified in rules:
-    - `<24 business hours>` (RULE_09)
-    - `"a quarterly basis"` (RULE_08)
+    - `<Company Name>` (RULE_01)
+    - `<Company name, address>` (RULE_02)
+    - `[ADD COMPANY LOGO]` (RULE_03)
+    - `"Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request."` (RULE_04)
+    - `"Access to Program Source Code"` (RULE_05)
     - `"Password management systems should be user-friendly"` (RULE_06)
+    - `"Password Management System"` (RULE_06 section deletion)
+    - `"All requests will be sent by email to <email>"` (RULE_07)
+    - `<Ticket Management Tool>` (RULE_07)
+    - `"a quarterly basis"` (RULE_08)
+    - `<24 business hours>` (RULE_09)
+    - `<owner>` (RULE_10)
     - `<Exceptions: IT Manager>` (RULE_11)
     - `<Violations: IT Manager>` (RULE_12)
-    - Other exact placeholders as specified
 12. **Universal Sentence Analysis:** For ALL rules, analyze the actual sentence structure containing any placeholder to determine if user response fits grammatically - choose Scenario A (narrow) or Scenario B (full sentence) accordingly
 
 ## Final Output Requirements
