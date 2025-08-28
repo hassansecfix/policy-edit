@@ -108,17 +108,39 @@ Extract and confirm ALL data needed for the 12 customization rules:
 }
 ```
 
-## 🧠 **AI Decision Logic**
+## 🧠 **UNIVERSAL AI Decision Logic**
 
-**For each operation, AI must decide:**
+**For EVERY rule operation, AI must:**
 
-1. **Analyze**: Does user response fit grammatically in the sentence?
-2. **IF YES** → Narrow replacement:
-   - `target_text`: `[placeholder from document]`
-   - `replacement`: `[user response]`
-3. **IF NO** → Sentence restructuring:
-   - `target_text`: `[full sentence containing placeholder]`
-   - `replacement`: `[complete restructured sentence]`
+1. **Find the full sentence** containing the target placeholder in the policy document
+2. **Test user response** grammatically in that sentence context
+3. **Choose scenario:**
+
+### **Scenario A: User response fits grammatically (Narrow Replacement)**
+
+```json
+{
+  "target_text": "[exact placeholder from document]",
+  "action": "replace",
+  "replacement": "[user response]",
+  "comment": "[Context about selection]",
+  "comment_author": "Secfix AI"
+}
+```
+
+### **Scenario B: User response needs sentence restructuring (Full Sentence)**
+
+```json
+{
+  "target_text": "[full sentence containing placeholder]",
+  "action": "replace",
+  "replacement": "[complete restructured sentence with user response integrated]",
+  "comment": "[Context about restructuring for grammatical correctness]",
+  "comment_author": "Secfix AI"
+}
+```
+
+**🎯 APPLIES TO ALL RULES - RULE_01 through RULE_12**
 
 ## Action Types
 
@@ -141,56 +163,170 @@ Extract and confirm ALL data needed for the 12 customization rules:
 - **"replace_with_logo"**: Replace placeholder with company logo image
   - replacement field should be empty string
 
-## Universal Rule Examples
+## Specific Policy Rules (REQUIRED)
 
-### **Simple Replacement Example**
+**🎯 AI must follow these EXACT rules to find the right placeholders:**
+
+### **RULE_01: Company Name Replacement**
+
+**🧠 AI analyzes sentence context and chooses:**
+
+**Scenario A (typical):**
 
 ```json
 {
-  "target_text": "[placeholder from document]",
+  "target_text": "<Company Name>",
   "action": "replace",
-  "replacement": "[user response]",
+  "replacement": "Acme Corp",
   "comment": "Replaced",
   "comment_author": "Secfix AI"
 }
 ```
 
-### **Universal AI Decision Examples**
-
-**🧠 AI DECIDES UPFRONT - No downstream processing needed:**
-
-**Scenario 1: User response fits grammatically (narrow replacement)**
+**Scenario B (if sentence restructuring needed):**
 
 ```json
 {
-  "target_text": "[placeholder from document]",
+  "target_text": "[full sentence containing <Company Name>]",
   "action": "replace",
-  "replacement": "[user response that fits grammatically]",
-  "comment": "[Context about user selection]",
+  "replacement": "[restructured sentence with company name]",
+  "comment": "Replaced with grammatical restructuring",
   "comment_author": "Secfix AI"
 }
 ```
 
-**Scenario 2: User response needs sentence restructuring**
+### **RULE_02: Company Name and Address**
+
+**Target:** `<Company name, address>` → AI applies universal logic
+
+### **RULE_03: Company Logo Integration**
+
+**Target:** `[ADD COMPANY LOGO]` → Special action: `replace_with_logo`
+
+### **RULE_04: Office Presence (No Office)**
+
+**Target:** "Company does not have a physical office..." → Action: `comment`
+
+### **RULE_05: Version Control Tool**
+
+**Target:** `<Version Control Tool>` → AI applies universal logic
+
+### **RULE_06: Password Management Tool**
+
+**Target:** `<Password Management Tool>` → AI applies universal logic
+
+### **RULE_07: Ticket Management Tool**
+
+**Target:** `<Ticket Management Tool>` → AI applies universal logic
+
+### **RULE_08: Access Review Frequency**
+
+**Target:** `<Review Frequency>` → AI applies universal logic + default check
+
+- If user selection MATCHES current → use `comment` action
+- If user selection DIFFERENT → apply universal AI decision logic
+
+### **RULE_09: Access Termination Timeframe**
+
+**Target:** `<24 business hours>` → AI applies universal logic
+
+- **Example**: "immediately" → AI detects grammar incompatibility → Scenario B (full sentence)
+
+### **RULE_10: Policy Owner**
+
+**Target:** `<Policy Owner>` → AI applies universal logic + name capitalization
+
+### **RULE_11: Exception Approver**
+
+**Target:** `<Exception Approver>` → AI applies universal logic + name capitalization
+
+### **RULE_12: Violations Reporter**
+
+**Target:** `<Violations Reporter>` → AI applies universal logic + name capitalization
+
+## 🧠 **Universal AI Decision Framework**
+
+**For ANY rule, AI follows this process:**
+
+1. **Finds target placeholder** in the policy document (e.g., `<24 business hours>`, `<Version Control Tool>`)
+2. **Reads full sentence context** containing the placeholder
+3. **Analyzes user response** for grammatical compatibility
+4. **Chooses scenario:**
+   - **Scenario A**: User response fits → target placeholder only
+   - **Scenario B**: User response doesn't fit → target full sentence + restructure
+5. **Outputs final decision**: Ready-to-apply JSON operation
+
+### **Example Applications:**
+
+**RULE_09**: `<24 business hours>` + "immediately" → Scenario B (grammar incompatibility)  
+**RULE_05**: `<Version Control Tool>` + "GitHub" → Scenario A (fits perfectly)  
+**RULE_06**: `<Password Management Tool>` + "custom solution" → Scenario A or B (AI decides)  
+**RULE_10**: `<Policy Owner>` + "john smith" → Scenario A + name capitalization
+
+## Critical Examples from v5.0 Rules
+
+### **Handling "Other" Responses**
+
+**If user selects "Other" and provides custom text:**
 
 ```json
 {
-  "target_text": "[full sentence containing placeholder from document]",
+  "target_text": "<Version Control Tool>",
   "action": "replace",
-  "replacement": "[complete restructured sentence with user response integrated]",
-  "comment": "[Context about restructuring for grammatical correctness]",
+  "replacement": "Clickup",
+  "comment": "Customer uses other tool: Clickup for version control",
   "comment_author": "Secfix AI"
 }
 ```
 
-**🎯 Universal AI Decision Process:**
+### **Handling Default Selections (Avoid Duplication)**
 
-1. **Analyzes**: Does user response fit grammatically in the sentence?
-2. **Determines**: YES = narrow replacement, NO = sentence restructuring
-3. **Outputs**: Optimal target_text and replacement based on analysis
-4. **Result**: Clean, grammatically correct replacement
+**❌ WRONG - Causes duplication:**
 
-**Works with ANY document, ANY sentence pattern - AI figures it out universally!**
+```json
+{
+  "target_text": "<Review Frequency>",
+  "action": "replace",
+  "replacement": "quarterly"
+}
+```
+
+Result: "quarterly basisa quarterly basis" (duplication!)
+
+**✅ CORRECT - Use comment action:**
+
+```json
+{
+  "target_text": "<Review Frequency>",
+  "action": "comment",
+  "replacement": "",
+  "comment": "Customer selected quarterly frequency which matches the current default. No change needed.",
+  "comment_author": "Secfix AI"
+}
+```
+
+### **Universal Examples - Multiple Rules**
+
+**Example 1 - RULE_09 (Scenario B):**
+
+- **Document:** "The maximum time frame for access termination is set at <24 business hours>."
+- **User response:** "immediately"
+- **AI analysis:** "set at immediately" ❌ → Scenario B needed
+- **Output:** Full sentence restructuring
+
+**Example 2 - RULE_05 (Scenario A):**
+
+- **Document:** "All code must be stored in <Version Control Tool>."
+- **User response:** "GitHub"
+- **AI analysis:** "stored in GitHub" ✅ → Scenario A works
+- **Output:** Replace placeholder only
+
+**Example 3 - RULE_06 (AI decides):**
+
+- **Document:** "Employees must use <Password Management Tool> for credentials."
+- **User response:** "our custom internal system"
+- **AI analysis:** Tests fit, chooses optimal approach
+- **Output:** Scenario A or B based on grammar analysis
 
 ## Implementation Guidelines
 
@@ -247,13 +383,17 @@ Extract and confirm ALL data needed for the 12 customization rules:
 ## Universal Processing Rules
 
 1. **Address Normalization:** Convert multi-line addresses to single line with commas
-2. **"Other" Response Handling:** Include exact user text contextually
-3. **Company Size Context:** Include for termination timeframe when <50 employees
-4. **Target Text Accuracy:** AI decides whether to target placeholder OR full sentence
+2. **"Other" Response Handling:** Extract exact user text from "Other" selections
+3. **Company Size Context:** Include termination context when <50 employees
+4. **Target Text Accuracy:** Must EXACTLY match placeholder from policy document
 5. **Default Selection Handling:** When user response matches current document text, use "comment" action to avoid duplication
 6. **Mandatory Placeholder Removal:** All placeholders must be removed using appropriate action
 7. **Comment Attribution:** Always include "Secfix AI" as comment_author
-8. **Universal AI Approach:** AI makes upfront decisions about narrow vs sentence replacement
+8. **Tool Name Extraction:** Remove parenthetical text like "(recommended)" from user responses
+9. **Name Capitalization:** Properly capitalize person names (e.g., "john smith" → "John Smith")
+10. **AI Grammar Decisions:** AI makes upfront decisions about narrow vs sentence replacement based on grammatical compatibility
+11. **Exact Placeholder Matching:** Look for EXACT placeholders as specified in rules (e.g., `<24 business hours>`, not generic terms)
+12. **Universal Sentence Analysis:** For ALL rules, analyze the actual sentence structure containing any placeholder to determine if user response fits grammatically - choose Scenario A (narrow) or Scenario B (full sentence) accordingly
 
 ## Final Output Requirements
 

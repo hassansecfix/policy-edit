@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent / 'lib'))
 # Import our modular utilities
 from libre_office_utils import LibreOfficeManager
 from document_processing import DocumentProcessor, bool_from_str
-from instruction_parser import EditFileReader, OperationExtractor
+from instruction_parser_v5_2 import V52EditFileReader as EditFileReader, validate_v52_format
 from logo_processing import LogoProcessor
 from comment_utils import CommentManager
 
@@ -151,9 +151,9 @@ class TrackedChangesProcessor:
         if not self.csv_path.endswith('.json'):
             return
         
-        # Get operations and metadata
-        all_operations = OperationExtractor.get_all_operations(self.csv_path)
-        metadata = OperationExtractor.get_metadata(self.csv_path)
+        # Get operations and metadata (v5.2 format)
+        all_operations = list(EditFileReader.read_edits(self.csv_path))
+        metadata = EditFileReader.get_metadata(self.csv_path)
         
         # Process logo operations
         logo_processor = LogoProcessor(doc)
@@ -164,8 +164,8 @@ class TrackedChangesProcessor:
         if not self.csv_path.endswith('.json'):
             return
         
-        # Get operations
-        all_operations = OperationExtractor.get_all_operations(self.csv_path)
+        # Get comment operations (v5.2 format)
+        all_operations = list(EditFileReader.get_comment_operations(self.csv_path))
         
         # Process comments
         comment_manager = CommentManager(doc, self.lo_manager.smgr)
@@ -175,17 +175,22 @@ class TrackedChangesProcessor:
         """Process text replacement operations with tracked changes."""
         comment_manager = CommentManager(doc, self.lo_manager.smgr)
         
+        # Validate v5.2 format before processing
+        if not validate_v52_format(self.csv_path):
+            raise ValueError(f"File {self.csv_path} is not in valid v5.2 format")
+        
         for row in EditFileReader.read_edits(self.csv_path):
-            find = (row.get("Find") or "").strip()
-            repl = (row.get("Replace") or "")
+            find = (row.get("target_text") or "").strip()
+            repl = (row.get("replacement") or "")
             if not find:
                 continue
             
-            match_case = bool_from_str(row.get("MatchCase"))
-            whole_word = bool_from_str(row.get("WholeWord"))
-            wildcards = bool_from_str(row.get("Wildcards"))
-            comment_text = (row.get("Comment") or "").strip()
-            author_name = (row.get("Author") or "Secfix AI").strip()
+            # v5.2 format uses simple replacement - no complex matching options needed
+            match_case = False  # AI has already determined exact target_text
+            whole_word = False  # AI has already determined exact target_text
+            wildcards = False   # AI has already determined exact target_text
+            comment_text = (row.get("comment") or "").strip()
+            author_name = (row.get("comment_author") or "Secfix AI").strip()
             
             # SAFETY: Ensure author is always Secfix AI (override any other values)
             if author_name != "Secfix AI":
