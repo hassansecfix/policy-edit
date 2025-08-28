@@ -27,21 +27,21 @@
         "target_text": "[ADD COMPANY LOGO]",
         "action": "replace_with_logo",
         "replacement": "",
-        "comment": "Company logo available: company_logo_default.png",
+        "comment": "Company logo available: company_logo_default.png - will be inserted at this location",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
         "action": "delete",
         "replacement": "",
-        "comment": "Company has no physical office - removing guest network access section",
+        "comment": "Company has no physical office - removing guest network access section as it's not applicable",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Access to Program Source Code",
         "action": "comment",
         "replacement": "",
-        "comment": "Customer uses Clickup for version control - keeping source code access section",
+        "comment": "Customer uses Clickup for version control - source code access section remains applicable",
         "comment_author": "Secfix AI"
       },
       {
@@ -54,8 +54,8 @@
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be submitted through the ticketing system",
-        "comment": "Customer uses Clickup ticketing system for access requests",
+        "replacement": "All requests will be processed through the ticketing system",
+        "comment": "Customer uses ticketing system (Clickup) for access requests - restructured sentence for grammatical correctness",
         "comment_author": "Secfix AI"
       },
       {
@@ -76,28 +76,28 @@
         "target_text": "The maximum time frame for access termination is set at <24 business hours>.",
         "action": "replace",
         "replacement": "Access termination must be completed immediately.",
-        "comment": "Customer requires immediate termination - restructured sentence for grammatical correctness",
+        "comment": "Customer selected immediate termination - restructured sentence for grammatical correctness",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<owner>",
         "action": "replace",
         "replacement": "Hassan Tayyab",
-        "comment": "Policy owner assigned to Hassan Tayyab",
+        "comment": "Hassan Tayyab designated as policy owner",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Exceptions: IT Manager>",
         "action": "replace",
-        "replacement": "Exceptions: IT Manager",
-        "comment": "Exception approver set to IT Manager",
+        "replacement": "IT Manager",
+        "comment": "IT Manager designated as exception approver",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Violations: IT Manager>",
         "action": "replace",
-        "replacement": "Violations: IT Manager",
-        "comment": "Violations reporter set to IT Manager",
+        "replacement": "IT Manager",
+        "comment": "IT Manager designated as violations reporter",
         "comment_author": "Secfix AI"
       }
     ]
