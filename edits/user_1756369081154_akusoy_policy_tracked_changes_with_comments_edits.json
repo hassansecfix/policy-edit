@@ -41,7 +41,7 @@
         "target_text": "Access to Program Source Code",
         "action": "comment",
         "replacement": "",
-        "comment": "You indicated you use ClickUp for version control, so this section remains applicable. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Clickup for version control, so this section remains applicable. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -54,8 +54,8 @@
       {
         "target_text": "All requests will be sent by email to <email>",
         "action": "replace",
-        "replacement": "All requests will be submitted through the ClickUp ticketing system",
-        "comment": "You indicated you use ClickUp as your ticketing system and prefer ticketing system for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
+        "replacement": "All requests will be submitted through the ticketing system (Clickup)",
+        "comment": "You indicated you use ticketing system (Clickup) for access requests. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks.",
         "comment_author": "Secfix AI"
       },
       {
@@ -69,7 +69,7 @@
         "target_text": "<24 business hours>",
         "action": "replace",
         "replacement": "Access will be terminated immediately",
-        "comment": "You selected immediately. The sentence has been restructured for grammatical correctness. Immediate termination ensures security but requires responsive processes; Longer timeframes allow for proper handovers but increase security risk.",
+        "comment": "You selected immediately instead of the default timeframe. The sentence has been restructured for grammatical correctness. Faster termination = better security but requires responsive processes; Longer timeframes = easier to manage but higher security risk.",
         "comment_author": "Secfix AI"
       },
       {
