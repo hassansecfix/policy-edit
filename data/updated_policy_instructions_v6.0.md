@@ -20,7 +20,8 @@ _These rules apply to ANY policy document type_
 For ALL `replace` actions, AI must choose between:
 
 - **Scenario A (Exact):** Replace only the placeholder/target text
-- **Scenario B (Sentence):** Rewrite the entire sentence for grammar **ONLY** - do not add new words or concepts
+- **Scenario B (Sentence):** Rewrite the entire sentence for grammar
+  - **IMPORTANT: When restructuring sentences, only fix grammar - do not add new words or concepts**
 
 **Decision Process:**
 
