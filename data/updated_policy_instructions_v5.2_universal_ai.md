@@ -255,9 +255,21 @@ Extract and confirm ALL data needed for the 12 customization rules:
 
 **Target:** `<Exceptions: IT Manager>` → AI applies universal logic + name capitalization
 
+**Contextual Placeholder Handling:**
+
+- Extract core value from contextual placeholder
+- `<Exceptions: IT Manager>` → Replace entire placeholder with just `IT Manager`
+- Remove the descriptive prefix, keep only the role
+
 ### **RULE_12: Violations Reporter**
 
 **Target:** `<Violations: IT Manager>` → AI applies universal logic + name capitalization
+
+**Contextual Placeholder Handling:**
+
+- Extract core value from contextual placeholder
+- `<Violations: IT Manager>` → Replace entire placeholder with just `IT Manager`
+- Remove the descriptive prefix, keep only the role
 
 ## 🧠 **Universal AI Decision Framework**
 
