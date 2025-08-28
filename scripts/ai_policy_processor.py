@@ -9,7 +9,7 @@ Usage:
     python3 ai_policy_processor.py \
         --policy data/policy.docx \
         --questionnaire data/questionnaire.csv \
-        --prompt data/updated_policy_instructions_v5.0_context_aware.md \
+        --prompt data/updated_policy_instructions_v4.2.md \
         --output edits/ai_generated_edits.json \
         --api-key YOUR_CLAUDE_API_KEY
 
@@ -209,7 +209,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument('--policy', required=True, help='Path to policy DOCX file')
     parser.add_argument('--prompt', required=True, help='Path to AI prompt markdown file (prompt.md)')
     parser.add_argument('--policy-instructions', required=True, 
-                       help='Path to policy processing instructions (updated_policy_instructions_v5.0_context_aware.md)')
+                       help='Path to policy processing instructions (updated_policy_instructions_v4.2.md)')
     parser.add_argument('--output', required=True, help='Output path for generated JSON file')
     
     # Questionnaire input (mutually exclusive)
