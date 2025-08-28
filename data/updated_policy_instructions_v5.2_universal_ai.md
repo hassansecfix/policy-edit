@@ -221,12 +221,6 @@ Extract and confirm ALL data needed for the 12 customization rules:
 - If no version control → Action: `delete`
 - If has version control → Action: `comment`
 
-**Tool Classification:**
-
-- **Actual Version Control:** Git, GitHub, GitLab, Bitbucket, SVN, Perforce, Mercurial
-- **NOT Version Control:** Clickup, Jira, Asana, Trello, Monday.com, Slack (these are project management/ticketing)
-- **If "Other" response is NOT actual version control tool → treat as "None" → Action: `delete`**
-
 ### **RULE_06: Password Management Tool**
 
 **Target:** `"Password management systems should be user-friendly"` → AI applies universal logic
