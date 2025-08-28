@@ -17,31 +17,24 @@
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "For the purposes of this document, <Company Name> will be referred to as \"Company\" in all subsequent mentions. This terminology is utilized for simplicity and ease of reading. Please interpret all mentions of \"Company\" as direct references to <Company Name>.",
+        "target_text": "<Company name, address>",
         "action": "replace",
-        "replacement": "For the purposes of this document, Secfix GmbH will be referred to as \"Company\" in all subsequent mentions. This terminology is utilized for simplicity and ease of reading. Please interpret all mentions of \"Company\" as direct references to Secfix GmbH.",
+        "replacement": "Secfix GmbH, Salvatorplatz, 8033, Munich",
         "comment": "Replaced",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<Company Address>",
-        "action": "replace",
-        "replacement": "Salvatorplatz, 8033, Munich",
-        "comment": "Replaced",
-        "comment_author": "Secfix AI"
-      },
-      {
-        "target_text": "<Company Logo>",
+        "target_text": "[ADD COMPANY LOGO]",
         "action": "replace_with_logo",
         "replacement": "",
-        "comment": "Company logo available: company_logo_default.png",
+        "comment": "Company logo available: company_logo_default.png - replacing placeholder with company logo image",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "Company does not have a physical office, all employees work remotely.",
+        "target_text": "Company does not have a physical office",
         "action": "comment",
         "replacement": "",
-        "comment": "Customer confirmed: No physical office, remote work setup",
+        "comment": "Customer confirmed no physical office - policy section remains applicable as written",
         "comment_author": "Secfix AI"
       },
       {
@@ -62,21 +55,21 @@
         "target_text": "<Ticket Management Tool>",
         "action": "replace",
         "replacement": "Clickup",
-        "comment": "Customer uses other tool: Clickup for ticket management. Access requests will be submitted through ticketing system",
+        "comment": "Customer uses other tool: Clickup for ticket management with ticketing system access request method",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Review Frequency>",
-        "action": "replace",
-        "replacement": "quarterly",
-        "comment": "Customer selected quarterly review frequency (recommended option)",
+        "action": "comment",
+        "replacement": "",
+        "comment": "Customer selected quarterly frequency which matches the current default. No change needed.",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<Termination Timeframe>",
+        "target_text": "The maximum time frame for access termination is set at <24 business hours>.",
         "action": "replace",
-        "replacement": "immediately",
-        "comment": "Customer selected immediate termination timeframe for access revocation",
+        "replacement": "Access termination will be completed immediately.",
+        "comment": "Replaced with grammatical restructuring for immediate termination timeframe",
         "comment_author": "Secfix AI"
       },
       {
@@ -90,7 +83,14 @@
         "target_text": "<Exception Approver>",
         "action": "replace",
         "replacement": "IT Manager",
-        "comment": "Customer designated IT Manager as exception approver and violations reporter",
+        "comment": "Customer designated IT Manager as exception approver",
+        "comment_author": "Secfix AI"
+      },
+      {
+        "target_text": "<Violations Reporter>",
+        "action": "replace",
+        "replacement": "IT Manager",
+        "comment": "Customer designated IT Manager as violations reporter",
         "comment_author": "Secfix AI"
       }
     ]
