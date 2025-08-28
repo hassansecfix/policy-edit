@@ -58,6 +58,48 @@ Generate a JSON structure with the following **enhanced format**:
 
 ## Context-Aware Rule Examples
 
+### **RULE_01: Company Name Replacement**
+
+**Traditional approach (still supported):**
+
+```json
+{
+  "target_text": "<Company Name>",
+  "action": "replace",
+  "replacement": "Acme Corp",
+  "comment": "Replaced",
+  "comment_author": "Secfix AI"
+}
+```
+
+### **RULE_02: Company Name and Address**
+
+**CRITICAL: Use correct placeholder format:**
+
+```json
+{
+  "target_text": "<Company name, address>",
+  "action": "replace",
+  "replacement": "Acme Corp, 123 Main St, New York, NY 10001",
+  "comment": "Replaced",
+  "comment_author": "Secfix AI"
+}
+```
+
+### **RULE_03: Company Logo Integration**
+
+**CRITICAL: Use correct placeholder format:**
+
+```json
+{
+  "target_text": "[ADD COMPANY LOGO]",
+  "action": "replace_with_logo",
+  "replacement": "",
+  "comment": "Company logo inserted from questionnaire upload",
+  "comment_author": "Secfix AI"
+}
+```
+
 ### **Enhanced RULE_09: Access Termination Timeframe**
 
 **Instead of hardcoded scenarios, now use smart_replace:**
@@ -105,6 +147,23 @@ Generate a JSON structure with the following **enhanced format**:
 2. **Detects** article incompatibility ("a annual" is wrong)
 3. **Transforms** to: "an annual basis"
 4. **Maintains** narrow targeting since only article needs change
+
+### **Enhanced RULE_06: Password Management System**
+
+**Context-aware tool integration:**
+
+```json
+{
+  "target_text": "Password management systems should be user-friendly",
+  "context": "Password management systems should be user-friendly and accessible to all employees.",
+  "placeholder": "Password management systems should be user-friendly",
+  "user_response": "1Password",
+  "action": "smart_replace",
+  "replacement": "Password management systems, specifically 1Password, should be user-friendly",
+  "comment": "You indicated you use 1Password for password management. Grammar analysis integrates your specific tool while maintaining sentence structure.",
+  "comment_author": "Secfix AI"
+}
+```
 
 ### **Enhanced RULE_11: Exception Approval Authority**
 
