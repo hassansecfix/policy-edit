@@ -14,80 +14,33 @@ Read the processing instructions to understand all customization rules and JSON 
 
 ## CRITICAL Requirements:
 
-**You must complete internal data validation before generating JSON:**
-
-1. **Verify question count** matches form type expectations (SaaS=20, Professional Services=18)
-2. **Extract ALL rule-relevant data** for the 12 customization rules (see processing instructions checklist)
-3. **Follow JSON formatting requirements** - proper structure with metadata and operations array
-4. **Include comment_author** field for all operations with "Secfix AI" as default
+**Complete all validation and processing steps as specified in the processing instructions before generating JSON.**
 
 ## Important Guidelines:
 
-- Follow the processing instructions exactly - use the specified JSON output format with context-aware smart_replace operations
-- **Include detailed comments for all rules except company name, address, and logo** (which use "Replaced")
+- **Follow the processing instructions exactly** - use the specified JSON output format and action types defined in the instructions
+- **Follow all rules and guidelines** as specified in the processing instructions document
 - Remove markdown asterisks from target_text and replacement fields (Word doesn't understand \*\* formatting)
-- Provide exact "target_text" and "replacement" values for each operation
-- Use appropriate action types: "replace", "delete", or "comment"
-- Handle "Other" responses contextually using the guidelines provided
-- Normalize multi-line addresses to single line format with commas when provided
-- Extract tool names properly (remove parenthetical text like "(recommended)")
-- Include company size context for termination timeframe when <50 employees
-- **CRITICAL: Ensure all replacement text is grammatically correct in context** - follow the grammatical correctness requirements in the processing instructions
-- **CRITICAL: ALL placeholders (< >, [ ], { }) must be replaced with clean text, even if user selects default option - NEVER use "comment" action for placeholder removal**
-- **CRITICAL: target_text must EXACTLY match text from the policy document - NEVER invent or make up target_text that doesn't exist**
+- Handle "Other" responses contextually using the guidelines provided in the instructions
+- **CRITICAL: target_text must EXACTLY match text from the policy document** - NEVER invent or make up target_text that doesn't exist
+- **CRITICAL: Follow the exact JSON structure and field requirements** specified in the processing instructions
 
 ## Expected JSON Output:
 
-Generate a complete JSON structure as specified in the processing instructions, including:
+Generate a complete JSON structure **exactly as specified in the processing instructions**. The structure, field names, action types, and formatting requirements are all defined in the processing instructions document.
 
-```json
-{
-  "metadata": {
-    "generated_timestamp": "[ISO timestamp]",
-    "company_name": "[from CSV]",
-    "format_version": "operations",
-    "total_operations": [count],
-    "generator": "PolicyWorkflow v2.0"
-  },
-  "instructions": {
-    "operations": [
-      {
-        "target_text": "[exact text to find]",
-        "action": "replace|delete|comment",
-        "replacement": "[replacement text for replace action, empty string for delete/comment]",
-        "comment": "[detailed reasoning for rules 4-12, 'Replaced' for rules 1-3]",
-        "comment_author": "Secfix AI"
-      }
-    ]
-  }
-}
-```
+## Processing Requirements:
 
-## Action Types:
+Follow all comment requirements, processing rules, and guidelines **exactly as specified in the processing instructions document**. This includes:
 
-- **"replace"**: Suggest text replacement with detailed comment explaining the change
-- **"delete"**: Suggest text deletion with detailed comment explaining why
-- **"comment"**: Add explanatory comment only (no text change needed)
-
-## Comment Requirements:
-
-- **For RULE_01, RULE_02, RULE_03**: Use "Replaced"
-- **For RULE_04-RULE_12**: Format as "[Customer-specific context] [General business logic]"
-- Reference what the customer indicated in their responses
-- Explain the business principle (e.g., "No office = no guest network needed")
-
-## Critical Processing Rules:
-
-1. **Address Normalization**: Convert multi-line addresses to single line with commas
-2. **"Other" Response Handling**: Interpret custom text contextually for each rule
-3. **Company Size Context**: Include for termination timeframe when <50 employees
-4. **Password Management Target Text**: Use `Password management systems should be user-friendly` to avoid duplicate matches
-5. **Separate Exception/Violations Placeholders**: Use `<Exceptions: IT Manager>` and `<Violations: IT Manager>` as distinct targets
-6. **Simplified Termination Timeframe**: Use `<24 business hours>` placeholder format
-7. **NO ACTION REQUIRED Cases**: Use "comment" action with appropriate reasoning
-8. **Tool Name Extraction**: Remove parenthetical text like "(recommended)" from tool names
-9. **MANDATORY PLACEHOLDER REMOVAL**: ALL placeholders must be replaced with clean text using "replace" action, even for default selections
-10. **TARGET TEXT ACCURACY**: target_text must EXACTLY match actual text from the provided policy document - do not invent text
+- Comment formatting and content requirements
+- Address normalization rules
+- "Other" response handling
+- Company size context requirements
+- Target text accuracy requirements
+- Placeholder removal requirements
+- Action type selection criteria
+- All other processing rules defined in the instructions
 
 **IMPORTANT**: Output ONLY the clean JSON structure. Do NOT include any internal validation results, processing details, or explanatory text outside the JSON. The response should start directly with the opening brace `{` and end with the closing brace `}`.
 
