@@ -258,7 +258,7 @@ Extract and confirm ALL data needed for the 12 customization rules:
 **Contextual Placeholder Handling:**
 
 - Extract core value from contextual placeholder
-- `<Exceptions: IT Manager>` → Replace entire placeholder with just `IT Manager`
+- `<Exceptions: IT Manager>` → Replace entire placeholder with just `[user selected answer]`
 - Remove the descriptive prefix, keep only the role
 
 ### **RULE_12: Violations Reporter**
@@ -268,7 +268,7 @@ Extract and confirm ALL data needed for the 12 customization rules:
 **Contextual Placeholder Handling:**
 
 - Extract core value from contextual placeholder
-- `<Violations: IT Manager>` → Replace entire placeholder with just `IT Manager`
+- `<Violations: IT Manager>` → Replace entire placeholder with just `[user selected answer]`
 - Remove the descriptive prefix, keep only the role
 
 ## 🧠 **Universal AI Decision Framework**
