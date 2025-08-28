@@ -31,20 +31,20 @@
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "guest network access",
+        "target_text": "Guest Network Access",
         "action": "delete",
         "replacement": "",
-        "comment": "You indicated no physical office. Guest network access provisions removed as they are not applicable to your business model.",
+        "comment": "You indicated no physical office. Companies without offices typically don't need guest network policies since there's no physical location for guests to access networks.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "Version control systems should be secure",
-        "context": "Version control systems should be secure and accessible to authorized personnel.",
+        "context": "Version control systems should be secure and accessible to authorized personnel only.",
         "placeholder": "Version control systems should be secure",
         "user_response": "Clickup",
         "action": "smart_replace",
         "replacement": "Version control systems, specifically Clickup, should be secure",
-        "comment": "You indicated you use Clickup for version control. Grammar analysis integrates your specific tool while maintaining sentence structure.",
+        "comment": "You indicated you use Clickup for version control. Grammar analysis will integrate your specific tool while maintaining sentence structure.",
         "comment_author": "Secfix AI"
       },
       {
@@ -54,44 +54,44 @@
         "user_response": "1Password",
         "action": "smart_replace",
         "replacement": "Password management systems, specifically 1Password, should be user-friendly",
-        "comment": "You indicated you use 1Password for password management. Grammar analysis integrates your specific tool while maintaining sentence structure.",
+        "comment": "You indicated you use 1Password for password management. Grammar analysis will integrate your specific tool while maintaining sentence structure.",
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "ticketing system",
-        "context": "Access requests should be submitted through the ticketing system for proper tracking.",
+        "target_text": "Access requests should be submitted through the ticketing system",
+        "context": "Access requests should be submitted through the ticketing system for proper tracking and approval.",
         "placeholder": "ticketing system",
         "user_response": "Clickup",
         "action": "smart_replace",
-        "replacement": "Clickup ticketing system",
-        "comment": "You indicated you use Clickup for ticket management and selected ticketing system as your access request method. Grammar analysis will integrate your specific tool name.",
+        "replacement": "Access requests should be submitted through Clickup",
+        "comment": "You indicated you use Clickup for ticket management and selected ticketing system as your access request method. Grammar analysis will ensure proper integration of your specific tool.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "a quarterly basis",
-        "context": "Reviews will be conducted on a quarterly basis.",
-        "placeholder": "quarterly",
-        "user_response": "Quarterly",
-        "action": "replace",
-        "replacement": "a quarterly basis",
-        "comment": "You selected quarterly frequency for access reviews, which matches the recommended frequency.",
+        "action": "comment",
+        "replacement": "",
+        "comment": "You selected quarterly frequency which matches the current default. We recommend quarterly reviews for most companies. No change needed.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<24 business hours>",
-        "context": "Access will be terminated within <24 business hours> of the termination notice.",
+        "context": "Access termination must be completed within <24 business hours> of notification.",
         "placeholder": "<24 business hours>",
-        "user_response": "Immediately",
+        "user_response": "immediately",
         "action": "smart_replace",
-        "replacement": "Immediately",
-        "comment": "You selected 'Immediately' for termination timeframe. Grammar analysis will determine optimal replacement strategy based on context compatibility.",
+        "replacement": "immediately",
+        "comment": "You selected 'immediately' for access termination timeframe. Grammar analysis will determine optimal replacement strategy based on context compatibility.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Policy Owner>",
-        "action": "replace",
+        "context": "This policy is owned and maintained by <Policy Owner>.",
+        "placeholder": "<Policy Owner>",
+        "user_response": "Hassan Tayyab",
+        "action": "smart_replace",
         "replacement": "Hassan Tayyab",
-        "comment": "You indicated Hassan Tayyab as the policy owner responsible for maintaining and updating this access control policy.",
+        "comment": "You indicated Hassan Tayyab is the policy owner. Grammar analysis will ensure proper name formatting.",
         "comment_author": "Secfix AI"
       },
       {
@@ -99,9 +99,9 @@
         "context": "Policy exceptions must be approved by <Exceptions: IT Manager>.",
         "placeholder": "<Exceptions: IT Manager>",
         "user_response": "IT Manager",
-        "action": "replace",
+        "action": "smart_replace",
         "replacement": "IT Manager",
-        "comment": "You indicated IT Manager is responsible for approving policy exceptions.",
+        "comment": "You indicated IT Manager is responsible for approving exceptions. Grammar analysis will ensure proper formatting.",
         "comment_author": "Secfix AI"
       },
       {
@@ -109,9 +109,9 @@
         "context": "Policy violations should be reported to <Violations: IT Manager>.",
         "placeholder": "<Violations: IT Manager>",
         "user_response": "IT Manager",
-        "action": "replace",
+        "action": "smart_replace",
         "replacement": "IT Manager",
-        "comment": "You indicated IT Manager handles policy violations reporting and investigation.",
+        "comment": "You indicated IT Manager handles policy violations. Grammar analysis will ensure proper formatting and extract clean text from contextual placeholder.",
         "comment_author": "Secfix AI"
       }
     ]
