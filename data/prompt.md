@@ -23,6 +23,8 @@ Read the processing instructions to understand all customization rules and JSON 
 - Remove markdown asterisks from target_text and replacement fields (Word doesn't understand \*\* formatting)
 - Handle "Other" responses contextually using the guidelines provided in the instructions
 - **CRITICAL: target_text must EXACTLY match text from the policy document** - NEVER invent or make up target_text that doesn't exist
+- **CRITICAL: context field must contain ACTUAL sentence from the policy document** - NEVER use examples from instructions
+- **CRITICAL: When user response matches current document text, use "comment" action** - do NOT use "replace" or "smart_replace" to avoid duplication
 - **CRITICAL: Follow the exact JSON structure and field requirements** specified in the processing instructions
 
 ## Expected JSON Output:

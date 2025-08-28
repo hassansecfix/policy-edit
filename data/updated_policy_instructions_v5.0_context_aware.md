@@ -208,10 +208,27 @@ Generate a JSON structure with the following **enhanced format**:
 
 **UNIVERSAL: Provide raw data for grammar analyzer to process:**
 
+**CRITICAL: Use ACTUAL text from the provided document, not examples:**
+
 ```json
 {
   "target_text": "<24 business hours>",
-  "context": "Access will be terminated within <24 business hours> of the termination notice.",
+  "context": "[ACTUAL SENTENCE from the policy document containing the placeholder]",
+  "placeholder": "<24 business hours>",
+  "user_response": "immediately",
+  "action": "smart_replace",
+  "replacement": "immediately",
+  "comment": "You selected 'immediately' for termination timeframe. Grammar analysis will determine optimal replacement strategy based on context compatibility.",
+  "comment_author": "Secfix AI"
+}
+```
+
+**Example if document says:** "The maximum time frame for access termination is set at <24 business hours>."
+
+```json
+{
+  "target_text": "<24 business hours>",
+  "context": "The maximum time frame for access termination is set at <24 business hours>.",
   "placeholder": "<24 business hours>",
   "user_response": "immediately",
   "action": "smart_replace",
@@ -224,24 +241,41 @@ Generate a JSON structure with the following **enhanced format**:
 **What the Grammar Analyzer Does:**
 
 1. **Receives** raw user response: "immediately"
-2. **Analyzes** context: "within <24 business hours>" structure
-3. **Determines** "immediately" doesn't fit grammatically in "within [X]" pattern
+2. **Analyzes** actual context from document (e.g., "set at <24 business hours>" structure)
+3. **Determines** "immediately" doesn't fit grammatically in "set at [X]" pattern
 4. **Chooses** sentence restructuring strategy automatically
-5. **Outputs** final replacement: "Access will be terminated immediately"
+5. **Outputs** final replacement based on actual context (e.g., "The maximum time frame for access termination is immediate")
 
 ### **Enhanced RULE_08: Access Review Frequency**
 
-**UNIVERSAL: Let grammar analyzer handle article compatibility:**
+**UNIVERSAL: Handle both default and different selections:**
+
+**If user selects DIFFERENT frequency (e.g., "annual" instead of "quarterly"):**
 
 ```json
 {
   "target_text": "a quarterly basis",
-  "context": "Reviews will be conducted on a quarterly basis.",
+  "context": "[ACTUAL sentence from document containing 'a quarterly basis']",
   "placeholder": "quarterly",
   "user_response": "annual",
   "action": "smart_replace",
   "replacement": "annual",
   "comment": "You selected annual frequency instead of quarterly. Grammar analysis will ensure proper article usage and context compatibility.",
+  "comment_author": "Secfix AI"
+}
+```
+
+**If user selects DEFAULT frequency (e.g., "quarterly" - matches current):**
+
+```json
+{
+  "target_text": "a quarterly basis",
+  "context": "[ACTUAL sentence from document containing 'a quarterly basis']",
+  "placeholder": "quarterly",
+  "user_response": "quarterly",
+  "action": "comment",
+  "replacement": "",
+  "comment": "You selected quarterly frequency which matches the current default. We recommend quarterly reviews for most companies. No change needed.",
   "comment_author": "Secfix AI"
 }
 ```
@@ -323,34 +357,79 @@ Generate a JSON structure with the following **enhanced format**:
 
 ## Implementation Guidelines
 
-### **When to Use smart_replace:**
+### **When to Use Each Action:**
 
-**Use smart_replace for:**
+**Use "smart_replace" for:**
 
+- User response is DIFFERENT from current document text
 - Any placeholder replacement where user response might not fit grammatically
 - Situations requiring article compatibility (a/an)
 - Name/role assignments needing capitalization
 - Timeframe responses that might need sentence restructuring
 - Tool/system names needing preservation of formatting
 
-**Keep using traditional replace for:**
+**Use "comment" action for:**
 
-- Simple, guaranteed-compatible replacements
-- Logo operations (replace_with_logo)
-- Delete operations
-- Comment-only operations
+- User response MATCHES current document text (default selection)
+- No replacement needed, just add explanatory comment
+- When documenting why no change was made
+
+**Use traditional "replace" for:**
+
+- Simple, guaranteed-compatible replacements where user response is different
+- Company name/address substitutions
+
+**Use "delete" for:**
+
+- Removing entire sections (e.g., no office = remove guest network section)
+
+**Use "replace_with_logo" for:**
+
+- Logo placeholder replacements
+
+### **CRITICAL: Default Selection Examples**
+
+**❌ WRONG - Causes duplication:**
+
+```json
+{
+  "target_text": "a quarterly basis",
+  "action": "replace",
+  "replacement": "a quarterly basis"
+}
+```
+
+**Result:** "...on a quarterly basisa quarterly basis..." (duplication!)
+
+**✅ CORRECT - Use comment action:**
+
+```json
+{
+  "target_text": "a quarterly basis",
+  "action": "comment",
+  "replacement": "",
+  "comment": "You selected quarterly frequency which matches the current default. No change needed.",
+  "comment_author": "Secfix AI"
+}
+```
+
+**Result:** "...on a quarterly basis..." (no duplication, just comment added)
 
 ### **Context Field Requirements:**
 
 **For smart_replace operations, always include:**
 
 - **target_text**: EXACT placeholder from document (e.g., "<24 business hours>")
-- **context**: Full sentence containing the placeholder
+- **context**: ACTUAL full sentence from the provided policy document containing the placeholder
 - **placeholder**: The original placeholder text (same as target_text)
 - **user_response**: User's actual raw response from questionnaire
 - **replacement**: User's raw response (grammar analyzer will transform this)
 
-**CRITICAL PRINCIPLE: JSON provides RAW DATA, grammar analyzer handles intelligence**
+**CRITICAL REQUIREMENTS:**
+
+- **context** must be EXACT text from the provided document, NOT examples from instructions
+- **target_text** must EXACTLY match placeholder found in the document
+- JSON provides RAW DATA from actual document, grammar analyzer handles intelligence
 
 ## Comment Format Requirements
 
@@ -377,9 +456,13 @@ Generate a JSON structure with the following **enhanced format**:
 7. **Mandatory Placeholder Removal:** All placeholders must be removed using appropriate action (smart_replace for grammar-sensitive, replace for simple)
 8. **Comment Attribution:** Always include "Secfix AI" as comment_author
 9. **Target Text Accuracy:** target_text must EXACTLY match text from the provided policy document - NEVER invent or make up target_text
-10. **Universal Approach:** Use smart_replace for operations requiring grammar analysis, provide raw user data for processing
+10. **Context Text Accuracy:** context field must contain ACTUAL sentence from the provided policy document - NEVER use examples from instructions
+11. **Default Selection Handling:** When user response matches current document text, use "comment" action to avoid duplication - do NOT use "replace" or "smart_replace"
+12. **Universal Approach:** Use smart_replace for operations requiring grammar analysis, provide raw user data for processing
 
 ## Example Complete Operation Set
+
+**CRITICAL: All context fields must use ACTUAL text from the provided policy document**
 
 ```json
 {
@@ -401,7 +484,7 @@ Generate a JSON structure with the following **enhanced format**:
       },
       {
         "target_text": "<24 business hours>",
-        "context": "User access will be revoked within <24 business hours> of termination.",
+        "context": "[ACTUAL sentence from document containing placeholder]",
         "placeholder": "<24 business hours>",
         "user_response": "immediately",
         "action": "smart_replace",
