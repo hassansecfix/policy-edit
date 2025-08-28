@@ -175,9 +175,9 @@ class TrackedChangesProcessor:
         """Process text replacement operations with tracked changes."""
         comment_manager = CommentManager(doc, self.lo_manager.smgr)
         
-        # Validate v5.2 format before processing
-        if not validate_v52_format(self.csv_path):
-            raise ValueError(f"File {self.csv_path} is not in valid v5.2 format")
+        # Validate format before processing
+        if not validate_format(self.csv_path):
+            raise ValueError(f"File {self.csv_path} is not in valid format")
         
         for row in EditFileReader.read_edits(self.csv_path):
             find = (row.get("target_text") or "").strip()
