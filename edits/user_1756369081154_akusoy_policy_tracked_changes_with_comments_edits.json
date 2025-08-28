@@ -41,7 +41,7 @@
         "target_text": "Access to Program Source Code",
         "action": "comment",
         "replacement": "",
-        "comment": "You indicated you use Clickup for version control, so this section remains relevant for protecting your intellectual property. No version control = no source code to protect; Using version control = IP protection needed.",
+        "comment": "You indicated you use Clickup for version control, so this section remains relevant. No version control = no source code to protect; Using version control = IP protection needed.",
         "comment_author": "Secfix AI"
       },
       {
@@ -69,7 +69,7 @@
         "target_text": "Access will be terminated within <24 business hours>",
         "action": "replace",
         "replacement": "Access will be terminated immediately",
-        "comment": "You selected immediately instead of the default timeframe. The sentence has been restructured for grammatical correctness. Immediate termination ensures no unauthorized access continues after employment ends, which is especially important for security-sensitive roles.",
+        "comment": "You selected immediately instead of the default timeframe. The sentence has been restructured for grammatical correctness. Immediate termination provides the highest security but requires efficient processes; Longer timeframes allow for proper handovers but increase security risk.",
         "comment_author": "Secfix AI"
       },
       {
