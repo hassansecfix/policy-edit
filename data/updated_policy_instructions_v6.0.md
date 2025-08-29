@@ -123,13 +123,13 @@ _These rules are specific to the Access Control Policy document_
 ### **RULE_11: Exception Approver**
 
 - **Target:** `<Exceptions: IT Manager>`
-- **Action:** `replace` Replace entire placeholder with just `[user selected answer]`
+- **Action:** `replace` Replace ENTIRE placeholder with just user selected answer
 - **AI Logic:** Always Scenario A (exact replacement of full placeholder)
 
 ### **RULE_12: Violations Reporter**
 
 - **Target:** `<Violations: IT Manager>`
-- **Action:** `replace` Replace entire placeholder with just `[user selected answer]`
+- **Action:** `replace` Replace ENTIRE placeholder with just user selected answer
 - **AI Logic:** Always Scenario A (exact replacement of full placeholder)
 
 ---
