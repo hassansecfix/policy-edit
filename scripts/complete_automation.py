@@ -24,6 +24,7 @@ import os
 import sys
 import argparse
 import json
+import time
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -316,6 +317,14 @@ class AutomationOrchestrator:
             # Show completion summary
             self.show_completion_summary()
             
+            # Wait for GitHub Actions to start before cleanup
+            if self.user_id and not self.args.skip_github and not self.args.no_cleanup_delay:
+                # Use command line arg, fallback to environment variable, default to 30
+                cleanup_delay = self.args.cleanup_delay or int(os.environ.get('GITHUB_ACTIONS_STARTUP_DELAY', '30'))
+                print(f"\n⏳ Waiting {cleanup_delay} seconds for GitHub Actions to start and checkout branch...")
+                print("💡 Use --no-cleanup-delay to skip this wait (risk: GitHub Actions checkout may fail)")
+                time.sleep(cleanup_delay)
+            
             # Clean up user-specific git operations
             if self.user_id:
                 print("\n🧹 Cleaning up user-specific git operations...")
@@ -368,6 +377,10 @@ def create_argument_parser() -> argparse.ArgumentParser:
                        help='Optional path to company logo image (png/jpg) to insert in header')
     parser.add_argument('--user-id', 
                        help='Unique user identifier for multi-user isolation (auto-generated if not provided)')
+    parser.add_argument('--no-cleanup-delay', action='store_true',
+                       help='Skip waiting for GitHub Actions before cleanup (faster but may cause checkout errors)')
+    parser.add_argument('--cleanup-delay', type=int, default=30,
+                       help='Seconds to wait for GitHub Actions startup before cleanup (default: 30)')
     
     return parser
 
