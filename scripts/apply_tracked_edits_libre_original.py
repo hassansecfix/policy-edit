@@ -1016,7 +1016,7 @@ def main():
                     search_desc = doc.createSearchDescriptor()
                     search_desc.SearchString = target_text
                     search_desc.SearchCaseSensitive = False
-                    search_desc.SearchWords = False
+                    search_desc.SearchWords = True  # Use exact word matching to avoid partial matches
                     
                     found_range = doc.findFirst(search_desc)
                     added_count = 0

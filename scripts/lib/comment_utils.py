@@ -64,7 +64,7 @@ class CommentManager:
             search_desc = self.doc.createSearchDescriptor()
             search_desc.SearchString = target_text
             search_desc.SearchCaseSensitive = False
-            search_desc.SearchWords = False
+            search_desc.SearchWords = True  # Use exact word matching to avoid partial matches
             
             found_range = self.doc.findFirst(search_desc)
             added_count = 0
@@ -256,7 +256,7 @@ class CommentManager:
         search_desc = self.doc.createSearchDescriptor()
         search_desc.SearchString = search_text
         search_desc.SearchCaseSensitive = match_case
-        search_desc.SearchWords = whole_word
+        search_desc.SearchWords = True  # Always use exact word matching for comments
         
         found_range = self.doc.findFirst(search_desc)
         added_count = 0
