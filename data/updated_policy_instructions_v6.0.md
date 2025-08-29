@@ -115,15 +115,15 @@ _These rules are specific to the Access Control Policy document_
 
 - **Target:** `<Exceptions: IT Manager>`
 - **Action:** `replace` entire placeholder with user answer only
+- **CRITICAL:** If user selects "IT Manager", replace `<Exceptions: IT Manager>` with just `IT Manager` (NOT "Exceptions: IT Manager")
 - **AI Logic:** Always Scenario A
 
 ### **RULE_12: Violations Reporter**
 
 - **Target:** `<Violations: IT Manager>`
 - **Action:** `replace` entire placeholder with user answer only
+- **CRITICAL:** If user selects "IT Manager", replace `<Violations: IT Manager>` with just `IT Manager` (NOT "Violations: IT Manager")
 - **AI Logic:** Always Scenario A
-
-**Note for RULE_11 & RULE_12:** Replace the complete placeholder (including angle brackets and prefixes) with ONLY the user's selection. Example: `<Exceptions: IT Manager>` → `IT Manager`
 
 ---
 
