@@ -21,7 +21,7 @@ from .highlighting_cleanup import clean_docx_highlighting, extract_docx_content
 from .content_loader import load_file_content, filter_base64_from_csv  
 from .claude_api import call_claude_api
 from .json_utils import extract_json_from_response, validate_json_content
-from .git_utils import commit_and_push_files, GitManager
+from .git_utils import commit_and_push_files, GitManager, cleanup_user_git_operations
 from .github_utils import GitHubActionsManager, create_workflow_params, clean_policy_for_github, cleanup_temp_files
 from .logo_utils import process_logo_operations, inject_logo_metadata, cleanup_logo_file
 from .shell_executor import run_command, generate_user_id, validate_api_key, setup_file_paths, show_startup_info, convert_xlsx_to_csv, generate_edits_with_ai
@@ -41,6 +41,7 @@ __all__ = [
     # Git utilities
     'commit_and_push_files',
     'GitManager',
+    'cleanup_user_git_operations',
     # GitHub utilities
     'GitHubActionsManager',
     'create_workflow_params',
