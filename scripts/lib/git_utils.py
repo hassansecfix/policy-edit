@@ -28,7 +28,16 @@ class GitManager:
         self.repo_owner: Optional[str] = None
         self.repo_name: Optional[str] = None
         self.user_id = user_id
-        self.user_branch = f"user-{user_id}" if user_id else None
+        # Create branch name, avoiding double "user-" prefix
+        if user_id:
+            if user_id.startswith('user'):
+                # User ID already has user prefix, use as-is for branch name
+                self.user_branch = user_id.replace('_', '-')  # Replace underscores with hyphens for branch name
+            else:
+                # Add user prefix
+                self.user_branch = f"user-{user_id}"
+        else:
+            self.user_branch = None
         self._extract_repo_info()
     
     def _extract_repo_info(self) -> None:

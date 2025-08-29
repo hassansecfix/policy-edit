@@ -264,8 +264,16 @@ def create_workflow_params(input_docx: str, edits_json: str, output_name: str, u
     # Use user_id for output isolation, fallback to timestamp if not provided
     output_prefix = user_id if user_id else f"run-{int(time.time())}"
     
-    # Determine the branch to use for the workflow
-    ref_branch = f"user-{user_id}" if user_id else "main"
+    # Determine the branch to use for the workflow, avoiding double "user-" prefix
+    if user_id:
+        if user_id.startswith('user'):
+            # User ID already has user prefix, use as-is for branch name
+            ref_branch = user_id.replace('_', '-')  # Replace underscores with hyphens for branch name
+        else:
+            # Add user prefix
+            ref_branch = f"user-{user_id}"
+    else:
+        ref_branch = "main"
     
     return {
         'input_docx': input_docx,
