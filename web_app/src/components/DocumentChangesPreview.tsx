@@ -98,7 +98,7 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
         type: 'logo',
         description: 'Company logo insertion in document header',
         oldText: '[ADD COMPANY LOGO]',
-                  newText: `Uploaded logo: ${(companyLogo.value as FileUploadValue).name}`,
+        newText: `Uploaded logo: ${(companyLogo.value as FileUploadValue).name}`,
         field: 'onboarding.company_logo',
       });
     }
@@ -147,7 +147,7 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
         type: 'replace',
         description: 'Policy exception approval authority',
         oldText: '<Exceptions: IT Manager>',
-        newText: `Exceptions: ${exceptionApprover.value}`,
+        newText: exceptionApprover.value,
         field: 'user_response.exception_approver',
       });
     }
@@ -159,7 +159,7 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
         type: 'replace',
         description: 'Policy violation reporting contact',
         oldText: '<Violations: IT Manager>',
-        newText: `Violations: ${violationsReporter.value}`,
+        newText: violationsReporter.value,
         field: 'user_response.violations_reporter',
       });
     }
