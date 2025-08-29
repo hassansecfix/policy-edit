@@ -34,7 +34,7 @@
         "target_text": "Guest Network Access: Visitors to the Company can access guest networks by registering with the office personnel, bypassing the need for a formal access request.",
         "action": "delete",
         "replacement": "",
-        "comment": "Company operates remotely without physical office space, making guest network access provisions irrelevant.",
+        "comment": "Company operates remotely without physical office space, making guest network access irrelevant.",
         "comment_author": "Secfix AI"
       },
       {
@@ -62,14 +62,14 @@
         "target_text": "a quarterly basis",
         "action": "comment",
         "replacement": "",
-        "comment": "Company maintains quarterly access review schedule as recommended best practice for security compliance.",
+        "comment": "Company selected quarterly access reviews, which matches the current policy recommendation for balanced security oversight.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "The maximum time frame for access termination is set at <24 business hours>.",
         "action": "replace",
         "replacement": "Access termination must be completed immediately upon notification.",
-        "comment": "Company requires immediate access termination for enhanced security posture, eliminating any delay window for potential unauthorized access.",
+        "comment": "Company requires immediate access termination for enhanced security posture, replacing the standard 24-hour timeframe.",
         "comment_author": "Secfix AI"
       },
       {
@@ -83,14 +83,14 @@
         "target_text": "<Exceptions: IT Manager>",
         "action": "replace",
         "replacement": "IT Manager",
-        "comment": "IT Manager designated as exception approver for access control policy deviations and special circumstances.",
+        "comment": "IT Manager designated as the authorized approver for policy exceptions and special access requests.",
         "comment_author": "Secfix AI"
       },
       {
         "target_text": "<Violations: IT Manager>",
         "action": "replace",
         "replacement": "IT Manager",
-        "comment": "IT Manager assigned as violations reporter for access control policy breaches and security incidents.",
+        "comment": "IT Manager assigned as the primary contact for reporting and investigating policy violations.",
         "comment_author": "Secfix AI"
       }
     ]

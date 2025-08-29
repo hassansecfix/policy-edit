@@ -62,7 +62,7 @@ class GitHubActionsManager:
         except Exception:
             pass
     
-    def verify_file_on_github(self, file_path: str, max_retries: int = 6, delay: int = 5) -> bool:
+    def verify_file_on_github(self, file_path: str, max_retries: int = 6, delay: int = 5, branch: str = "main") -> bool:
         """
         Verify a file exists on GitHub with retries.
         
@@ -70,6 +70,7 @@ class GitHubActionsManager:
             file_path: Path to file on GitHub
             max_retries: Maximum number of retry attempts
             delay: Delay between retries in seconds
+            branch: Branch to check for the file (defaults to main)
             
         Returns:
             True if file exists, False otherwise
@@ -78,8 +79,8 @@ class GitHubActionsManager:
             print("❌ GitHub credentials not configured")
             return False
         
-        print(f"🔍 Checking file on GitHub: {file_path}")
-        api_url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/contents/{file_path}"
+        print(f"🔍 Checking file on GitHub: {file_path} (branch: {branch})")
+        api_url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/contents/{file_path}?ref={branch}"
         print(f"   API URL: {api_url}")
         
         for attempt in range(max_retries):
@@ -106,7 +107,7 @@ class GitHubActionsManager:
                     print(f"⏳ File not found (404) on attempt {attempt + 1}/{max_retries}")
                     if attempt == 0:
                         # On first failure, check what files ARE available in the directory
-                        self._debug_directory_contents(file_path)
+                        self._debug_directory_contents(file_path, branch)
                     
                     if attempt < max_retries - 1:
                         print(f"   Waiting {delay} seconds before retry...")
@@ -133,12 +134,12 @@ class GitHubActionsManager:
                 
         return False
     
-    def _debug_directory_contents(self, file_path: str) -> None:
+    def _debug_directory_contents(self, file_path: str, branch: str = "main") -> None:
         """Debug what files are available in the directory."""
         try:
             dir_path = '/'.join(file_path.split('/')[:-1]) if '/' in file_path else ''
             if dir_path:
-                dir_url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/contents/{dir_path}"
+                dir_url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}/contents/{dir_path}?ref={branch}"
                 headers = {
                     'Authorization': f'token {self.github_token}',
                     'Accept': 'application/vnd.github.v3+json'
@@ -173,11 +174,12 @@ class GitHubActionsManager:
             return False, "Repository information not available"
         
         # Verify files exist on GitHub before triggering workflow
-        print("🔍 Verifying files are available on GitHub...")
+        ref_branch = workflow_params.get('ref_branch', 'main')
+        print(f"🔍 Verifying files are available on GitHub (branch: {ref_branch})...")
         files_to_verify = [workflow_params.get('input_docx'), workflow_params.get('edits_csv')]
         
         for file_path in files_to_verify:
-            if file_path and not self.verify_file_on_github(file_path):
+            if file_path and not self.verify_file_on_github(file_path, branch=ref_branch):
                 return False, f"File verification failed: {file_path}"
         
         print("✅ All files verified on GitHub - proceeding with workflow trigger")
