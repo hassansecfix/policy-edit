@@ -17,25 +17,25 @@ _These rules apply to ANY policy document type_
 
 ### **AI Grammar Decision Logic**
 
-**MANDATORY GRAMMAR CHECK:** For EVERY `replace` action, you MUST:
-
-1. **STEP 1:** Find the target text in the policy document
-2. **STEP 2:** Read the COMPLETE sentence containing the target
-3. **STEP 3:** Mentally substitute the user response into the sentence
-4. **STEP 4:** READ THE RESULT ALOUD - Does it sound natural and grammatically correct?
-5. **STEP 5:** DECIDE:
-
 **Scenario A (Exact Replacement):** Use ONLY if substitution sounds natural
 
-- Example: "stored in <Tool>" + "GitHub" = "stored in GitHub" ✓
+```json
+{
+  "target_text": "<placeholder>",
+  "action": "replace",
+  "replacement": "user_answer"
+}
+```
 
-**Scenario B (Sentence Rewrite):** Use if substitution sounds awkward or wrong
+**Scenario B (Sentence Rewrite for Replacement):** Use if substitution is not grammatically correct:
 
-- Example: "conducted on <frequency>" + "monthly" = "conducted on monthly" ✗
-- **FIX:** Rewrite entire sentence: "Access reviews are conducted monthly"
-- **RULE:** Preserve meaning, fix grammar ONLY, no new concepts
-
-**WARNING:** Simple substitution that creates grammatical errors is UNACCEPTABLE. Always test grammar first!
+```json
+{
+  "target_text": "Exact sentence from the document containing the <placeholder> in it.",
+  "action": "replace",
+  "replacement": "The complete rewritten sentence with user answer integrated naturally."
+}
+```
 
 ### **Universal Formatting Rules**
 
@@ -108,9 +108,9 @@ _These rules are specific to the Access Control Policy document_
 
 ### **RULE_09: Access Termination Timeframe**
 
-- **Target:** `<24 business hours>`
+- **Target:** If Scenario A use `<24 business hours>`. If Scenario B use `The maximum time frame for access termination is set at <24 business hours>.`
 - **Action:** `replace` with user timeframe
-- **AI Logic:** AI decides Scenario A vs B based on grammar
+- **AI Logic:** Decide between Scenario A and B based on grammar
 
 ### **RULE_10: Policy Owner**
 
@@ -173,14 +173,3 @@ Generate JSON with this structure:
   }
 }
 ```
-
----
-
-## **Final Requirements**
-
-1. **Exact Matching:** Find EXACT target text as specified in rules
-2. **Grammar Analysis:** For replace actions, choose Scenario A vs B based on natural language flow
-3. **Context Comments:** Include business context explaining choices
-4. **Name Capitalization:** Properly format all person names
-5. **Tool Integration:** Include specific tool names when applicable
-6. **No Duplication:** Use `comment` when user selection matches existing text
