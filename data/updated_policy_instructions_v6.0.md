@@ -17,18 +17,25 @@ _These rules apply to ANY policy document type_
 
 ### **AI Grammar Decision Logic**
 
-**IMPORTANT & CRITICAL:** For ALL `replace` actions, AI must choose between following two scenarios:
+**MANDATORY GRAMMAR CHECK:** For EVERY `replace` action, you MUST:
 
-- **Scenario A (Exact):** Replace only the placeholder/target text
-- **Scenario B (Sentence):** Rewrite the entire sentence for grammar
-  - **IMPORTANT: When restructuring sentences, only fix grammar - do not add new words or concepts**
+1. **STEP 1:** Find the target text in the policy document
+2. **STEP 2:** Read the COMPLETE sentence containing the target
+3. **STEP 3:** Mentally substitute the user response into the sentence
+4. **STEP 4:** READ THE RESULT ALOUD - Does it sound natural and grammatically correct?
+5. **STEP 5:** DECIDE:
 
-**Decision Process:**
+**Scenario A (Exact Replacement):** Use ONLY if substitution sounds natural
 
-1. Find the target text in the policy document
-2. Read the full sentence containing the target
-3. Test if user response fits grammatically
-4. Choose scenario based on grammar compatibility
+- Example: "stored in <Tool>" + "GitHub" = "stored in GitHub" ✓
+
+**Scenario B (Sentence Rewrite):** Use if substitution sounds awkward or wrong
+
+- Example: "conducted on <frequency>" + "monthly" = "conducted on monthly" ✗
+- **FIX:** Rewrite entire sentence: "Access reviews are conducted monthly"
+- **RULE:** Preserve meaning, fix grammar ONLY, no new concepts
+
+**WARNING:** Simple substitution that creates grammatical errors is UNACCEPTABLE. Always test grammar first!
 
 ### **Universal Formatting Rules**
 
