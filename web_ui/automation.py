@@ -158,7 +158,7 @@ class AutomationRunner:
         # Configure user ID for multi-user isolation
         if user_id:
             env['USER_ID'] = user_id
-            self.emit_log(f"👤 User ID: {user_id}", "info")
+            self.emit_log(f"👤 User ID: {user_id} (enables branch isolation)", "info")
         
         # Log logo data presence for debugging
         has_logo = '_logo_base64_data' in questionnaire_answers

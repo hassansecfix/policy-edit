@@ -15,12 +15,24 @@ on:
         description: 'Path to output .docx'
         required: true
         default: 'build/output.docx'
+      user_id:
+        description: 'User ID for isolation (optional)'
+        required: false
+        default: ''
+      branch:
+        description: 'Branch to checkout (optional)'
+        required: false
+        default: 'main'
 
 jobs:
   redline:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout user-specific branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
 
       # OPTIMIZATION 1: Cache LibreOffice installation (simple and reliable)
       - name: Cache LibreOffice installation
@@ -81,7 +93,7 @@ jobs:
 
           # Start virtual display
           Xvfb :99 -screen 0 800x600x16 > /dev/null 2>&1 &
-          
+
           # Wait for display to be ready
           sleep 1
 
@@ -101,5 +113,5 @@ jobs:
       - name: Upload output
         uses: actions/upload-artifact@v4
         with:
-          name: redlined-docx-${{ github.run_id }}-${{ github.run_number }}
+          name: redlined-docx-${{ github.event.inputs.user_id }}-${{ github.run_id }}-${{ github.run_number }}
           path: ${{ github.event.inputs.output_docx }}

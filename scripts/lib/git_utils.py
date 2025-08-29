@@ -19,13 +19,16 @@ class GitManager:
     Manages Git operations for the automation system.
     
     Handles repository configuration, file operations, and remote synchronization.
+    Supports user-specific branch isolation for parallel operations.
     """
     
-    def __init__(self, repo_path: str = "."):
-        """Initialize GitManager with repository path."""
+    def __init__(self, repo_path: str = ".", user_id: Optional[str] = None):
+        """Initialize GitManager with repository path and optional user ID for isolation."""
         self.repo_path = repo_path
         self.repo_owner: Optional[str] = None
         self.repo_name: Optional[str] = None
+        self.user_id = user_id
+        self.user_branch = f"user-{user_id}" if user_id else None
         self._extract_repo_info()
     
     def _extract_repo_info(self) -> None:
@@ -122,6 +125,78 @@ class GitManager:
             print("💡 Set GITHUB_TOKEN environment variable for production git push")
         
         return True, f"Remote and auth configured for {remote_url}"
+    
+    def create_user_branch(self) -> Tuple[bool, str]:
+        """Create and switch to user-specific branch for isolation."""
+        if not self.user_branch:
+            return True, "No user ID provided, using main branch"
+        
+        print(f"🌿 Creating user-specific branch: {self.user_branch}")
+        
+        # Ensure we're on main branch first
+        checkout_main = subprocess.run(['git', 'checkout', 'main'], capture_output=True, text=True)
+        if checkout_main.returncode != 0:
+            print(f"⚠️  Could not checkout main branch: {checkout_main.stderr}")
+            # Try to create main if it doesn't exist
+            create_main = subprocess.run(['git', 'checkout', '-b', 'main'], capture_output=True, text=True)
+            if create_main.returncode != 0:
+                return False, f"Could not create main branch: {create_main.stderr}"
+        
+        # Pull latest changes from main
+        pull_result = subprocess.run(['git', 'pull', 'origin', 'main'], capture_output=True, text=True)
+        if pull_result.returncode != 0:
+            print(f"⚠️  Could not pull latest main: {pull_result.stderr}")
+        
+        # Check if user branch already exists locally
+        branch_check = subprocess.run(['git', 'branch', '--list', self.user_branch], capture_output=True, text=True)
+        branch_exists = self.user_branch in branch_check.stdout
+        
+        if branch_exists:
+            # Switch to existing user branch and reset to main
+            print(f"🔄 Switching to existing user branch: {self.user_branch}")
+            checkout_result = subprocess.run(['git', 'checkout', self.user_branch], capture_output=True, text=True)
+            if checkout_result.returncode != 0:
+                return False, f"Failed to checkout user branch: {checkout_result.stderr}"
+            
+            # Reset user branch to main to get latest changes
+            reset_result = subprocess.run(['git', 'reset', '--hard', 'main'], capture_output=True, text=True)
+            if reset_result.returncode != 0:
+                print(f"⚠️  Could not reset user branch to main: {reset_result.stderr}")
+        else:
+            # Create new user branch from main
+            print(f"🆕 Creating new user branch: {self.user_branch}")
+            create_result = subprocess.run(['git', 'checkout', '-b', self.user_branch], capture_output=True, text=True)
+            if create_result.returncode != 0:
+                return False, f"Failed to create user branch: {create_result.stderr}"
+        
+        print(f"✅ Successfully switched to user branch: {self.user_branch}")
+        return True, f"User branch {self.user_branch} ready"
+    
+    def cleanup_user_branch(self) -> Tuple[bool, str]:
+        """Clean up user-specific branch after successful operation."""
+        if not self.user_branch:
+            return True, "No user branch to clean up"
+        
+        print(f"🧹 Cleaning up user branch: {self.user_branch}")
+        
+        # Switch back to main
+        checkout_main = subprocess.run(['git', 'checkout', 'main'], capture_output=True, text=True)
+        if checkout_main.returncode != 0:
+            print(f"⚠️  Could not switch to main for cleanup: {checkout_main.stderr}")
+            return False, "Could not switch to main branch"
+        
+        # Delete user branch locally
+        delete_result = subprocess.run(['git', 'branch', '-D', self.user_branch], capture_output=True, text=True)
+        if delete_result.returncode != 0:
+            print(f"⚠️  Could not delete local user branch: {delete_result.stderr}")
+        
+        # Delete user branch remotely (if it exists)
+        delete_remote = subprocess.run(['git', 'push', 'origin', '--delete', self.user_branch], capture_output=True, text=True)
+        if delete_remote.returncode != 0:
+            print(f"ℹ️  Remote user branch doesn't exist or couldn't be deleted: {delete_remote.stderr}")
+        
+        print(f"✅ User branch cleanup completed")
+        return True, "User branch cleaned up successfully"
     
     def setup_user_identity(self) -> None:
         """Configure git identity if environment variables are set."""
@@ -249,7 +324,36 @@ class GitManager:
         return True, "Files committed successfully"
     
     def push_to_remote(self) -> Tuple[bool, str]:
-        """Push committed changes to remote repository."""
+        """Push committed changes to remote repository using user-specific branch."""
+        # Use user branch if available, otherwise determine current branch
+        target_branch = self.user_branch if self.user_branch else self._get_current_branch()
+        
+        if not target_branch:
+            print("⚠️  Could not determine target branch, using 'main'")
+            target_branch = 'main'
+        
+        print(f"🔄 Pushing to branch: {target_branch}")
+        
+        # For user branches, we don't need to pull since they're isolated
+        if not self.user_branch:
+            # Only pull for main branch to avoid conflicts
+            print("⬇️  Pulling latest changes from remote...")
+            pull_result = subprocess.run(['git', 'pull', 'origin', target_branch], capture_output=True, text=True)
+            if pull_result.returncode != 0:
+                print(f"⚠️  Pull failed or not needed: {pull_result.stderr.strip()}")
+            else:
+                print("✅ Successfully pulled latest changes")
+        
+        # Try pushing with explicit origin and branch
+        result = subprocess.run(['git', 'push', 'origin', target_branch], capture_output=True, text=True)
+        if result.returncode != 0:
+            return self._handle_push_failure(result, target_branch)
+        else:
+            print(f"✅ Pushed to origin/{target_branch}")
+            return True, f"Successfully pushed to {target_branch}"
+    
+    def _get_current_branch(self) -> Optional[str]:
+        """Get the current branch name."""
         # Get the current branch name
         branch_result = subprocess.run(['git', 'branch', '--show-current'], capture_output=True, text=True)
         current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 and branch_result.stdout.strip() else None
@@ -257,31 +361,9 @@ class GitManager:
         # Fallback for older Git versions
         if not current_branch:
             branch_result = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True)
-            current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 and branch_result.stdout.strip() else 'main'
+            current_branch = branch_result.stdout.strip() if branch_result.returncode == 0 and branch_result.stdout.strip() else None
         
-        # Final validation
-        if not current_branch or current_branch == 'HEAD':
-            print("⚠️  Could not determine current branch, using 'main'")
-            current_branch = 'main'
-        
-        print(f"🔄 Pushing to branch: {current_branch}")
-        
-        # First, try to pull latest changes to avoid conflicts
-        print("⬇️  Pulling latest changes from remote...")
-        pull_result = subprocess.run(['git', 'pull', 'origin', current_branch], capture_output=True, text=True)
-        if pull_result.returncode != 0:
-            print(f"⚠️  Pull failed or not needed: {pull_result.stderr.strip()}")
-            # Continue anyway - might be first push or empty repo
-        else:
-            print("✅ Successfully pulled latest changes")
-        
-        # Try pushing with explicit origin and branch
-        result = subprocess.run(['git', 'push', 'origin', current_branch], capture_output=True, text=True)
-        if result.returncode != 0:
-            return self._handle_push_failure(result, current_branch)
-        else:
-            print(f"✅ Pushed to origin/{current_branch}")
-            return True, f"Successfully pushed to {current_branch}"
+        return current_branch
     
     def _handle_push_failure(self, result: subprocess.CompletedProcess, current_branch: str) -> Tuple[bool, str]:
         """Handle push failures with various recovery strategies."""
@@ -549,19 +631,20 @@ class GitManager:
             return False, f"Failed to fix detached HEAD state: {reset_result.stderr}"
 
 
-def commit_and_push_files(files_to_commit: List[str], repo_path: str = ".") -> Tuple[bool, str]:
+def commit_and_push_files(files_to_commit: List[str], repo_path: str = ".", user_id: Optional[str] = None) -> Tuple[bool, str]:
     """
-    High-level function to commit and push files to Git repository.
+    High-level function to commit and push files to Git repository with user isolation.
     
     Args:
         files_to_commit: List of file paths to commit
         repo_path: Path to repository (defaults to current directory)
+        user_id: User ID for branch isolation (optional)
         
     Returns:
         Tuple of (success: bool, message: str)
     """
     try:
-        git_manager = GitManager(repo_path)
+        git_manager = GitManager(repo_path, user_id)
         
         # Step 1: Validate repository
         success, message = git_manager.validate_repository()
@@ -576,32 +659,58 @@ def commit_and_push_files(files_to_commit: List[str], repo_path: str = ".") -> T
         # Step 3: Setup user identity
         git_manager.setup_user_identity()
         
-        # Step 4: Ensure proper branch
+        # Step 4: Create user-specific branch for isolation
+        if user_id:
+            success, message = git_manager.create_user_branch()
+            if not success:
+                return False, message
+        
+        # Step 5: Ensure proper branch
         success, message = git_manager.ensure_proper_branch()
         if not success:
             return False, message
         
-        # Step 5: Add and stage files
+        # Step 6: Add and stage files
         success, message, staged_files = git_manager.add_and_stage_files(files_to_commit)
         if not success:
             return False, message
         
-        # Step 6: Commit files
+        # Step 7: Commit files
         success, message = git_manager.commit_files(staged_files)
         if not success:
             return False, message
         
-        # Step 7: Push to remote
+        # Step 8: Push to remote
         success, message = git_manager.push_to_remote()
         if not success:
             return False, message
         
-        # Step 8: Verify push success
+        # Step 9: Verify push success
         success, message = git_manager.verify_push_success()
         if not success:
             return False, message
         
-        return True, f"Successfully committed and pushed {len(staged_files)} files"
+        return True, f"Successfully committed and pushed {len(staged_files)} files to user branch"
         
     except Exception as e:
         return False, f"Git operations failed: {e}"
+
+
+def cleanup_user_git_operations(user_id: str, repo_path: str = ".") -> Tuple[bool, str]:
+    """
+    Clean up user-specific git operations after successful completion.
+    
+    Args:
+        user_id: User ID for branch cleanup
+        repo_path: Path to repository (defaults to current directory)
+        
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    try:
+        git_manager = GitManager(repo_path, user_id)
+        success, message = git_manager.cleanup_user_branch()
+        return success, message
+        
+    except Exception as e:
+        return False, f"Git cleanup failed: {e}"

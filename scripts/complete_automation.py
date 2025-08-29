@@ -36,7 +36,7 @@ from lib import (
     generate_user_id, validate_api_key, setup_file_paths, show_startup_info,
     run_command, convert_xlsx_to_csv, generate_edits_with_ai,
     # Git utilities
-    commit_and_push_files,
+    commit_and_push_files, cleanup_user_git_operations,
     # GitHub utilities  
     GitHubActionsManager, create_workflow_params, clean_policy_for_github, cleanup_temp_files,
     # Logo utilities
@@ -201,9 +201,9 @@ class AutomationOrchestrator:
         if github_policy_path != self.args.policy:  # Only add if we created a cleaned copy
             files_to_commit.append(github_policy_path)
         
-        # Commit and push files to GitHub
+        # Commit and push files to GitHub with user isolation
         print("📤 Committing and pushing files to GitHub...")
-        success, message = commit_and_push_files(files_to_commit)
+        success, message = commit_and_push_files(files_to_commit, ".", self.user_id)
         if not success:
             print(f"❌ Failed to push files: {message}")
             print("💡 You'll need to manually commit and push the files")
@@ -315,6 +315,15 @@ class AutomationOrchestrator:
             
             # Show completion summary
             self.show_completion_summary()
+            
+            # Clean up user-specific git operations
+            if self.user_id:
+                print("\n🧹 Cleaning up user-specific git operations...")
+                success, message = cleanup_user_git_operations(self.user_id)
+                if success:
+                    print(f"✅ {message}")
+                else:
+                    print(f"⚠️  {message}")
             
         except KeyboardInterrupt:
             print("\n⏹️  Automation cancelled by user")

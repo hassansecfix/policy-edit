@@ -194,16 +194,23 @@ class GitHubActionsManager:
             'Accept': 'application/vnd.github.v3+json'
         }
         
+        # Use user branch if available, otherwise use main
+        ref_branch = workflow_params.get('ref_branch', 'main')
+        
         data = {
-            'ref': 'main',
+            'ref': ref_branch,
             'inputs': {
                 'input_docx': workflow_params.get('input_docx'),
                 'edits_csv': workflow_params.get('edits_csv'),
-                'output_docx': workflow_params.get('output_docx')
+                'output_docx': workflow_params.get('output_docx'),
+                'user_id': workflow_params.get('user_id', ''),
+                'branch': ref_branch
             }
         }
         
         print(f"🚀 Triggering workflow with parameters:")
+        print(f"   - Branch: {ref_branch}")
+        print(f"   - User ID: {workflow_params.get('user_id', 'N/A')}")
         print(f"   - DOCX: {workflow_params.get('input_docx')}")
         print(f"   - JSON: {workflow_params.get('edits_csv')}")
         print(f"   - Output: {workflow_params.get('output_docx')}")
@@ -241,7 +248,7 @@ class GitHubActionsManager:
 
 def create_workflow_params(input_docx: str, edits_json: str, output_name: str, user_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    Create workflow parameters for GitHub Actions.
+    Create workflow parameters for GitHub Actions with user isolation.
     
     Args:
         input_docx: Path to input DOCX file
@@ -255,10 +262,15 @@ def create_workflow_params(input_docx: str, edits_json: str, output_name: str, u
     # Use user_id for output isolation, fallback to timestamp if not provided
     output_prefix = user_id if user_id else f"run-{int(time.time())}"
     
+    # Determine the branch to use for the workflow
+    ref_branch = f"user-{user_id}" if user_id else "main"
+    
     return {
         'input_docx': input_docx,
         'edits_csv': edits_json,
-        'output_docx': f'build/{output_prefix}_{output_name}.docx'
+        'output_docx': f'build/{output_prefix}_{output_name}.docx',
+        'user_id': user_id or '',
+        'ref_branch': ref_branch
     }
 
 
