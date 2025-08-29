@@ -17,7 +17,7 @@ _These rules apply to ANY policy document type_
 
 ### **AI Grammar Decision Logic**
 
-For ALL `replace` actions, AI must choose between:
+**IMPORTANT & CRITICAL:** For ALL `replace` actions, AI must choose between following two scenarios:
 
 - **Scenario A (Exact):** Replace only the placeholder/target text
 - **Scenario B (Sentence):** Rewrite the entire sentence for grammar
@@ -29,14 +29,6 @@ For ALL `replace` actions, AI must choose between:
 2. Read the full sentence containing the target
 3. Test if user response fits grammatically
 4. Choose scenario based on grammar compatibility
-
-**Examples:**
-
-- `"stored in <Tool>"` + "GitHub" → "stored in GitHub" ✅ → Scenario A
-- `"set at <24 hours>"` + "immediately" → "set at immediately" ❌ → Scenario B
-  - **Full sentence:** "The maximum time frame for access termination is set at <24 business hours>."
-  - **Problem:** "set at immediately" is grammatically incorrect
-  - **Correct fix:** "Access termination must be completed immediately." (full sentence rewrite)
 
 ### **Universal Formatting Rules**
 
@@ -112,7 +104,6 @@ _These rules are specific to the Access Control Policy document_
 - **Target:** `<24 business hours>`
 - **Action:** `replace` with user timeframe
 - **AI Logic:** AI decides Scenario A vs B based on grammar
-- **Example:** "immediately" requires Scenario B (full sentence restructuring)
 
 ### **RULE_10: Policy Owner**
 
@@ -123,14 +114,16 @@ _These rules are specific to the Access Control Policy document_
 ### **RULE_11: Exception Approver**
 
 - **Target:** `<Exceptions: IT Manager>`
-- **Action:** `replace` Replace ENTIRE placeholder with just user selected answer. For example, if user selects "IT Manager", the replacement should be "IT Manager".
-- **AI Logic:** Always Scenario A (exact replacement of full placeholder)
+- **Action:** `replace` entire placeholder with user answer only
+- **AI Logic:** Always Scenario A
 
 ### **RULE_12: Violations Reporter**
 
 - **Target:** `<Violations: IT Manager>`
-- **Action:** `replace` Replace ENTIRE placeholder with just user selected answer. For example, if user selects "IT Manager", the replacement should be "IT Manager".
-- **AI Logic:** Always Scenario A (exact replacement of full placeholder)
+- **Action:** `replace` entire placeholder with user answer only
+- **AI Logic:** Always Scenario A
+
+**Note for RULE_11 & RULE_12:** Replace the complete placeholder (including angle brackets and prefixes) with ONLY the user's selection. Example: `<Exceptions: IT Manager>` → `IT Manager`
 
 ---
 
