@@ -48,6 +48,8 @@ def call_claude_api(prompt_content: str, questionnaire_content: str,
     client = anthropic.Anthropic(api_key=api_key)
     
     # Construct the full prompt with the new JSON workflow
+    # Note: Sending full document content for better AI context and grammar decisions
+    # This increases API costs but significantly improves accuracy for complex grammar rules
     full_prompt = _build_full_prompt(
         prompt_content, 
         questionnaire_content, 
@@ -105,8 +107,7 @@ def _build_full_prompt(prompt_content: str, questionnaire_content: str,
 
 ### POLICY DOCUMENT CONTENT (FOR REFERENCE):
 ```
-{policy_content[:2000]}...
-[Document truncated for API efficiency - full content will be processed by automation system]
+{policy_content}
 ```
 
 ---
