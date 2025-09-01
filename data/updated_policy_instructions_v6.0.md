@@ -15,7 +15,13 @@ _These rules apply to ANY policy document type_
 3. **`delete`** - Remove target text entirely
 4. **`replace_with_logo`** - Replace with company logo
 
+### **Target Text**
+
+**`target_text`** - This text is EXACTLY the same as the text in the document and should NEVER be changed.
+
 ### **AI Grammar Decision Logic**
+
+**`replacement`** - This text is the user's answer to the question and should be replaced in the target text. If the user's answer is not grammatically correct, then use ALWAYS use Scenario B.
 
 **Scenario A (Exact Replacement):** Use ONLY if substitution sounds natural
 
