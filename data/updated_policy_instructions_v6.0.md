@@ -108,9 +108,12 @@ _These rules are specific to the Access Control Policy document_
 
 ### **RULE_09: Access Termination Timeframe**
 
-- **Target:** If Scenario A use `<24 business hours>`. If Scenario B use `The maximum time frame for access termination is set at <24 business hours>.`
-- **Action:** `replace` with user timeframe
-- **AI Logic:** Decide between Scenario A and B based on grammar
+- **AI Logic:** AI decides Scenario A vs B based on grammar. Adapt sentence structure to ensure natural, grammatically correct result.
+- **Target:** If Scenario A use `<24 business hours>`. If Scenario B use the EXACT sentence from the document containing the `<24 business hours>` in it.
+- **Action:**
+  - **Scenario A:**`replace` with user timeframe.
+  - **Scenario B:**`replace` with full grammatically correct sentence containing user timeframe.
+- **CRITICAL:** ALWAYS make sure that the grammar of the sentence is correct when adding replacement sentence.
 
 ### **RULE_10: Policy Owner**
 
@@ -129,8 +132,8 @@ _These rules are specific to the Access Control Policy document_
 
 - **Target:** `<Violations: IT Manager>`
 - **Action:** `replace` entire placeholder with user answer only
-- **CRITICAL:** If user selects "IT Manager", replace `<Violations: IT Manager>` with just `IT Manager` (NOT "Violations: IT Manager")
 - **AI Logic:** Always Scenario A
+- **CRITICAL:** Always remove "Violations: " and brackets. For example, if user selects "IT Manager", replace `<Violations: IT Manager>` with just `IT Manager` (NOT "Violations: IT Manager")
 
 ---
 

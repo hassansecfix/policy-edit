@@ -26,6 +26,7 @@ Read the processing instructions to understand all customization rules and JSON 
 - **🧠 UNIVERSAL AI DECISION: For EVERY rule, AI must analyze full sentence context**
 - **Scenario A: IF user response fits grammatically → target_text = placeholder**
 - **Scenario B: IF sentence needs restructuring → target_text = full sentence + restructured replacement**
+- **CRITICAL: ALWAYS make sure that the grammar of the sentence is correct when adding replacement sentence.**
 - **This applies to ALL rules (RULE_01 through RULE_12), not just complex ones**
 - **CRITICAL: When user response matches current document text, use "comment" action** - do NOT use "replace" or "smart_replace" to avoid duplication
 - **CRITICAL: Follow the exact JSON structure and field requirements** specified in the processing instructions
