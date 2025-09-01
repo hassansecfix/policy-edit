@@ -1,5 +1,9 @@
 # Policy Customization Request - JSON Output
 
+## 🎯 PRIMARY OBJECTIVE: PERFECT GRAMMAR ALWAYS
+
+**CRITICAL: Every single sentence you generate must be grammatically perfect and natural. This is the highest priority requirement.**
+
 I need you to analyze customer data and generate JSON-formatted customization instructions for a policy document.
 
 ## What I'm Providing:
@@ -14,7 +18,11 @@ Read the processing instructions to understand all customization rules and JSON 
 
 ## CRITICAL Requirements:
 
+**GRAMMAR VALIDATION: Before generating any replacement text, mentally read it aloud. If it sounds awkward or unnatural, rewrite the entire sentence.**
+
 **Complete all validation and processing steps as specified in the processing instructions before generating JSON.**
+
+**MANDATORY GRAMMAR CHECK: For every single operation, verify that the final sentence is grammatically perfect and flows naturally.**
 
 ## Important Guidelines:
 
@@ -24,9 +32,7 @@ Read the processing instructions to understand all customization rules and JSON 
 - Handle "Other" responses contextually using the guidelines provided in the instructions
 - **CRITICAL: target_text must EXACTLY match text from the policy document** - NEVER invent or make up target_text that doesn't exist
 - **🧠 UNIVERSAL AI DECISION: For EVERY rule, AI must analyze full sentence context**
-- **Scenario A: IF user response fits grammatically → target_text = placeholder**
-- **Scenario B: IF sentence needs restructuring → target_text = full sentence + restructured replacement**
-- **CRITICAL: ALWAYS make sure that the grammar of the sentence is correct when adding replacement sentence.**
+- **CRITICAL: The final sentence must always be grammatically correct and sound natural when read aloud.**
 - **This applies to ALL rules (RULE_01 through RULE_12), not just complex ones**
 - **CRITICAL: When user response matches current document text, use "comment" action** - do NOT use "replace" or "smart_replace" to avoid duplication
 - **CRITICAL: Follow the exact JSON structure and field requirements** specified in the processing instructions
@@ -49,5 +55,15 @@ Follow all comment requirements, processing rules, and guidelines **exactly as s
 - All other processing rules defined in the instructions
 
 **IMPORTANT**: Output ONLY the clean JSON structure. Do NOT include any internal validation results, processing details, or explanatory text outside the JSON. The response should start directly with the opening brace `{` and end with the closing brace `}`.
+
+## 🔍 FINAL VALIDATION STEP
+
+**Before you output the JSON, perform this final check:**
+
+1. Read every "replacement" field aloud in your mind
+2. If ANY sentence sounds awkward, unnatural, or grammatically incorrect, fix it immediately
+3. Ensure every sentence flows naturally and is grammatically perfect
+
+**ZERO TOLERANCE for grammatical errors. Perfect grammar is required for every single replacement.**
 
 Please analyze the provided files and generate the JSON customization instructions following the processing instructions format.

@@ -61,7 +61,7 @@ def call_claude_api(prompt_content: str, questionnaire_content: str,
         message = client.messages.create(
             model="claude-sonnet-4-20250514",  # Claude Sonnet model
             max_tokens=4000,
-            temperature=0.1,  # Low temperature for consistent, accurate output
+            temperature=0.0,  # Zero temperature for maximum consistency and deterministic output
             messages=[{
                 "role": "user",
                 "content": full_prompt
@@ -109,6 +109,12 @@ def _build_full_prompt(prompt_content: str, questionnaire_content: str,
 ```
 {policy_content}
 ```
+
+---
+
+## 🎯 FINAL GRAMMAR REMINDER
+
+**ZERO TOLERANCE FOR GRAMMATICAL ERRORS. Every replacement sentence must be perfect.**
 
 ---
 
