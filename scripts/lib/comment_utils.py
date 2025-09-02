@@ -63,7 +63,7 @@ class CommentManager:
             # Find the target text to add comment to
             search_desc = self.doc.createSearchDescriptor()
             search_desc.SearchString = target_text
-            search_desc.SearchCaseSensitive = False
+            search_desc.SearchCaseSensitive = True
             search_desc.SearchWords = True  # Use exact word matching to avoid partial matches
             
             found_range = self.doc.findFirst(search_desc)

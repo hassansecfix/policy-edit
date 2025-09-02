@@ -95,7 +95,7 @@ _These rules are specific to the Access Control Policy document_
   - If no version control → `delete`
 - **Create separate delete operations for each target to ensure reliable DOCX matching:**
   - **Title Target:** `delete`
-  - **Each Paragraph:** `delete`
+  - **Paragraph:** `delete` each paragraph under the title
   - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 - **IMPORTANT:** RULE_05 NEVER uses `replace` action - ONLY `comment` or `delete`
@@ -108,7 +108,7 @@ _These rules are specific to the Access Control Policy document_
   - If no password management tool → `delete`
 - **Create separate delete operations for each target to ensure reliable DOCX matching:**
   - **Title Target:** `delete`
-  - **Each Paragraph:** `delete`
+  - **Paragraph:** `delete` each paragraph under the title
   - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 
@@ -124,7 +124,7 @@ _These rules are specific to the Access Control Policy document_
 - **Additional Target:** `<Ticket Management Tool>` → `replace` with tool name
 - **Create separate delete operations for each target to ensure reliable DOCX matching:**
   - **Title Target:** `delete`
-  - **Each Paragraph:** `delete`
+  - **Paragraph:** `delete` each paragraph under the title
   - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 
@@ -154,21 +154,19 @@ _These rules are specific to the Access Control Policy document_
 
 - **Target:** `<owner>`
 - **Action:** `replace` with properly capitalized name
-- **AI Logic:** Always Scenario A + name capitalization
+- **Replacement:** Always Scenario A + name capitalization
 
 ### **RULE_11: Exception Approver**
 
 - **Target:** `<Exceptions: IT Manager>`
 - **Action:** `replace` entire placeholder with user answer only
-- **CRITICAL:** If user selects "IT Manager", replace `<Exceptions: IT Manager>` with just `IT Manager` (NOT "Exceptions: IT Manager")
-- **AI Logic:** Always Scenario A
+- **Replacement:** Always remove "Exceptions: " and brackets. For example, if user selects "IT Manager", replace `<Exceptions: IT Manager>` with just `IT Manager` (NOT "Exceptions: IT Manager")
 
 ### **RULE_12: Violations Reporter**
 
 - **Target:** `<Violations: IT Manager>`
 - **Action:** `replace` entire placeholder with user answer only
-- **AI Logic:** Always Scenario A
-- **CRITICAL:** Always remove "Violations: " and brackets. For example, if user selects "IT Manager", replace `<Violations: IT Manager>` with just `IT Manager` (NOT "Violations: IT Manager")
+- **Replacement:** Always remove "Violations: " and brackets. For example, if user selects "IT Manager", replace `<Violations: IT Manager>` with just `IT Manager` (NOT "Violations: IT Manager")
 
 ---
 

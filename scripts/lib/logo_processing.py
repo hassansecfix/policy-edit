@@ -237,7 +237,7 @@ class LogoProcessor:
         # First, let's verify the target text exists in the document
         search_desc = self.doc.createSearchDescriptor()
         search_desc.SearchString = target_text
-        search_desc.SearchCaseSensitive = False
+        search_desc.SearchCaseSensitive = True
         search_desc.SearchWords = False
         
         # Test if target text exists at all
@@ -366,7 +366,7 @@ class LogoProcessor:
         try:
             search_desc = self.doc.createSearchDescriptor()
             search_desc.SearchString = target_text
-            search_desc.SearchCaseSensitive = False
+            search_desc.SearchCaseSensitive = True
             search_desc.SearchWords = False
             
             found_range = self.doc.findFirst(search_desc)
@@ -395,7 +395,7 @@ class LogoProcessor:
             rd1 = self.doc.createReplaceDescriptor()
             rd1.SearchString = regex_pattern
             rd1.ReplaceString = "__LOGO_PLACEHOLDER__"
-            rd1.SearchCaseSensitive = False
+            rd1.SearchCaseSensitive = True
             rd1.SearchWords = False
             rd1.setPropertyValue("RegularExpressions", True)
             
@@ -408,7 +408,7 @@ class LogoProcessor:
                 rd2 = self.doc.createReplaceDescriptor()
                 rd2.SearchString = regex_pattern2
                 rd2.ReplaceString = "__LOGO_PLACEHOLDER__"
-                rd2.SearchCaseSensitive = False
+                rd2.SearchCaseSensitive = True
                 rd2.SearchWords = False
                 rd2.setPropertyValue("RegularExpressions", True)
                 
@@ -458,7 +458,7 @@ class LogoProcessor:
             rd_ws = self.doc.createReplaceDescriptor()
             rd_ws.SearchString = pattern
             rd_ws.ReplaceString = "__LOGO_PLACEHOLDER__"
-            rd_ws.SearchCaseSensitive = False
+            rd_ws.SearchCaseSensitive = True
             rd_ws.SearchWords = False
             
             count = self.doc.replaceAll(rd_ws)
@@ -486,7 +486,7 @@ class LogoProcessor:
             rd3 = self.doc.createReplaceDescriptor()
             rd3.SearchString = pattern
             rd3.ReplaceString = "__LOGO_PLACEHOLDER__"
-            rd3.SearchCaseSensitive = False
+            rd3.SearchCaseSensitive = True
             rd3.SearchWords = False
             
             count = self.doc.replaceAll(rd3)
@@ -514,7 +514,7 @@ class LogoProcessor:
         """
         search_desc = self.doc.createSearchDescriptor()
         search_desc.SearchString = target_text
-        search_desc.SearchCaseSensitive = False
+        search_desc.SearchCaseSensitive = True
         search_desc.SearchWords = False
         
         found_range = self.doc.findFirst(search_desc)
@@ -1322,7 +1322,7 @@ class LogoProcessor:
             # Search for the target text again to verify spacing
             search_desc = self.doc.createSearchDescriptor()
             search_desc.SearchString = target_text
-            search_desc.SearchCaseSensitive = False
+            search_desc.SearchCaseSensitive = True
             search_desc.SearchWords = False
             
             found_range = self.doc.findFirst(search_desc)

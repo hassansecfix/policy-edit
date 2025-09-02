@@ -186,7 +186,7 @@ class TrackedChangesProcessor:
                 continue
             
             # v5.2 format uses simple replacement - no complex matching options needed
-            match_case = False  # AI has already determined exact target_text
+            match_case = True  # Make all text operations case sensitive
             whole_word = False  # AI has already determined exact target_text
             wildcards = False   # AI has already determined exact target_text
             comment_text = (row.get("comment") or "").strip()
