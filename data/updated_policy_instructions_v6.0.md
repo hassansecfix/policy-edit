@@ -91,8 +91,13 @@ _These rules are specific to the Access Control Policy document_
 
 - **Target:** `Access to Program Source Code`
 - **Action:**
-  - If no version control → `delete`
   - If has version control → `comment`
+  - If no version control → `delete`
+- **Create separate delete operations for each target to ensure reliable DOCX matching:**
+  - **Title Target:** `delete`
+  - **Each Paragraph:** `delete`
+  - **Table of contents Target:** `delete`
+- **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 - **IMPORTANT:** RULE_05 NEVER uses `replace` action - ONLY `comment` or `delete`
 
 ### **RULE_06: Password Management Tool**
@@ -101,10 +106,10 @@ _These rules are specific to the Access Control Policy document_
 - **Action:**
   - If has password management tool → `replace` with "[Tool Name] systems should be user-friendly"
   - If no password management tool → `delete`
-- **AI Logic:** AI decides Scenario A vs B based on grammar
 - **Create separate delete operations for each target to ensure reliable DOCX matching:**
   - **Title Target:** `delete`
   - **Each Paragraph:** `delete`
+  - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 
 ### **RULE_07: Ticket Management Tool / Access Request Method**
@@ -114,28 +119,36 @@ _These rules are specific to the Access Control Policy document_
   - **Scenario B:** EXACT sentence from the document containing the `All requests will be sent by email to <email>` in it.
 - **Action:** `replace` based on user selection
   - If ticketing system → Replace with "[Tool Name] ticketing system" → AI adjusts sentence structure
+  - If no ticketing system → `delete`
 - **Comment Format:** "[Customer context]. Email = simple but no tracking; Ticketing system = proper audit trails; Chat = fast but informal; Manager approval = personal but creates bottlenecks."
 - **Additional Target:** `<Ticket Management Tool>` → `replace` with tool name
-- **CRITICAL:** Follow CRITICAL & MOST IMPORTANT - ZERO TOLERANCE rules.
+- **Create separate delete operations for each target to ensure reliable DOCX matching:**
+  - **Title Target:** `delete`
+  - **Each Paragraph:** `delete`
+  - **Table of contents Target:** `delete`
+- **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 
 ### **RULE_08: Access Review Frequency**
 
 - **Target:**
-  - **Scenario A:** `a quarterly basis`
-  - **Scenario B:** EXACT sentence from the document containing the `a quarterly basis` in it.
+  - If the complete sentence containing user selection is grammatically correct and sounding natural → `a quarterly basis`
+  - If the complete sentence containing user selection is not grammatically correct and sounding natural → EXACT sentence from the document containing the `a quarterly basis` in it.
 - **Action:**
   - If user selection MATCHES current → `comment`
   - If user selection DIFFERENT → `replace` with new frequency
-- **AI Logic:** Decide between Scenario A and B based on best possible grammatical accuracy.
-- **CRITICAL:** Follow CRITICAL & MOST IMPORTANT - ZERO TOLERANCE rules.
+- **Replacement:**
+  - If the complete sentence containing user selection is grammatically correct and sounding natural -> `replace` with new frequency
+  - If the complete sentence containing user selection is not grammatically correct and sounding natural -> Completely rewritten sentence containing the user selection making it grammatically correct and sounding natural.
 
 ### **RULE_09: Access Termination Timeframe**
 
-- **BEFORE Deciding the target text:** Decide between Scenario A and B based on best possible grammatical accuracy for the complete sentence including the user response in it.
 - **Target:**
-  - **Scenario A:** `<24 business hours>`
-  - **Scenario B:** EXACT sentence from the document containing the `<24 business hours>` in it.
+  - If the complete sentence containing user selection is grammatically correct and sounding natural → `<24 business hours>`
+  - If the complete sentence containing user selection is not grammatically correct and sounding natural → EXACT sentence from the document containing the `<24 business hours>` in it.
 - **Action:** `replace` with grammatically correct sentence containing the user timeframe.
+- **Replacement:**
+  - If the complete sentence containing user selection is grammatically correct and sounding natural -> `replace` with user selection
+  - If the complete sentence containing user selection is not grammatically correct and sounding natural -> Completely rewritten sentence containing the user selection making it grammatically correct and sounding natural.
 
 ### **RULE_10: Policy Owner**
 

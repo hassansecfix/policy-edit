@@ -60,7 +60,7 @@ def call_claude_api(prompt_content: str, questionnaire_content: str,
     try:
         message = client.messages.create(
             model="claude-sonnet-4-20250514",  # Claude Sonnet model
-            max_tokens=4000,
+            max_tokens=12000,
             temperature=0.0,  # Zero temperature for maximum consistency and deterministic output
             messages=[{
                 "role": "user",

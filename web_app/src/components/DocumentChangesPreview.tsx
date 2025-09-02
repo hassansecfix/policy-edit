@@ -164,16 +164,101 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
       });
     }
 
+    // Version control tools - source code access sections
+    const versionControl = answers['onboarding.version_control_tools'];
+    if (versionControl && typeof versionControl.value === 'string') {
+      if (versionControl.value === 'None') {
+        changes.push({
+          type: 'remove',
+          description: 'Source code access sections (no version control)',
+          oldText: 'Access to Program Source Code sections and related content',
+          newText: '',
+          field: 'onboarding.version_control_tools',
+        });
+      } else {
+        changes.push({
+          type: 'add',
+          description: 'Source code access policy sections',
+          oldText: '',
+          newText: `Source code protection for ${versionControl.value}`,
+          field: 'onboarding.version_control_tools',
+        });
+      }
+    }
+
+    // Password management tool
+    const passwordTool = answers['onboarding.password_management_tool'];
+    if (passwordTool && typeof passwordTool.value === 'string') {
+      if (passwordTool.value === 'None') {
+        changes.push({
+          type: 'remove',
+          description: 'Password management tool sections',
+          oldText: 'Password management systems requirements and related content',
+          newText: '',
+          field: 'onboarding.password_management_tool',
+        });
+      } else {
+        const toolName = passwordTool.value.replace(' (recommended)', '');
+        changes.push({
+          type: 'replace',
+          description: 'Password management tool requirements',
+          oldText: 'Password management systems should be user-friendly',
+          newText: `${toolName} systems should be user-friendly`,
+          field: 'onboarding.password_management_tool',
+        });
+      }
+    }
+
+    // Ticket management tools
+    const ticketTool = answers['onboarding.ticket_management_tools'];
+    if (ticketTool && typeof ticketTool.value === 'string') {
+      if (ticketTool.value === 'None') {
+        changes.push({
+          type: 'remove',
+          description: 'Ticketing system references',
+          oldText: 'Ticket management tool sections and related content',
+          newText: '',
+          field: 'onboarding.ticket_management_tools',
+        });
+      } else {
+        changes.push({
+          type: 'replace',
+          description: 'Ticketing system references',
+          oldText: '<Ticket Management Tool>',
+          newText: ticketTool.value,
+          field: 'onboarding.ticket_management_tools',
+        });
+      }
+    }
+
     // Access request method
     const accessMethod = answers['user_response.access_request_method'];
     if (accessMethod && typeof accessMethod.value === 'string') {
-      changes.push({
-        type: 'replace',
-        description: 'Access request and approval process',
-        oldText: 'ticketing system processes',
-        newText: accessMethod.value.toLowerCase() + ' processes',
-        field: 'user_response.access_request_method',
-      });
+      if (accessMethod.value.includes('Email')) {
+        changes.push({
+          type: 'replace',
+          description: 'Access request process (email-based)',
+          oldText: 'All requests will be sent by email to <email>',
+          newText: 'All requests will be sent by email to [designated email]',
+          field: 'user_response.access_request_method',
+        });
+      } else if (accessMethod.value.includes('Ticketing')) {
+        changes.push({
+          type: 'replace',
+          description: 'Access request process (ticketing system)',
+          oldText: 'All requests will be sent by email to <email>',
+          newText: 'All requests will be submitted through the ticketing system',
+          field: 'user_response.access_request_method',
+        });
+      } else {
+        changes.push({
+          type: 'replace',
+          description: 'Access request and approval process',
+          oldText: 'All requests will be sent by email to <email>',
+          newText: `Access requests will be handled via ${accessMethod.value.toLowerCase()}`,
+          field: 'user_response.access_request_method',
+        });
+      }
     }
 
     setChanges(changes);
