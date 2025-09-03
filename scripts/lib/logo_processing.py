@@ -68,7 +68,7 @@ class LogoProcessor:
         # Look for company name replacement to calculate dynamic spacing
         for op in operations:
             if (op.get('action') == 'replace' and 
-                op.get('target_text', '').strip() == '<Company name, address>'):
+                op.get('target_text', '').strip() == '<Company Name, Address>'):
                 target_text_op = op.get('target_text', '').strip()
                 replacement_text = op.get('replacement', '')
                 if replacement_text:

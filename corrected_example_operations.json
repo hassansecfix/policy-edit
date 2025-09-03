@@ -17,7 +17,7 @@
         "comment_author": "Secfix AI"
       },
       {
-        "target_text": "<Company name, address>",
+        "target_text": "<Company Name, Address>",
         "action": "replace",
         "replacement": "Demo Corp, 123 Main Street, New York, NY 10001",
         "comment": "Replaced",
