@@ -79,10 +79,10 @@ _These rules are specific to the Access Control Policy document_
 - **Action:**
   - If has version control → `comment`
   - If no version control → `delete`
-- **Create separate delete operations for each target to ensure reliable DOCX matching:**
-  - **Title Target:** `delete`
-  - **Paragraph:** `delete` each paragraph under the title
-  - **Table of contents Target:** `delete`
+  - **Create separate delete operations for each target to ensure reliable DOCX matching:**
+    - **Title Target:** `delete`
+    - **Paragraph:** `delete` each paragraph under the title
+    - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 - **IMPORTANT:** RULE_05 NEVER uses `replace` action - ONLY `comment` or `delete`
 
@@ -90,12 +90,12 @@ _These rules are specific to the Access Control Policy document_
 
 - **Target:** `"Password management systems should be user-friendly"`
 - **Action:**
-  - If has password management tool → `replace` with "[Tool Name] systems should be user-friendly"
+  - If has password management tool → `replace` with "[Tool Name] should be user-friendly"
   - If no password management tool → `delete`
-- **Create separate delete operations for each target to ensure reliable DOCX matching:**
-  - **Title Target:** `delete`
-  - **Paragraph:** `delete` each paragraph under the title
-  - **Table of contents Target:** `delete`
+  - **Create separate delete operations for each target to ensure reliable DOCX matching:**
+    - **Title Target:** `delete` action with placeholder `Password Management System`
+    - **Paragraph:** `delete` each paragraph under the title `Password Management System`
+    - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 
 ### **RULE_07: Ticket Management Tool / Access Request Method**
