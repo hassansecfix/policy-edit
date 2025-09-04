@@ -216,7 +216,15 @@ class CommentManager:
         if added_to_redlines > 0:
             print(f"✅ Added comment to {added_to_redlines} tracked change(s) by {author_name}")
         else:
-            # Fallback: annotate occurrences directly
+            print(f"🔄 Redlines failed, trying direct text annotation...")
+            # Force document refresh before fallback
+            try:
+                self.doc.refresh()
+                print(f"🔄 Forced document refresh")
+            except:
+                pass
+            
+            # Fallback 1: annotate occurrences directly on the NEW text
             added_count = self._add_comment_to_text_occurrences(
                 replace_text if replace_text else find_text, 
                 comment_text, author_name, match_case, whole_word)
@@ -224,8 +232,18 @@ class CommentManager:
             if added_count > 0:
                 print(f"✅ Added {added_count} comment(s) to replacements by {author_name}")
             else:
-                # Final fallback: attach to most recent tracked change
-                self._add_comment_to_latest_redline(comment_text, author_name)
+                print(f"🔄 Direct text annotation failed, trying document-wide search...")
+                # Fallback 2: Find the text anywhere in document and annotate
+                added_count = self._add_comment_anywhere_in_document(
+                    replace_text, comment_text, author_name)
+                
+                if added_count > 0:
+                    print(f"✅ Added {added_count} comment(s) via document-wide search by {author_name}")
+                else:
+                    print(f"❌ All comment attachment methods failed for '{replace_text[:50]}...'")
+                    print(f"❌ LOST COMMENT: '{comment_text[:100]}...'")
+                    # Log the lost comment for manual review
+                    self._log_lost_comment(find_text, replace_text, comment_text, author_name)
     
     def _add_comment_to_new_redlines(self, comment_text: str, author_name: str, 
                                    prev_redlines_count: int) -> int:
@@ -319,6 +337,83 @@ class CommentManager:
             except Exception as e:
                 if attempt == 2:  # Last attempt
                     print(f"❌ Final fallback failed: Unable to add comment after all retry attempts")
+    
+    def _add_comment_anywhere_in_document(self, search_text: str, comment_text: str, author_name: str) -> int:
+        """Search entire document for text and add comment - last resort method."""
+        if not search_text:
+            return 0
+        
+        try:
+            # Create a very flexible search
+            search_desc = self.doc.createSearchDescriptor()
+            search_desc.SearchString = search_text[:20]  # Use just first part to increase chances
+            search_desc.SearchCaseSensitive = False  # Case insensitive
+            search_desc.SearchWords = False  # No word boundaries
+            
+            found_range = self.doc.findFirst(search_desc)
+            added_count = 0
+            
+            while found_range and added_count == 0:
+                try:
+                    # Try to add annotation directly to found range
+                    if self._try_annotation_field(found_range, author_name, comment_text):
+                        added_count = 1
+                        print(f"✅ Document-wide search: Added annotation to '{search_text[:30]}...'")
+                        break
+                    elif self._try_postit_field(found_range, author_name, comment_text):
+                        added_count = 1
+                        print(f"✅ Document-wide search: Added post-it to '{search_text[:30]}...'")
+                        break
+                    else:
+                        # Try to insert a text comment marker
+                        try:
+                            cursor = found_range.getText().createTextCursorByRange(found_range)
+                            cursor.goRight(0, False)  # Position at end of found text
+                            comment_marker = f" [COMMENT: {comment_text}]"
+                            cursor.setString(cursor.getString() + comment_marker)
+                            added_count = 1
+                            print(f"✅ Document-wide search: Added text marker comment")
+                            break
+                        except:
+                            pass
+                        
+                except Exception as e:
+                    print(f"⚠️ Document-wide annotation error: {e}")
+                
+                # Try next occurrence
+                found_range = self.doc.findNext(found_range, search_desc)
+            
+            return added_count
+            
+        except Exception as e:
+            print(f"❌ Document-wide search failed: {e}")
+            return 0
+    
+    def _log_lost_comment(self, find_text: str, replace_text: str, comment_text: str, author_name: str) -> None:
+        """Log comment that couldn't be attached for manual review."""
+        try:
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Try to write to a lost comments file
+            try:
+                with open("lost_comments.txt", "a", encoding='utf-8') as f:
+                    f.write(f"\n{timestamp} - LOST COMMENT:\n")
+                    f.write(f"  Find: {find_text}\n")
+                    f.write(f"  Replace: {replace_text}\n") 
+                    f.write(f"  Comment: {comment_text}\n")
+                    f.write(f"  Author: {author_name}\n")
+                    f.write("-" * 50 + "\n")
+                print(f"📝 Logged lost comment to lost_comments.txt")
+            except:
+                # If file write fails, at least print it clearly
+                print(f"💾 MANUAL REVIEW NEEDED:")
+                print(f"   Find: {find_text}")
+                print(f"   Replace: {replace_text}")
+                print(f"   Comment: {comment_text}")
+                
+        except Exception as e:
+            print(f"⚠️ Could not log lost comment: {e}")
     
     def update_document_author(self, author_name: str) -> None:
         """

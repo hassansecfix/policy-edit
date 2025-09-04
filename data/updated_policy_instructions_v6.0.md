@@ -22,7 +22,7 @@ You are a policy customization assistant that analyzes customer data and generat
 {
   "target_text": "Exact SINGLE sentence from the document containing the <placeholder> in it.",
   "action": "replace",
-  "replacement": "Rewritten fully grammatically CORRECT and sounding NATURAL sentence containing user answer."
+  "replacement": "Fully rewritten sentence to sound natural containing user answer in it."
 }
 ```
 
