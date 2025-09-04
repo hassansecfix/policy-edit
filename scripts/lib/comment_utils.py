@@ -344,49 +344,97 @@ class CommentManager:
             return 0
         
         try:
-            # Create a very flexible search
+            # Strategy 1: Try to find the exact full text first
             search_desc = self.doc.createSearchDescriptor()
-            search_desc.SearchString = search_text[:20]  # Use just first part to increase chances
+            search_desc.SearchString = search_text  # Use full text
             search_desc.SearchCaseSensitive = False  # Case insensitive
             search_desc.SearchWords = False  # No word boundaries
             
             found_range = self.doc.findFirst(search_desc)
             added_count = 0
             
+            # Try full text match first
             while found_range and added_count == 0:
-                try:
-                    # Try to add annotation directly to found range
-                    if self._try_annotation_field(found_range, author_name, comment_text):
-                        added_count = 1
-                        print(f"✅ Document-wide search: Added annotation to '{search_text[:30]}...'")
-                        break
-                    elif self._try_postit_field(found_range, author_name, comment_text):
-                        added_count = 1
-                        print(f"✅ Document-wide search: Added post-it to '{search_text[:30]}...'")
-                        break
-                    else:
-                        # Try to insert a text comment marker
-                        try:
-                            cursor = found_range.getText().createTextCursorByRange(found_range)
-                            cursor.goRight(0, False)  # Position at end of found text
-                            comment_marker = f" [COMMENT: {comment_text}]"
-                            cursor.setString(cursor.getString() + comment_marker)
-                            added_count = 1
-                            print(f"✅ Document-wide search: Added text marker comment")
-                            break
-                        except:
-                            pass
-                        
-                except Exception as e:
-                    print(f"⚠️ Document-wide annotation error: {e}")
-                
-                # Try next occurrence
+                added_count = self._try_add_comment_to_range(found_range, search_text, comment_text, author_name, "full text")
+                if added_count > 0:
+                    break
                 found_range = self.doc.findNext(found_range, search_desc)
+            
+            # Strategy 2: If full text fails, try partial search but expand the range
+            if added_count == 0 and len(search_text) > 15:
+                print(f"🔄 Full text search failed, trying partial search with range expansion...")
+                
+                # Use first significant part (but longer than before)
+                search_part = search_text[:min(30, len(search_text))]
+                search_desc.SearchString = search_part
+                
+                found_range = self.doc.findFirst(search_desc)
+                
+                while found_range and added_count == 0:
+                    try:
+                        # Expand the range to capture the full replacement text
+                        expanded_range = self._expand_range_to_full_text(found_range, search_text)
+                        if expanded_range:
+                            added_count = self._try_add_comment_to_range(expanded_range, search_text, comment_text, author_name, "expanded range")
+                            if added_count > 0:
+                                break
+                        
+                    except Exception as e:
+                        print(f"⚠️ Range expansion error: {e}")
+                    
+                    found_range = self.doc.findNext(found_range, search_desc)
             
             return added_count
             
         except Exception as e:
             print(f"❌ Document-wide search failed: {e}")
+            return 0
+    
+    def _expand_range_to_full_text(self, found_range, full_text: str):
+        """Expand found range to capture the complete target text."""
+        try:
+            # Create cursor from found range
+            cursor = found_range.getText().createTextCursorByRange(found_range)
+            
+            # Expand right to capture full text length plus some buffer
+            target_length = len(full_text)
+            cursor.goRight(target_length + 10, True)  # Select more than needed
+            
+            # Get the expanded text and check if it contains our target
+            expanded_text = cursor.getString()
+            
+            if full_text.lower() in expanded_text.lower():
+                # Find exact position and trim cursor to exact text
+                start_pos = expanded_text.lower().find(full_text.lower())
+                if start_pos >= 0:
+                    # Reset cursor and position it correctly
+                    cursor.gotoRange(found_range, False)
+                    cursor.goRight(start_pos, False)  # Move to start of target
+                    cursor.goRight(len(full_text), True)  # Select exact length
+                    return cursor
+            
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ Range expansion failed: {e}")
+            return None
+    
+    def _try_add_comment_to_range(self, text_range, search_text: str, comment_text: str, author_name: str, method: str) -> int:
+        """Try to add comment to a specific text range."""
+        try:
+            # Try annotation field first
+            if self._try_annotation_field(text_range, author_name, comment_text):
+                print(f"✅ {method}: Added annotation to '{search_text[:50]}...'")
+                return 1
+            elif self._try_postit_field(text_range, author_name, comment_text):
+                print(f"✅ {method}: Added post-it to '{search_text[:50]}...'")
+                return 1
+            else:
+                print(f"⚠️ {method}: Could not attach comment to '{search_text[:50]}...'")
+                return 0
+                
+        except Exception as e:
+            print(f"⚠️ Comment attachment error ({method}): {e}")
             return 0
     
     def _log_lost_comment(self, find_text: str, replace_text: str, comment_text: str, author_name: str) -> None:
