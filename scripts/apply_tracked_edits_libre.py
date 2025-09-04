@@ -214,9 +214,14 @@ class TrackedChangesProcessor:
             
             # Add comment if provided and replacements were made
             if comment_text and replaced_count > 0:
+                print(f"🔍 DEBUG: About to add comment for '{find}' -> '{repl}': '{comment_text[:80]}...'")
                 comment_manager.add_comment_to_replacements(
                     find, repl, comment_text, author_name, 
                     match_case, whole_word, prev_redlines_count)
+            elif comment_text and replaced_count == 0:
+                print(f"❌ DEBUG: Comment not added because no replacements made for '{find}'")
+            elif not comment_text:
+                print(f"🔍 DEBUG: No comment to add for '{find}'")
             
             # Log results
             if replaced_count > 0:
