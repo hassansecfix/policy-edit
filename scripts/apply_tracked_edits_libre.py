@@ -214,30 +214,9 @@ class TrackedChangesProcessor:
             
             # Add comment if provided and replacements were made
             if comment_text and replaced_count > 0:
-                print(f"🔍 DEBUG: About to add comment for '{find}' -> '{repl}': '{comment_text[:80]}...'")
-                
-                # CRITICAL: Force LibreOffice to flush/commit tracked changes before accessing redlines
-                try:
-                    # Method 1: Force document update
-                    doc.update()
-                    print(f"🔄 DEBUG: Forced document update after replacement")
-                except Exception as e1:
-                    print(f"🔍 DEBUG: Document update failed: {e1}")
-                
-                try:
-                    # Method 2: Force redlines refresh  
-                    doc.getPropertyValue("RecordChanges")  # Just accessing this can force refresh
-                    print(f"🔄 DEBUG: Accessed RecordChanges property to force refresh")
-                except Exception as e2:
-                    print(f"🔍 DEBUG: RecordChanges access failed: {e2}")
-                
                 comment_manager.add_comment_to_replacements(
                     find, repl, comment_text, author_name, 
                     match_case, whole_word, prev_redlines_count)
-            elif comment_text and replaced_count == 0:
-                print(f"❌ DEBUG: Comment not added because no replacements made for '{find}'")
-            elif not comment_text:
-                print(f"🔍 DEBUG: No comment to add for '{find}'")
             
             # Log results
             if replaced_count > 0:
@@ -263,29 +242,6 @@ class TrackedChangesProcessor:
         except Exception:
             prev_redlines_count = 0
         
-        # DEBUG: Test if the text can be found at all
-        print(f"🔍 DEBUG SEARCH: Looking for '{find}' in document...")
-        search_desc = doc.createSearchDescriptor()
-        search_desc.SearchString = find
-        search_desc.SearchCaseSensitive = match_case
-        search_desc.SearchWords = whole_word
-        test_find = doc.findFirst(search_desc)
-        
-        if test_find:
-            found_text = test_find.getString()
-            print(f"✅ DEBUG SEARCH: Found text: '{found_text}'")
-            print(f"🔍 DEBUG SEARCH: Text length: {len(found_text)} vs search length: {len(find)}")
-        else:
-            print(f"❌ DEBUG SEARCH: Text '{find}' NOT FOUND in document!")
-            # Try case-insensitive search as fallback
-            search_desc.SearchCaseSensitive = False
-            test_find_ci = doc.findFirst(search_desc)
-            if test_find_ci:
-                found_text_ci = test_find_ci.getString()
-                print(f"💡 DEBUG SEARCH: Found case-insensitive: '{found_text_ci}'")
-            else:
-                print(f"❌ DEBUG SEARCH: Not found even with case-insensitive search")
-        
         # Create replace descriptor
         rd = doc.createReplaceDescriptor()
         rd.SearchString = find
@@ -301,9 +257,73 @@ class TrackedChangesProcessor:
         
         # Perform the replacement
         count_replaced = doc.replaceAll(rd)
-        print(f"🔍 DEBUG REPLACEMENT: Replaced {count_replaced} occurrences of '{find}'")
+        
+        # If replacement failed and text contains spaces, try flexible search
+        if count_replaced == 0 and " " in find:
+            print(f"⚠️ Primary replacement failed for '{find}', trying flexible search...")
+            count_replaced = self._try_flexible_replacement(doc, find, repl, match_case)
         
         return count_replaced, prev_redlines_count
+    
+    def _try_flexible_replacement(self, doc, find: str, repl: str, match_case: bool) -> int:
+        """Try flexible replacement for text that might have line breaks or formatting."""
+        # Strategy 1: Replace spaces with flexible whitespace regex pattern
+        flexible_pattern = find.replace(" ", r"\s+")  # Match any whitespace including line breaks
+        
+        rd = doc.createReplaceDescriptor()
+        rd.SearchString = flexible_pattern
+        rd.ReplaceString = repl
+        rd.SearchCaseSensitive = match_case
+        rd.SearchWords = False  # Disable word boundaries for flexible search
+        
+        try:
+            rd.setPropertyValue("RegularExpressions", True)  # Enable regex
+            count_replaced = doc.replaceAll(rd)
+            if count_replaced > 0:
+                print(f"✅ Flexible regex replacement succeeded: {count_replaced} occurrences")
+                return count_replaced
+        except Exception as e:
+            print(f"⚠️ Flexible regex failed: {e}")
+        
+        # Strategy 2: Try word-by-word search and replace
+        words = find.split()
+        if len(words) > 1:
+            # Look for the first word, then check if the full phrase follows
+            search_desc = doc.createSearchDescriptor()
+            search_desc.SearchString = words[0]
+            search_desc.SearchCaseSensitive = match_case
+            search_desc.SearchWords = False
+            
+            found_range = doc.findFirst(search_desc)
+            replaced_count = 0
+            
+            while found_range:
+                # Get surrounding text to check if full phrase is present
+                try:
+                    # Expand range to check for full phrase
+                    text_cursor = found_range.getText().createTextCursorByRange(found_range)
+                    text_cursor.goRight(len(find) * 2, True)  # Expand to capture potential line breaks
+                    expanded_text = text_cursor.getString().replace('\n', ' ').replace('\r', ' ')
+                    
+                    if find.lower() in expanded_text.lower():
+                        # Found the phrase, now replace it
+                        text_cursor.setString(repl)
+                        replaced_count += 1
+                        break
+                        
+                except Exception as e:
+                    print(f"⚠️ Word-by-word replacement error: {e}")
+                    break
+                
+                # Find next occurrence
+                found_range = doc.findNext(found_range, search_desc)
+            
+            if replaced_count > 0:
+                print(f"✅ Word-by-word replacement succeeded: {replaced_count} occurrences")
+                return replaced_count
+        
+        print(f"❌ All flexible replacement strategies failed for '{find}'")
+        return 0
 
 
 def create_argument_parser() -> argparse.ArgumentParser:

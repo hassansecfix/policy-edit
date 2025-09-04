@@ -20,9 +20,9 @@ You are a policy customization assistant that analyzes customer data and generat
 
 ```json
 {
-  "target_text": "Exact single sentence from the document containing the <placeholder> in it.",
+  "target_text": "Exact SINGLE sentence from the document containing the <placeholder> in it.",
   "action": "replace",
-  "replacement": "Rewritten fully grammatically correct and sounding natural sentence containing user answer."
+  "replacement": "Rewritten fully grammatically CORRECT and sounding NATURAL sentence containing user answer."
 }
 ```
 

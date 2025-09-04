@@ -209,10 +209,6 @@ class CommentManager:
         if not comment_text:
             return
         
-        print(f"🔍 DEBUG COMMENT: Trying to add comment to replacement '{find_text}' -> '{replace_text}'")
-        print(f"🔍 DEBUG COMMENT: Comment text: '{comment_text[:100]}...'")
-        print(f"🔍 DEBUG COMMENT: Previous redlines count: {prev_redlines_count}")
-        
         # First, try to attach the comment ONLY to NEW DELETION redlines
         added_to_redlines = self._add_comment_to_new_redlines(
             comment_text, author_name, prev_redlines_count)
@@ -220,7 +216,6 @@ class CommentManager:
         if added_to_redlines > 0:
             print(f"✅ Added comment to {added_to_redlines} tracked change(s) by {author_name}")
         else:
-            print(f"🔍 DEBUG COMMENT: No redlines to attach to, trying text occurrences...")
             # Fallback: annotate occurrences directly
             added_count = self._add_comment_to_text_occurrences(
                 replace_text if replace_text else find_text, 
@@ -229,7 +224,6 @@ class CommentManager:
             if added_count > 0:
                 print(f"✅ Added {added_count} comment(s) to replacements by {author_name}")
             else:
-                print(f"🔍 DEBUG COMMENT: Text occurrence method failed, trying latest redline...")
                 # Final fallback: attach to most recent tracked change
                 self._add_comment_to_latest_redline(comment_text, author_name)
     
@@ -244,35 +238,25 @@ class CommentManager:
             try:
                 if attempt > 0:
                     time.sleep(0.1)  # Small delay between attempts
-                    print(f"🔄 DEBUG: Retry attempt {attempt + 1} to access redlines")
                 
                 redlines = self.doc.getPropertyValue("Redlines")
                 if redlines:
                     total_after = redlines.getCount()
-                    print(f"🔍 DEBUG REDLINES: Before={prev_redlines_count}, After={total_after}, New redlines={total_after - prev_redlines_count}")
                     
                     for i in range(prev_redlines_count, total_after):
                         try:
                             rl = redlines.getByIndex(i)
                             rl_type = get_redline_type(rl)
-                            print(f"🔍 DEBUG REDLINE {i}: Type='{rl_type}'")
                             
                             if rl_type == "delete":
                                 rl.setPropertyValue("Comment", f"{author_name}: {comment_text}")
                                 added_to_redlines += 1
-                                print(f"✅ DEBUG: Added comment to delete redline {i}")
-                            elif rl_type == "insert":
-                                print(f"🔍 DEBUG: Found insert redline {i} but not adding comment (delete-only mode)")
-                            else:
-                                print(f"🔍 DEBUG: Unknown redline type '{rl_type}' for redline {i}")
                         except Exception as e_rl:
                             print(f"Could not set comment on redline {i}: {e_rl}")
                     
                     # If we successfully accessed redlines, break out of retry loop
                     if total_after > prev_redlines_count:
                         break
-                else:
-                    print(f"🔍 DEBUG REDLINES: No redlines container found on attempt {attempt + 1}")
                     
             except Exception as e_red:
                 print(f"Could not access redlines on attempt {attempt + 1}: {e_red}")
@@ -324,7 +308,6 @@ class CommentManager:
             try:
                 if attempt > 0:
                     time.sleep(0.1)
-                    print(f"🔄 DEBUG: Retry attempt {attempt + 1} for latest redline")
                 
                 redlines = self.doc.getPropertyValue("Redlines")
                 if redlines and redlines.getCount() > 0:
@@ -332,15 +315,10 @@ class CommentManager:
                     last_redline.setPropertyValue("Comment", f"{author_name}: {comment_text}")
                     print(f"✅ Added comment to recent tracked change: {comment_text[:80]}...")
                     return  # Success, exit retry loop
-                else:
-                    print(f"❌ No tracked changes available on attempt {attempt + 1}")
                     
             except Exception as e:
-                print(f"Could not add comment to tracked change on attempt {attempt + 1}: {e}")
                 if attempt == 2:  # Last attempt
                     print(f"❌ Final fallback failed: Unable to add comment after all retry attempts")
-                    print(f"❌ COMMENT LOST: '{comment_text[:100]}...'")
-                    print(f"💡 This indicates a LibreOffice API issue with redlines access")
     
     def update_document_author(self, author_name: str) -> None:
         """
