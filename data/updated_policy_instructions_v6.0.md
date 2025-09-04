@@ -135,7 +135,7 @@ _These rules are specific to the Access Control Policy document_
 ### **RULE_09: Access Termination Timeframe**
 
 - Go with Scenario B for placeholder: `<24 business hours>`
-- **CRITICAL:** Always make sure the replacement sentence is grammatically correct and reads naturally.
+- **CRITICAL:** Always make sure the `replacement` sentence is grammatically correct and reads naturally.
 
 ### **RULE_10: Policy Owner**
 

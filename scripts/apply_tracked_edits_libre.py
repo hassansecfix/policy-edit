@@ -255,15 +255,72 @@ class TrackedChangesProcessor:
         except Exception:
             pass
         
-        # Perform the replacement
+        # Perform the replacement in main document
         count_replaced = doc.replaceAll(rd)
         
-        # If replacement failed, try flexible search for any multi-word text
+        # If no replacement in main doc, try headers and footers
+        if count_replaced == 0:
+            count_replaced = self._try_header_footer_replacement(doc, find, repl, match_case, whole_word)
+        
+        # If still no replacement and it's complex text, try flexible search
         if count_replaced == 0 and (len(find) > 10 or " " in find):
             print(f"⚠️ Primary replacement failed for '{find[:50]}...', trying flexible search...")
             count_replaced = self._try_flexible_replacement(doc, find, repl, match_case)
         
         return count_replaced, prev_redlines_count
+    
+    def _try_header_footer_replacement(self, doc, find: str, repl: str, match_case: bool, whole_word: bool) -> int:
+        """Try replacement in document headers and footers."""
+        total_replaced = 0
+        
+        try:
+            # Get all page styles
+            page_styles = doc.getStyleFamilies().getByName("PageStyles")
+            
+            for i in range(page_styles.getCount()):
+                page_style = page_styles.getByIndex(i)
+                
+                # Check headers
+                if page_style.getPropertyValue("HeaderIsOn"):
+                    header_text = page_style.getPropertyValue("HeaderText")
+                    replaced = self._replace_in_text_content(header_text, find, repl, match_case, whole_word, "header")
+                    total_replaced += replaced
+                
+                # Check footers  
+                if page_style.getPropertyValue("FooterIsOn"):
+                    footer_text = page_style.getPropertyValue("FooterText")
+                    replaced = self._replace_in_text_content(footer_text, find, repl, match_case, whole_word, "footer")
+                    total_replaced += replaced
+            
+            if total_replaced > 0:
+                print(f"✅ Header/Footer replacement succeeded: {total_replaced} occurrences")
+                
+        except Exception as e:
+            print(f"⚠️ Header/Footer replacement failed: {e}")
+        
+        return total_replaced
+    
+    def _replace_in_text_content(self, text_content, find: str, repl: str, match_case: bool, whole_word: bool, location: str) -> int:
+        """Replace text within a specific text content (header/footer)."""
+        try:
+            # Create replace descriptor for this text content
+            rd = text_content.createReplaceDescriptor()
+            rd.SearchString = find
+            rd.ReplaceString = repl
+            rd.SearchCaseSensitive = match_case
+            rd.SearchWords = whole_word
+            
+            # Perform replacement
+            count_replaced = text_content.replaceAll(rd)
+            
+            if count_replaced > 0:
+                print(f"✅ Found and replaced {count_replaced} occurrence(s) in {location}")
+            
+            return count_replaced
+            
+        except Exception as e:
+            print(f"⚠️ Replacement in {location} failed: {e}")
+            return 0
     
     def _try_flexible_replacement(self, doc, find: str, repl: str, match_case: bool) -> int:
         """Try flexible replacement for text that might have line breaks or formatting."""
