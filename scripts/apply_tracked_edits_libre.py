@@ -215,6 +215,22 @@ class TrackedChangesProcessor:
             # Add comment if provided and replacements were made
             if comment_text and replaced_count > 0:
                 print(f"🔍 DEBUG: About to add comment for '{find}' -> '{repl}': '{comment_text[:80]}...'")
+                
+                # CRITICAL: Force LibreOffice to flush/commit tracked changes before accessing redlines
+                try:
+                    # Method 1: Force document update
+                    doc.update()
+                    print(f"🔄 DEBUG: Forced document update after replacement")
+                except Exception as e1:
+                    print(f"🔍 DEBUG: Document update failed: {e1}")
+                
+                try:
+                    # Method 2: Force redlines refresh  
+                    doc.getPropertyValue("RecordChanges")  # Just accessing this can force refresh
+                    print(f"🔄 DEBUG: Accessed RecordChanges property to force refresh")
+                except Exception as e2:
+                    print(f"🔍 DEBUG: RecordChanges access failed: {e2}")
+                
                 comment_manager.add_comment_to_replacements(
                     find, repl, comment_text, author_name, 
                     match_case, whole_word, prev_redlines_count)
@@ -247,6 +263,29 @@ class TrackedChangesProcessor:
         except Exception:
             prev_redlines_count = 0
         
+        # DEBUG: Test if the text can be found at all
+        print(f"🔍 DEBUG SEARCH: Looking for '{find}' in document...")
+        search_desc = doc.createSearchDescriptor()
+        search_desc.SearchString = find
+        search_desc.SearchCaseSensitive = match_case
+        search_desc.SearchWords = whole_word
+        test_find = doc.findFirst(search_desc)
+        
+        if test_find:
+            found_text = test_find.getString()
+            print(f"✅ DEBUG SEARCH: Found text: '{found_text}'")
+            print(f"🔍 DEBUG SEARCH: Text length: {len(found_text)} vs search length: {len(find)}")
+        else:
+            print(f"❌ DEBUG SEARCH: Text '{find}' NOT FOUND in document!")
+            # Try case-insensitive search as fallback
+            search_desc.SearchCaseSensitive = False
+            test_find_ci = doc.findFirst(search_desc)
+            if test_find_ci:
+                found_text_ci = test_find_ci.getString()
+                print(f"💡 DEBUG SEARCH: Found case-insensitive: '{found_text_ci}'")
+            else:
+                print(f"❌ DEBUG SEARCH: Not found even with case-insensitive search")
+        
         # Create replace descriptor
         rd = doc.createReplaceDescriptor()
         rd.SearchString = find
@@ -262,6 +301,7 @@ class TrackedChangesProcessor:
         
         # Perform the replacement
         count_replaced = doc.replaceAll(rd)
+        print(f"🔍 DEBUG REPLACEMENT: Replaced {count_replaced} occurrences of '{find}'")
         
         return count_replaced, prev_redlines_count
 
