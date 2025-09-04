@@ -114,13 +114,23 @@ _These rules are specific to the Access Control Policy document_
   - **Table of contents Target:** `delete`
 - **CRITICAL:** When no tool is used, create separate delete operations for each target to ensure reliable DOCX matching
 
-### **RULE_08: Access Review Frequency**
+### **RULE_08: Access Review Frequency (Smart Recommendation with User Override)**
 
-- **Placeholder:**`a quarterly basis`
-- **Action:**
-  - If user selection MATCHES current → `comment`
-  - If user selection DIFFERENT:
-    - Go with Scenario B
+- **Placeholder:** `a quarterly basis`
+- **Action:** User choice with intelligent recommendation based on total user count (employees + contractors)
+- **AI Logic:**
+  - **Total Users < 50:** Replace with "an annual basis" (Scenario B)
+  - **Total Users 50-999:** Keep "a quarterly basis" → `comment` action
+  - **Total Users ≥ 1000:** Replace with "a monthly basis" (Scenario B)
+- **Dynamic Comment Format:** "You selected {selected_frequency} reviews for your organization ({total_user_count} users - {organization_size} organization). {recommendation_context} This frequency aligns with industry best practices and ensures proper access oversight while balancing administrative burden."
+- **Comment Variables:**
+  - `{total_user_count}` = employee_count + contractor_count
+  - `{selected_frequency}` = "annual" | "quarterly" | "monthly" (user's actual choice)
+  - `{organization_size}` = "small" (<50) | "medium" (50-999) | "large" (1000+)
+  - `{recommendation_context}` =
+    - If user chose recommended option: "This matches our recommendation for {organization_size} organizations."
+    - If user overrode recommendation: "While we typically recommend [recommended_frequency] for {organization_size} organizations, you've customized this to meet your specific requirements."
+- **Smart Recommendation:** This rule uses employee_count + contractor_count from questions 7 & 8 to recommend appropriate frequency, but respects user's final choice
 
 ### **RULE_09: Access Termination Timeframe**
 
