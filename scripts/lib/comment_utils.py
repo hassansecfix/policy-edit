@@ -239,9 +239,11 @@ class CommentManager:
                     try:
                         rl = redlines.getByIndex(i)
                         rl_type = get_redline_type(rl)
-                        if rl_type == "delete":
+                        # Attach comments to both deletions AND insertions for replace operations
+                        if rl_type in ["delete", "insert"]:
                             rl.setPropertyValue("Comment", f"{author_name}: {comment_text}")
                             added_to_redlines += 1
+                            print(f"✅ Added comment to {rl_type} redline: {comment_text[:50]}...")
                     except Exception as e_rl:
                         print(f"Could not set comment on redline {i}: {e_rl}")
         except Exception as e_red:
