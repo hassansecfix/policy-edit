@@ -1,6 +1,7 @@
 'use client';
 
 import { QuestionInput } from '@/components/QuestionInput';
+import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [, forceUpdate] = useState({});
 
   // Load questions from API
   useEffect(() => {
@@ -74,6 +76,11 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
       });
     }
   }, [state.currentQuestionIndex, questions.length, onProgressUpdate]);
+
+  // Force re-render when answers change (for dynamic descriptions)
+  useEffect(() => {
+    forceUpdate({});
+  }, [state.answers]);
 
   const handleAnswer = useCallback((answer: QuestionnaireAnswer) => {
     setState((prev) => {
@@ -215,11 +222,14 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
           <h2 className='text-xl font-semibold text-gray-900 mb-2'>
             {currentQuestion.questionText}
           </h2>
-          {currentQuestion.questionDescription && (
-            <p className='text-gray-600 text-sm leading-relaxed'>
-              {currentQuestion.questionDescription}
-            </p>
-          )}
+          {(() => {
+            const dynamicDescription = generateDynamicDescription(currentQuestion);
+            return (
+              dynamicDescription && (
+                <p className='text-gray-600 text-sm leading-relaxed'>{dynamicDescription}</p>
+              )
+            );
+          })()}
         </div>
 
         <QuestionInput

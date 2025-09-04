@@ -12,6 +12,40 @@ interface QuestionInputProps {
 export function QuestionInput({ question, value, onChange }: QuestionInputProps) {
   const [customText, setCustomText] = useState('');
   const [isOtherSelected, setIsOtherSelected] = useState(false);
+  const [, forceUpdate] = useState({});
+
+  // Helper function to get recommended frequency based on organization size
+  const getRecommendedFrequency = useCallback(() => {
+    if (question.field !== 'user_response.review_frequency') return null;
+
+    const savedAnswers = localStorage.getItem('questionnaire_answers');
+    if (savedAnswers) {
+      try {
+        const answers = JSON.parse(savedAnswers);
+        const employeeCount = parseInt(
+          String(answers['user_response.employee_count']?.value || '0'),
+        );
+        const contractorCount = parseInt(
+          String(answers['user_response.contractor_count']?.value || '0'),
+        );
+        const totalUsers = employeeCount + contractorCount;
+
+        if (totalUsers === 0) return null;
+
+        // Return the option WITH the (Recommended) label to match dynamic options
+        if (totalUsers < 50) {
+          return 'Annually (Recommended)';
+        } else if (totalUsers < 1000) {
+          return 'Quarterly (Recommended)';
+        } else {
+          return 'Monthly (Recommended)';
+        }
+      } catch (error) {
+        console.error('Error calculating recommended frequency:', error);
+      }
+    }
+    return null;
+  }, [question.field]);
 
   // Initialize state based on current value
   useEffect(() => {
@@ -37,6 +71,32 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
     },
     [question, onChange],
   );
+
+  // Auto-select recommended frequency when employee/contractor counts are available
+  useEffect(() => {
+    if (question.field === 'user_response.review_frequency' && !value) {
+      const recommended = getRecommendedFrequency();
+      if (recommended) {
+        handleChange(recommended);
+      }
+    }
+  }, [question.field, value, getRecommendedFrequency, handleChange]);
+
+  // Force re-render when employee/contractor counts change (for dynamic recommended labels)
+  useEffect(() => {
+    if (question.field === 'user_response.review_frequency') {
+      const handleStorageChange = () => {
+        forceUpdate({});
+      };
+
+      // Listen for localStorage changes
+      window.addEventListener('storage', handleStorageChange);
+
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    }
+  }, [question.field]);
 
   const handleRadioChange = useCallback(
     (selectedValue: string) => {
@@ -168,7 +228,11 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
         );
 
       case 'Radio buttons':
-        const radioOptions = question.options || getRadioOptions(question);
+        // For review frequency, always use dynamic options; for others, use static options from CSV
+        const radioOptions =
+          question.field === 'user_response.review_frequency'
+            ? getRadioOptions(question)
+            : question.options || getRadioOptions(question);
         return (
           <div className='space-y-3'>
             {radioOptions.map((option) => {
@@ -265,9 +329,46 @@ function getRadioOptions(question: Question): string[] {
       return ['Yes', 'No'];
     case 'user_response.access_request_method':
       return ['Ticketing system (Jira/ServiceNow/etc.)', 'Email approval', 'Manual process'];
+    case 'user_response.review_frequency':
+      return getDynamicReviewFrequencyOptions();
     default:
       return ['Yes', 'No'];
   }
+}
+
+// Helper function to get dynamic review frequency options with recommended labels
+function getDynamicReviewFrequencyOptions(): string[] {
+  const savedAnswers = localStorage.getItem('questionnaire_answers');
+  let recommendedOption = 'Quarterly'; // default fallback
+
+  if (savedAnswers) {
+    try {
+      const answers = JSON.parse(savedAnswers);
+      const employeeCount = parseInt(String(answers['user_response.employee_count']?.value || '0'));
+      const contractorCount = parseInt(
+        String(answers['user_response.contractor_count']?.value || '0'),
+      );
+      const totalUsers = employeeCount + contractorCount;
+
+      if (totalUsers > 0) {
+        if (totalUsers < 50) {
+          recommendedOption = 'Annually';
+        } else if (totalUsers < 1000) {
+          recommendedOption = 'Quarterly';
+        } else {
+          recommendedOption = 'Monthly';
+        }
+      }
+    } catch (error) {
+      console.error('Error determining recommended frequency:', error);
+    }
+  }
+
+  // Return options with dynamic "(Recommended)" label
+  const options = ['Annually', 'Quarterly', 'Monthly', 'Other'];
+  return options.map((option) =>
+    option === recommendedOption ? `${option} (Recommended)` : option,
+  );
 }
 
 function getDropdownOptions(question: Question): string[] {
@@ -280,8 +381,6 @@ function getDropdownOptions(question: Question): string[] {
       return ['1Password (recommended)', 'LastPass', 'Bitwarden', 'Dashlane', 'Other', 'None'];
     case 'onboarding.ticket_management_tools':
       return ['Jira', 'ServiceNow', 'Zendesk', 'Clickup', 'Asana', 'Trello', 'Other'];
-    case 'user_response.review_frequency':
-      return ['Monthly', 'Quarterly (Recommended)', 'Semi-annually', 'Annually'];
     case 'user_response.termination_timeframe':
       return [
         'Immediately',

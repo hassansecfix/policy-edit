@@ -15,7 +15,7 @@ interface DocumentChangesPreviewProps {
 }
 
 interface DocumentChange {
-  type: 'replace' | 'remove' | 'add' | 'logo';
+  type: 'replace' | 'remove' | 'add' | 'logo' | 'info';
   description: string;
   oldText: string;
   newText: string;
@@ -115,14 +115,54 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
       });
     }
 
-    // Review frequency
-    const reviewFreq = answers['user_response.review_frequency'];
-    if (reviewFreq && typeof reviewFreq.value === 'string') {
+    // Employee and contractor counts
+    const employeeCount = parseInt(String(answers['user_response.employee_count']?.value || '0'));
+    const contractorCount = parseInt(
+      String(answers['user_response.contractor_count']?.value || '0'),
+    );
+    const totalUsers = employeeCount + contractorCount;
+
+    if (employeeCount > 0) {
+      changes.push({
+        type: 'info',
+        description: `Organization size calculation: ${employeeCount} employees`,
+        oldText: '',
+        newText: `${employeeCount}`,
+        field: 'user_response.employee_count',
+      });
+    }
+
+    if (contractorCount > 0) {
+      changes.push({
+        type: 'info',
+        description: `Organization size calculation: ${contractorCount} contractors`,
+        oldText: '',
+        newText: `${contractorCount}`,
+        field: 'user_response.contractor_count',
+      });
+    }
+
+    // Review frequency (auto-calculated)
+    let reviewFrequency = 'quarterly'; // default
+    let frequencyDescription = 'Quarterly (default)';
+
+    if (totalUsers > 0) {
+      if (totalUsers < 50) {
+        reviewFrequency = 'annual';
+        frequencyDescription = `Annually (auto-determined for ${totalUsers} total users - small organization)`;
+      } else if (totalUsers < 1000) {
+        reviewFrequency = 'quarterly';
+        frequencyDescription = `Quarterly (auto-determined for ${totalUsers} total users - medium organization)`;
+      } else {
+        reviewFrequency = 'monthly';
+        frequencyDescription = `Monthly (auto-determined for ${totalUsers} total users - large organization)`;
+      }
+
       changes.push({
         type: 'replace',
-        description: 'User access review schedule',
+        description: `User access review schedule - ${frequencyDescription}`,
         oldText: 'quarterly',
-        newText: reviewFreq.value.toLowerCase().replace(' (recommended)', ''),
+        newText: reviewFrequency,
         field: 'user_response.review_frequency',
       });
     }
@@ -274,6 +314,8 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
         return '➕';
       case 'logo':
         return '🖼️';
+      case 'info':
+        return '📊';
       default:
         return '📝';
     }
@@ -289,6 +331,8 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
         return 'border-green-200 bg-green-50';
       case 'logo':
         return 'border-purple-200 bg-purple-50';
+      case 'info':
+        return 'border-cyan-200 bg-cyan-50';
       default:
         return 'border-gray-200 bg-gray-50';
     }
