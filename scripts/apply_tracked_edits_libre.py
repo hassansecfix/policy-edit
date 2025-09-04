@@ -258,72 +258,174 @@ class TrackedChangesProcessor:
         # Perform the replacement
         count_replaced = doc.replaceAll(rd)
         
-        # If replacement failed and text contains spaces, try flexible search
-        if count_replaced == 0 and " " in find:
-            print(f"⚠️ Primary replacement failed for '{find}', trying flexible search...")
+        # If replacement failed, try flexible search for any multi-word text
+        if count_replaced == 0 and (len(find) > 10 or " " in find):
+            print(f"⚠️ Primary replacement failed for '{find[:50]}...', trying flexible search...")
             count_replaced = self._try_flexible_replacement(doc, find, repl, match_case)
         
         return count_replaced, prev_redlines_count
     
     def _try_flexible_replacement(self, doc, find: str, repl: str, match_case: bool) -> int:
         """Try flexible replacement for text that might have line breaks or formatting."""
-        # Strategy 1: Replace spaces with flexible whitespace regex pattern
-        flexible_pattern = find.replace(" ", r"\s+")  # Match any whitespace including line breaks
         
-        rd = doc.createReplaceDescriptor()
-        rd.SearchString = flexible_pattern
-        rd.ReplaceString = repl
-        rd.SearchCaseSensitive = match_case
-        rd.SearchWords = False  # Disable word boundaries for flexible search
+        # Strategy 1: Flexible whitespace regex (handles line breaks, multiple spaces)
+        flexible_pattern = find.replace(" ", r"\s+")
+        count_replaced = self._try_regex_replacement(doc, flexible_pattern, repl, match_case, "whitespace-flexible")
+        if count_replaced > 0:
+            return count_replaced
         
+        # Strategy 2: Case-insensitive search if original was case-sensitive
+        if match_case:
+            count_replaced = self._try_case_insensitive_replacement(doc, find, repl)
+            if count_replaced > 0:
+                return count_replaced
+        
+        # Strategy 3: Remove punctuation and try again (for text with periods, commas, etc.)
+        import re
+        clean_find = re.sub(r'[^\w\s]', '', find)  # Remove punctuation
+        if clean_find != find:
+            count_replaced = self._try_regex_replacement(doc, clean_find.replace(" ", r"\s+"), repl, False, "punctuation-free")
+            if count_replaced > 0:
+                return count_replaced
+        
+        # Strategy 4: Word-by-word fuzzy matching
+        count_replaced = self._try_fuzzy_word_matching(doc, find, repl, match_case)
+        if count_replaced > 0:
+            return count_replaced
+        
+        # Strategy 5: Partial text matching (for very long strings)
+        if len(find) > 50:
+            # Try matching just the first part of the text
+            first_part = find[:30].strip()
+            count_replaced = self._try_partial_text_replacement(doc, find, first_part, repl, match_case)
+            if count_replaced > 0:
+                return count_replaced
+        
+        print(f"❌ All {5} flexible replacement strategies failed for '{find[:50]}...'")
+        return 0
+    
+    def _try_regex_replacement(self, doc, pattern: str, repl: str, match_case: bool, strategy_name: str) -> int:
+        """Try regex-based replacement."""
         try:
-            rd.setPropertyValue("RegularExpressions", True)  # Enable regex
+            rd = doc.createReplaceDescriptor()
+            rd.SearchString = pattern
+            rd.ReplaceString = repl
+            rd.SearchCaseSensitive = match_case
+            rd.SearchWords = False
+            rd.setPropertyValue("RegularExpressions", True)
+            
             count_replaced = doc.replaceAll(rd)
             if count_replaced > 0:
-                print(f"✅ Flexible regex replacement succeeded: {count_replaced} occurrences")
-                return count_replaced
+                print(f"✅ {strategy_name} regex replacement succeeded: {count_replaced} occurrences")
+            return count_replaced
         except Exception as e:
-            print(f"⚠️ Flexible regex failed: {e}")
-        
-        # Strategy 2: Try word-by-word search and replace
+            print(f"⚠️ {strategy_name} regex failed: {e}")
+            return 0
+    
+    def _try_case_insensitive_replacement(self, doc, find: str, repl: str) -> int:
+        """Try case-insensitive replacement."""
+        try:
+            rd = doc.createReplaceDescriptor()
+            rd.SearchString = find
+            rd.ReplaceString = repl
+            rd.SearchCaseSensitive = False  # Case insensitive
+            rd.SearchWords = False
+            
+            count_replaced = doc.replaceAll(rd)
+            if count_replaced > 0:
+                print(f"✅ Case-insensitive replacement succeeded: {count_replaced} occurrences")
+            return count_replaced
+        except Exception:
+            return 0
+    
+    def _try_fuzzy_word_matching(self, doc, find: str, repl: str, match_case: bool) -> int:
+        """Try fuzzy word-by-word matching."""
         words = find.split()
-        if len(words) > 1:
-            # Look for the first word, then check if the full phrase follows
+        if len(words) < 2:
+            return 0
+        
+        try:
+            # Search for the first few words as a phrase
+            search_phrase = " ".join(words[:min(3, len(words))])
             search_desc = doc.createSearchDescriptor()
-            search_desc.SearchString = words[0]
+            search_desc.SearchString = search_phrase
             search_desc.SearchCaseSensitive = match_case
             search_desc.SearchWords = False
             
             found_range = doc.findFirst(search_desc)
             replaced_count = 0
             
-            while found_range:
-                # Get surrounding text to check if full phrase is present
+            while found_range and replaced_count == 0:
                 try:
-                    # Expand range to check for full phrase
+                    # Expand range to capture full text
                     text_cursor = found_range.getText().createTextCursorByRange(found_range)
-                    text_cursor.goRight(len(find) * 2, True)  # Expand to capture potential line breaks
-                    expanded_text = text_cursor.getString().replace('\n', ' ').replace('\r', ' ')
+                    text_cursor.goRight(len(find) + 50, True)  # Extra buffer for formatting
+                    expanded_text = text_cursor.getString()
                     
-                    if find.lower() in expanded_text.lower():
-                        # Found the phrase, now replace it
+                    # Normalize whitespace for comparison
+                    normalized_expanded = ' '.join(expanded_text.split())
+                    normalized_find = ' '.join(find.split())
+                    
+                    if (match_case and normalized_find in normalized_expanded) or \
+                       (not match_case and normalized_find.lower() in normalized_expanded.lower()):
+                        # Found a match, replace the entire expanded range
                         text_cursor.setString(repl)
-                        replaced_count += 1
+                        replaced_count = 1
+                        print(f"✅ Fuzzy word matching succeeded: {replaced_count} occurrences")
                         break
                         
                 except Exception as e:
-                    print(f"⚠️ Word-by-word replacement error: {e}")
+                    print(f"⚠️ Fuzzy matching error: {e}")
                     break
                 
                 # Find next occurrence
                 found_range = doc.findNext(found_range, search_desc)
             
-            if replaced_count > 0:
-                print(f"✅ Word-by-word replacement succeeded: {replaced_count} occurrences")
-                return replaced_count
-        
-        print(f"❌ All flexible replacement strategies failed for '{find}'")
-        return 0
+            return replaced_count
+        except Exception as e:
+            print(f"⚠️ Fuzzy word matching failed: {e}")
+            return 0
+    
+    def _try_partial_text_replacement(self, doc, full_find: str, partial_find: str, repl: str, match_case: bool) -> int:
+        """Try finding by partial text then replacing full context."""
+        try:
+            search_desc = doc.createSearchDescriptor()
+            search_desc.SearchString = partial_find
+            search_desc.SearchCaseSensitive = match_case
+            search_desc.SearchWords = False
+            
+            found_range = doc.findFirst(search_desc)
+            replaced_count = 0
+            
+            while found_range and replaced_count == 0:
+                try:
+                    # Expand to get more context
+                    text_cursor = found_range.getText().createTextCursorByRange(found_range)
+                    text_cursor.goRight(len(full_find) + 100, True)
+                    expanded_text = text_cursor.getString()
+                    
+                    # Check if the full text is present in the expanded area
+                    normalized_expanded = ' '.join(expanded_text.split())
+                    normalized_full = ' '.join(full_find.split())
+                    
+                    if (match_case and normalized_full in normalized_expanded) or \
+                       (not match_case and normalized_full.lower() in normalized_expanded.lower()):
+                        # Replace the full context
+                        text_cursor.setString(repl)
+                        replaced_count = 1
+                        print(f"✅ Partial text replacement succeeded: {replaced_count} occurrences")
+                        break
+                        
+                except Exception as e:
+                    print(f"⚠️ Partial text replacement error: {e}")
+                    break
+                
+                found_range = doc.findNext(found_range, search_desc)
+            
+            return replaced_count
+        except Exception as e:
+            print(f"⚠️ Partial text replacement failed: {e}")
+            return 0
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
