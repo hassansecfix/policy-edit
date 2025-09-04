@@ -192,6 +192,12 @@ class TrackedChangesProcessor:
             comment_text = (row.get("comment") or "").strip()
             author_name = (row.get("comment_author") or "Secfix AI").strip()
             
+            # DEBUG: Show what we extracted from JSON
+            if comment_text:
+                print(f"📝 DEBUG JSON: Found comment for '{find[:30]}...': '{comment_text[:50]}...'")
+            else:
+                print(f"📝 DEBUG JSON: No comment for '{find[:30]}...'")
+            
             # SAFETY: Ensure author is always Secfix AI (override any other values)
             if author_name != "Secfix AI":
                 print(f"⚠️ Author was '{author_name}', overriding to 'Secfix AI'")
@@ -212,11 +218,19 @@ class TrackedChangesProcessor:
             replaced_count, prev_redlines_count = self._perform_replacement(
                 doc, find, repl, match_case, whole_word, wildcards)
             
+            # DEBUG: Show replacement result  
+            print(f"🔄 DEBUG REPLACEMENT: '{find[:30]}...' -> replaced_count = {replaced_count}")
+            
             # Add comment if provided and replacements were made
             if comment_text and replaced_count > 0:
+                print(f"💬 DEBUG COMMENT: Attempting to add comment for '{find[:30]}...'")
                 comment_manager.add_comment_to_replacements(
                     find, repl, comment_text, author_name, 
                     match_case, whole_word, prev_redlines_count)
+            elif comment_text and replaced_count == 0:
+                print(f"❌ DEBUG COMMENT: Skipping comment because replacement failed (count=0) for '{find[:30]}...'")
+            elif not comment_text and replaced_count > 0:
+                print(f"❌ DEBUG COMMENT: Skipping comment because no comment text for '{find[:30]}...'")
             
             # Log results
             if replaced_count > 0:
@@ -224,6 +238,8 @@ class TrackedChangesProcessor:
                     print(f"⚡ Replaced {replaced_count} occurrences by {author_name} (fast mode)")
                 else:
                     print(f"Replaced {replaced_count} occurrence(s) of '{find}' with '{repl}' by {author_name}")
+            else:
+                print(f"❌ No replacements made for '{find}'")
     
     def _perform_replacement(self, doc, find: str, repl: str, match_case: bool, 
                            whole_word: bool, wildcards: bool) -> tuple:
