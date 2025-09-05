@@ -122,14 +122,11 @@ _These rules are specific to the Access Control Policy document_
   - **Total Users < 50:** Replace with "an annual basis" (Scenario B)
   - **Total Users 50-999:** Keep "a quarterly basis" → `comment` action
   - **Total Users ≥ 1000:** Replace with "a monthly basis" (Scenario B)
-- **Dynamic Comment Format:** "You selected {selected_frequency} reviews for your organization ({total_user_count} users - {organization_size} organization). {recommendation_context} This frequency aligns with industry best practices and ensures proper access oversight while balancing administrative burden."
+- **Dynamic Comment Format:** "Based on your organization size ({total_user_count} people), we recommend {selected_frequency} reviews. Guidance: If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
+
 - **Comment Variables:**
   - `{total_user_count}` = employee_count + contractor_count
   - `{selected_frequency}` = "annual" | "quarterly" | "monthly" (user's actual choice)
-  - `{organization_size}` = "small" (<50) | "medium" (50-999) | "large" (1000+)
-  - `{recommendation_context}` =
-    - If user chose recommended option: "This matches our recommendation for {organization_size} organizations."
-    - If user overrode recommendation: "While we typically recommend [recommended_frequency] for {organization_size} organizations, you've customized this to meet your specific requirements."
 - **Smart Recommendation:** This rule uses employee_count + contractor_count from questions 7 & 8 to recommend appropriate frequency, but respects user's final choice
 
 ### **RULE_09: Access Termination Timeframe**

@@ -38,7 +38,7 @@ export function generateDynamicDescription(question: Question): string {
           organizationType = 'large';
         }
 
-        return `Based on your organization size (${employeeCount} employees + ${contractorCount} contractors = ${totalUsers} total users), we recommend ${frequency.toLowerCase()} reviews for ${organizationType} organizations. This option has been auto-selected for you, but you can choose a different frequency if your company has specific requirements.`;
+        return `Based on your organization size (${totalUsers} people), we recommend ${frequency.toLowerCase()} reviews. Guidance: If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.`;
       } catch (error) {
         console.error('Error generating dynamic description:', error);
       }
