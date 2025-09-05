@@ -123,6 +123,8 @@ _These rules are specific to the Access Control Policy document_
   - **Total Users 50-999:** Keep "a quarterly basis" → `comment` action
   - **Total Users ≥ 1000:** Replace with "a monthly basis" (Scenario B)
 - **Dynamic Comment Format:** "Based on your organization size ({total_user_count} people), we recommend {selected_frequency} reviews. Guidance: If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here."
+- **Scenario:** Always Scenario B
+- **CRITICAL replacement rule:** Always rewrite the entire sentence to sound naturaly
 
 - **Comment Variables:**
   - `{total_user_count}` = employee_count + contractor_count
@@ -132,8 +134,8 @@ _These rules are specific to the Access Control Policy document_
 ### **RULE_09: Access Termination Timeframe**
 
 - **Placeholder:** `<24 business hours>`
-- **Scenario:** B
-- **Replacement:** Rewrite the entire sentence to sound naturaly
+- **Scenario:** Always Scenario B
+- **CRITICAL replacement rule:** Always rewrite the entire sentence to sound naturaly
 
 ### **RULE_10: Policy Owner**
 
