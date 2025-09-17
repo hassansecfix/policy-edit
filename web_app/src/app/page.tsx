@@ -7,6 +7,7 @@ import { DownloadSection } from '@/components/DownloadSection';
 import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
 import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
+import { PolicyAutomationLoader } from '@/components/multi-step-loader-demo';
 import { Questionnaire } from '@/components/Questionnaire';
 import { Sidebar } from '@/components/Sidebar';
 import { API_CONFIG, getApiUrl } from '@/config/api';
@@ -376,6 +377,13 @@ export default function Dashboard() {
               <div className='w-full'>
                 <LogsPanel logs={logs} logCount={logs.length} />
               </div>
+
+              {/* Policy Automation Loader - Below Logs */}
+              {automationRunning && (
+                <div className='w-full'>
+                  <PolicyAutomationLoader loading={automationRunning} />
+                </div>
+              )}
             </div>
           </div>
         </div>

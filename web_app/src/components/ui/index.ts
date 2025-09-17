@@ -7,5 +7,6 @@ export { FloatingInput } from './FloatingInput';
 export { FloatingSelect } from './FloatingSelect';
 export { FloatingTextarea } from './FloatingTextarea';
 export { FormField, FormGroup, FormSection } from './FormField';
+export { MultiStepLoader } from './multi-step-loader';
 export { Timeline } from './Timeline';
 export { ValidationMessage } from './ValidationMessage';

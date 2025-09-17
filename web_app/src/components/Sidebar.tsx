@@ -22,16 +22,11 @@ export function Sidebar({ currentStep, className }: SidebarProps) {
     },
     {
       id: 2,
-      title: 'Changes Overview',
-      status: currentStep > 2 ? 'completed' : currentStep === 2 ? 'active' : 'pending',
-    },
-    {
-      id: 3,
       title: 'Automating',
       status: currentStep > 3 ? 'completed' : currentStep === 3 ? 'active' : 'pending',
     },
     {
-      id: 4,
+      id: 3,
       title: 'Document Ready',
       status: currentStep > 4 ? 'completed' : currentStep === 4 ? 'active' : 'pending',
     },
