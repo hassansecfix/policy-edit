@@ -23,6 +23,10 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
+
+  // Development state for testing loader
+  const [testLoaderRunning, setTestLoaderRunning] = useState(false);
+  const isDev = process.env.NODE_ENV === 'development';
   // const [showDebugAnswers, setShowDebugAnswers] = useState(false); // Removed - replaced with DocumentChangesPreview
   const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
@@ -88,6 +92,7 @@ export default function Dashboard() {
 
         if (response.ok) {
           setAutomationRunning(true);
+          setTestLoaderRunning(false); // Stop test loader when real automation starts
           addLog({
             timestamp: formatTime(new Date()),
             message: `🚀 Automation started successfully with ${
@@ -250,6 +255,17 @@ export default function Dashboard() {
     setAutomationRunning(false);
   }
 
+  // Auto-stop test loader when real automation completes
+  useEffect(() => {
+    if (!automationRunning && testLoaderRunning) {
+      // Auto-stop test loader after a delay when real automation finishes
+      const timer = setTimeout(() => {
+        setTestLoaderRunning(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [automationRunning, testLoaderRunning]);
+
   // Show loading state while checking questionnaire status
   if (checkingQuestionnaire) {
     return (
@@ -364,6 +380,24 @@ export default function Dashboard() {
                   onClearLogs={handleClearLogs}
                   automationRunning={automationRunning}
                 />
+
+                {/* Development Test Button - Only visible in dev mode */}
+                {isDev && !automationRunning && (
+                  <div className='mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg'>
+                    <div className='text-center'>
+                      <button
+                        onClick={() => setTestLoaderRunning(!testLoaderRunning)}
+                        className='bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-200 border border-purple-400 shadow-sm'
+                      >
+                        🧪 {testLoaderRunning ? 'Stop' : 'Test'} Loader UI
+                      </button>
+                    </div>
+                    <p className='text-xs text-purple-600 text-center mt-2 font-medium'>
+                      Development Mode: Test the automation loader UI without running actual
+                      automation
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -379,9 +413,9 @@ export default function Dashboard() {
               </div>
 
               {/* Policy Automation Loader - Below Logs */}
-              {automationRunning && (
+              {(automationRunning || testLoaderRunning) && (
                 <div className='w-full'>
-                  <PolicyAutomationLoader loading={automationRunning} />
+                  <PolicyAutomationLoader loading={automationRunning || testLoaderRunning} />
                 </div>
               )}
             </div>
