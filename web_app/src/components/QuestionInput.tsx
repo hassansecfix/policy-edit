@@ -1,6 +1,7 @@
 'use client';
 
 import { FileUpload, Question, QuestionnaireAnswer } from '@/types';
+import { FileText, Upload } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionInputProps {
@@ -129,88 +130,124 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
     switch (question.responseType) {
       case 'Text input':
         return (
-          <input
-            type='text'
-            value={(value as string) || ''}
-            onChange={(e) => handleChange(e.target.value)}
-            className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white'
-            placeholder='Enter your answer...'
-          />
+          <div className='space-y-2'>
+            <label className='block text-sm font-medium text-gray-700'>Your Answer</label>
+            <input
+              type='text'
+              value={(value as string) || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+              placeholder='Enter your answer'
+            />
+          </div>
         );
 
       case 'Number input':
         return (
-          <input
-            type='number'
-            value={(value as number) || ''}
-            onChange={(e) => handleChange(parseInt(e.target.value) || 0)}
-            className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white'
-            placeholder='Enter a number...'
-            min='0'
-          />
+          <div className='space-y-2'>
+            <label className='block text-sm font-medium text-gray-700'>Number</label>
+            <input
+              type='number'
+              value={String(value || '')}
+              onChange={(e) => handleChange(parseInt(e.target.value) || 0)}
+              min='0'
+              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+              placeholder='Enter a number'
+            />
+          </div>
         );
 
       case 'Email/User selector':
       case 'Email/User selector/String':
         return (
-          <input
-            type='email'
-            value={(value as string) || ''}
-            onChange={(e) => handleChange(e.target.value)}
-            className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white'
-            placeholder='Enter email address...'
-          />
+          <div className='space-y-2'>
+            <label className='block text-sm font-medium text-gray-700'>Email Address</label>
+            <input
+              type='email'
+              value={(value as string) || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+              placeholder='Enter email address'
+            />
+          </div>
         );
 
       case 'Date picker':
         return (
-          <input
-            type='date'
-            value={(value as string) || ''}
-            onChange={(e) => handleChange(e.target.value)}
-            className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white'
-          />
+          <div className='space-y-2'>
+            <label className='block text-sm font-medium text-gray-700'>Select Date</label>
+            <input
+              type='date'
+              value={(value as string) || ''}
+              onChange={(e) => handleChange(e.target.value)}
+              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+            />
+          </div>
         );
 
       case 'File upload':
         return (
           <div className='space-y-4'>
-            <input
-              type='file'
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  // Convert file to base64 for JSON serialization
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const base64 = reader.result as string;
-                    // Store both filename and base64 data
-                    handleChange({
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                      data: base64,
-                    });
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100'
-              accept='image/*,.pdf,.doc,.docx'
-            />
-            {value && typeof value === 'object' && 'name' in value && (
-              <div className='space-y-2'>
-                <div className='text-sm text-gray-600'>
-                  {(value as FileUpload).data === 'existing-file'
-                    ? `Previously uploaded: ${(value as FileUpload).name}`
-                    : `Selected: ${(value as FileUpload).name}`}
+            {/* File Upload Area */}
+            <div className='relative'>
+              <div className='border-2 border-dashed border-gray-300 rounded p-6 text-center hover:border-gray-400 transition-colors'>
+                <Upload className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+                <h4 className='text-lg font-medium text-gray-900 mb-2'>Upload File</h4>
+                <p className='text-sm text-gray-600 mb-4'>
+                  Drag and drop your file here, or click to browse
+                </p>
+                <input
+                  type='file'
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Convert file to base64 for JSON serialization
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const base64 = reader.result as string;
+                        // Store both filename and base64 data
+                        handleChange({
+                          name: file.name,
+                          type: file.type,
+                          size: file.size,
+                          data: base64,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+                  accept='image/*,.pdf,.doc,.docx'
+                />
+                <div className='text-xs text-gray-500'>
+                  Supported formats: Images, PDF, Word documents
                 </div>
+              </div>
+            </div>
+
+            {/* File Preview */}
+            {value && typeof value === 'object' && 'name' in value && (
+              <div className='bg-white border border-gray-200 rounded-xl p-4'>
+                <div className='flex items-center gap-4'>
+                  <div className='w-10 h-10 bg-blue-50 rounded flex items-center justify-center'>
+                    <FileText className='h-5 w-5 text-blue-600' />
+                  </div>
+                  <div className='flex-1'>
+                    <h5 className='font-medium text-gray-900'>
+                      {(value as FileUpload).data === 'existing-file'
+                        ? 'Previously uploaded file'
+                        : 'Selected file'}
+                    </h5>
+                    <p className='text-sm text-gray-600'>{(value as FileUpload).name}</p>
+                  </div>
+                </div>
+
                 {/* Show image preview for uploaded images */}
                 {(value as FileUpload).type?.startsWith('image/') &&
                   (value as FileUpload).data &&
                   (value as FileUpload).data !== 'existing-file' && (
-                    <div className='border rounded-lg p-3 bg-gray-50'>
-                      <div className='text-xs text-gray-500 mb-2'>Preview:</div>
+                    <div className='mt-4 p-3 bg-gray-50 rounded'>
+                      <div className='text-xs font-medium text-gray-700 mb-2'>Preview:</div>
                       <img
                         src={(value as FileUpload).data}
                         alt={`Preview of ${(value as FileUpload).name}`}
@@ -243,27 +280,32 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
 
               return (
                 <div key={option}>
-                  <label className='flex items-center space-x-3 cursor-pointer'>
+                  <label className='flex items-center space-x-3 cursor-pointer p-3 rounded border border-gray-200 hover:bg-gray-50'>
                     <input
                       type='radio'
                       name={`question-${question.questionNumber}`}
                       value={option}
                       checked={isCurrentlySelected}
                       onChange={(e) => handleRadioChange(e.target.value)}
-                      className='w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500'
+                      className='w-4 h-4 text-violet-600 border-gray-300 focus:ring-violet-600'
                     />
-                    <span className='text-gray-700'>{option}</span>
+                    <span className='text-gray-900'>{option}</span>
+                    {option.includes('(Recommended)') && (
+                      <span className='ml-auto bg-violet-100 text-violet-800 text-xs px-2 py-1 rounded'>
+                        Recommended
+                      </span>
+                    )}
                   </label>
 
                   {/* Show text input when "Other" is selected */}
                   {option === 'Other' && isOtherSelected && (
-                    <div className='ml-7 mt-2'>
+                    <div className='ml-7 mt-3'>
                       <input
                         type='text'
                         value={customText}
                         onChange={(e) => handleCustomTextChange(e.target.value)}
                         placeholder='Please specify...'
-                        className='w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white text-sm'
+                        className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
                       />
                     </div>
                   )}
@@ -280,30 +322,39 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
             ? 'Other'
             : (value as string) || '';
 
+        const selectOptions = dropdownOptions.map((option) => ({
+          value: option,
+          label: option,
+        }));
+
         return (
-          <div className='space-y-3'>
-            <select
-              value={dropdownValue}
-              onChange={(e) => handleRadioChange(e.target.value)}
-              className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white text-gray-900'
-            >
-              <option value=''>Select an option...</option>
-              {dropdownOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <label className='block text-sm font-medium text-gray-700'>Select Option</label>
+              <select
+                value={dropdownValue}
+                onChange={(e) => handleRadioChange(e.target.value)}
+                className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+              >
+                <option value=''>Choose an option...</option>
+                {dropdownOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             {/* Show text input when "Other" is selected in dropdown */}
             {isOtherSelected && (
-              <div>
+              <div className='space-y-2'>
+                <label className='block text-sm font-medium text-gray-700'>Please Specify</label>
                 <input
                   type='text'
                   value={customText}
                   onChange={(e) => handleCustomTextChange(e.target.value)}
                   placeholder='Please specify...'
-                  className='w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 bg-white'
+                  className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
                 />
               </div>
             )}

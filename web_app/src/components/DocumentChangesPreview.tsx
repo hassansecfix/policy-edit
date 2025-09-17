@@ -1,7 +1,8 @@
 'use client';
 
+import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { QuestionnaireAnswer } from '@/types';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface FileUploadValue {
   name: string;
@@ -25,24 +26,10 @@ interface DocumentChange {
 export function DocumentChangesPreview({ visible = true }: DocumentChangesPreviewProps) {
   const [answers, setAnswers] = useState<Record<string, QuestionnaireAnswer> | null>(null);
   const [changes, setChanges] = useState<DocumentChange[]>([]);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnswersRef = useRef<string>('');
 
-  useEffect(() => {
-    if (!visible) return;
-
-    // Load answers from localStorage
-    try {
-      const savedAnswers = localStorage.getItem('questionnaire_answers');
-      if (savedAnswers) {
-        const parsedAnswers: Record<string, QuestionnaireAnswer> = JSON.parse(savedAnswers);
-        setAnswers(parsedAnswers);
-        generateChanges(parsedAnswers);
-      }
-    } catch (error) {
-      console.error('Error loading answers:', error);
-    }
-  }, [visible]);
-
-  const generateChanges = (answers: Record<string, QuestionnaireAnswer>) => {
+  const generateChanges = useCallback((answers: Record<string, QuestionnaireAnswer>) => {
     const changes: DocumentChange[] = [];
 
     // Company Name replacements
@@ -170,7 +157,10 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
     // Termination timeframe
     const terminationTime = answers['user_response.termination_timeframe'];
     if (terminationTime && typeof terminationTime.value === 'string') {
-      const timeframeText = terminationTime.value.replace(' (Recommended)', '').toLowerCase();
+      let timeframeText = terminationTime.value
+        .replace(' (Recommended)', '')
+        .replace(/^Other:\s*/, '') // Remove "Other: " prefix
+        .toLowerCase();
       changes.push({
         type: 'replace',
         description: 'Access revocation timeframe when employee leaves',
@@ -302,115 +292,133 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
     }
 
     setChanges(changes);
-  };
+  }, []);
 
-  const getChangeIcon = (type: string) => {
-    switch (type) {
-      case 'replace':
-        return '🔄';
-      case 'remove':
-        return '🗑️';
-      case 'add':
-        return '➕';
-      case 'logo':
-        return '🖼️';
-      case 'info':
-        return '📊';
-      default:
-        return '📝';
-    }
-  };
+  // Function to load and process answers
+  const loadAnswers = useCallback(() => {
+    try {
+      const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
+      const currentAnswersString = savedAnswers || '';
 
-  const getChangeColor = (type: string) => {
-    switch (type) {
-      case 'replace':
-        return 'border-blue-200 bg-blue-50';
-      case 'remove':
-        return 'border-red-200 bg-red-50';
-      case 'add':
-        return 'border-green-200 bg-green-50';
-      case 'logo':
-        return 'border-purple-200 bg-purple-50';
-      case 'info':
-        return 'border-cyan-200 bg-cyan-50';
-      default:
-        return 'border-gray-200 bg-gray-50';
+      // Only update if answers have actually changed
+      if (currentAnswersString !== lastAnswersRef.current) {
+        lastAnswersRef.current = currentAnswersString;
+
+        if (savedAnswers) {
+          const parsedAnswers: Record<string, QuestionnaireAnswer> = JSON.parse(savedAnswers);
+          setAnswers(parsedAnswers);
+          generateChanges(parsedAnswers);
+        } else {
+          setAnswers(null);
+          setChanges([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading answers:', error);
     }
-  };
+  }, [generateChanges]);
+
+  // Handle storage events (for cross-tab updates)
+  const handleStorageChange = useCallback(
+    (e: StorageEvent) => {
+      if (e.key === QUESTIONNAIRE_STORAGE_KEY) {
+        loadAnswers();
+      }
+    },
+    [loadAnswers],
+  );
+
+  useEffect(() => {
+    if (!visible) {
+      // Clean up when not visible
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Initial load
+    loadAnswers();
+
+    // Add storage event listener (works for cross-tab changes)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Set up polling for same-tab changes (localStorage events don't fire in same tab)
+    pollIntervalRef.current = setInterval(() => {
+      loadAnswers();
+    }, 500); // Check every 500ms for changes
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [visible, loadAnswers, handleStorageChange]);
 
   if (!visible || !answers) {
     return null;
   }
 
   return (
-    <div className='bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6'>
-      <div className='flex items-center gap-2 mb-4'>
-        <h3 className='text-lg font-semibold text-gray-900'>📄 Document Changes Preview</h3>
-        <span className='text-sm text-gray-500'>({changes.length} changes will be made)</span>
+    <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
+      <div className='px-6 py-4 border-b border-gray-200'>
+        <h3 className='text-lg font-semibold text-gray-900'>Document Changes Preview</h3>
+        <p className='text-sm text-gray-600 mt-1'>
+          {changes.length} {changes.length === 1 ? 'change' : 'changes'} will be applied to your
+          policy document
+        </p>
       </div>
 
-      <p className='text-sm text-gray-600 mb-4'>
-        Based on your questionnaire responses, here are the changes that will be applied to your
-        policy document:
-      </p>
-
-      {changes.length === 0 ? (
-        <div className='text-center py-8 text-gray-500'>
-          <div className='text-4xl mb-2'>📝</div>
-          <p>Complete the questionnaire to see what changes will be made to your document.</p>
-        </div>
-      ) : (
-        <div className='space-y-3 max-h-80 overflow-y-auto'>
-          {changes.map((change, index) => (
-            <div key={index} className={`border rounded-lg p-4 ${getChangeColor(change.type)}`}>
-              <div className='flex items-start gap-3'>
-                <span className='text-lg flex-shrink-0'>{getChangeIcon(change.type)}</span>
-                <div className='flex-1 min-w-0'>
-                  <div className='font-medium text-gray-900 mb-1'>{change.description}</div>
-
-                  {change.type === 'remove' ? (
-                    <div className='text-sm'>
-                      <span className='text-red-700 line-through bg-red-100 px-2 py-1 rounded'>
-                        {change.oldText}
-                      </span>
-                      <span className='text-green-700 ml-2 font-medium'>will be removed</span>
-                    </div>
-                  ) : change.type === 'logo' ? (
-                    <div className='text-sm'>
-                      <span className='text-gray-700 line-through bg-gray-100 px-2 py-1 rounded'>
-                        {change.oldText}
-                      </span>
-                      <span className='mx-2'>→</span>
-                      <span className='text-purple-700 bg-purple-100 px-2 py-1 rounded font-medium'>
-                        {change.newText}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className='text-sm'>
-                      <span className='text-gray-700 line-through bg-gray-100 px-2 py-1 rounded'>
-                        {change.oldText}
-                      </span>
-                      <span className='mx-2'>→</span>
-                      <span className='text-blue-700 bg-blue-100 px-2 py-1 rounded font-medium'>
-                        {change.newText}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className='mt-4 pt-4 border-t border-gray-200'>
-        <div className='text-xs text-gray-500 space-y-1'>
-          <div>
-            🔄 = Text replacement • 🗑️ = Content removal • ➕ = Content addition • 🖼️ = Logo
-            insertion
+      <div className='px-6 py-4'>
+        {changes.length === 0 ? (
+          <div className='text-center py-8'>
+            <p className='text-gray-500'>
+              Complete the questionnaire to see what changes will be made to your document.
+            </p>
           </div>
-          <div>Changes are applied automatically when you run the automation process.</div>
-        </div>
+        ) : (
+          <div className='space-y-3'>
+            {changes.map((change, index) => (
+              <div key={index}>
+                {/* Text replacements */}
+                {change.type === 'replace' && change.oldText && change.newText && (
+                  <div className='text-sm leading-relaxed'>
+                    <span className='line-through text-red-600'>{change.oldText}</span>
+                    <span className='mx-2 text-gray-400'>→</span>
+                    <span className='text-green-700'>{change.newText}</span>
+                  </div>
+                )}
+
+                {/* Content removal */}
+                {change.type === 'remove' && (
+                  <div className='text-sm text-red-600'>
+                    <span className='line-through'>{change.oldText || change.description}</span>
+                  </div>
+                )}
+
+                {/* Content addition */}
+                {change.type === 'add' && (
+                  <div className='text-sm text-green-700'>
+                    <span>{change.newText}</span>
+                  </div>
+                )}
+
+                {/* Logo changes */}
+                {change.type === 'logo' && (
+                  <div className='text-sm leading-relaxed'>
+                    <span className='line-through text-red-600'>{change.oldText}</span>
+                    <span className='mx-2 text-gray-400'>→</span>
+                    <span className='text-green-700'>{change.newText}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

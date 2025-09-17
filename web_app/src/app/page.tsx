@@ -4,10 +4,12 @@ import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { ControlPanel } from '@/components/ControlPanel';
 import { DocumentChangesPreview } from '@/components/DocumentChangesPreview';
 import { DownloadSection } from '@/components/DownloadSection';
+import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
 import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
-import { ProgressTracker } from '@/components/ProgressTracker';
+import { PolicyAutomationLoader } from '@/components/multi-step-loader-demo';
 import { Questionnaire } from '@/components/Questionnaire';
+import { Sidebar } from '@/components/Sidebar';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
@@ -21,6 +23,10 @@ export default function Dashboard() {
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
   const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
+
+  // Development state for testing loader
+  const [testLoaderRunning, setTestLoaderRunning] = useState(false);
+  const isDev = process.env.NODE_ENV === 'development';
   // const [showDebugAnswers, setShowDebugAnswers] = useState(false); // Removed - replaced with DocumentChangesPreview
   const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
 
@@ -86,6 +92,7 @@ export default function Dashboard() {
 
         if (response.ok) {
           setAutomationRunning(true);
+          setTestLoaderRunning(false); // Stop test loader when real automation starts
           addLog({
             timestamp: formatTime(new Date()),
             message: `🚀 Automation started successfully with ${
@@ -243,24 +250,26 @@ export default function Dashboard() {
     [addLog, editingQuestionnaire],
   );
 
-  const handleEditQuestionnaire = useCallback(() => {
-    setEditingQuestionnaire(true);
-    addLog({
-      timestamp: formatTime(new Date()),
-      message: '📝 Editing questionnaire responses...',
-      level: 'info',
-    });
-  }, [addLog]);
-
   // Update automation running state based on progress
   if (progress?.step === 5 && progress?.status === 'completed' && automationRunning) {
     setAutomationRunning(false);
   }
 
+  // Auto-stop test loader when real automation completes
+  // useEffect(() => {
+  //   if (!automationRunning && testLoaderRunning) {
+  //     // Auto-stop test loader after a delay when real automation finishes
+  //     const timer = setTimeout(() => {
+  //       setTestLoaderRunning(false);
+  //     }, 9000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [automationRunning, testLoaderRunning]);
+
   // Show loading state while checking questionnaire status
   if (checkingQuestionnaire) {
     return (
-      <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+      <div className='h-screen bg-zinc-50 flex items-center justify-center'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4'></div>
           <p className='text-gray-600'>Loading...</p>
@@ -269,45 +278,32 @@ export default function Dashboard() {
     );
   }
 
-  // Show questionnaire if not completed OR if user wants to edit
-  if (!questionnaireCompleted || editingQuestionnaire) {
+  // Show questionnaire if not completed (but not if just editing)
+  if (!questionnaireCompleted && !editingQuestionnaire) {
     return (
-      <div className='min-h-screen bg-gray-50'>
-        <div className='container mx-auto px-4 py-6 max-w-7xl'>
-          <Header />
+      <div className='h-screen bg-zinc-50 flex flex-col'>
+        {/* Header - Fixed */}
+        <div className='bg-zinc-50 border-b border-gray-200 px-4 py-3 flex-shrink-0'>
+          <div className='container mx-auto max-w-7xl'>
+            <Header />
+          </div>
+        </div>
 
-          <div className='mt-8'>
-            <div className='text-center mb-8'>
-              <h1 className='text-3xl font-bold text-gray-900 mb-4'>
-                {editingQuestionnaire
-                  ? 'Edit Questionnaire Responses'
-                  : 'Policy Configuration Questionnaire'}
-              </h1>
-              <p className='text-lg text-gray-600 max-w-2xl mx-auto'>
-                {editingQuestionnaire
-                  ? 'Update your responses below. Your previous answers have been pre-filled for easy editing.'
-                  : 'Please answer the following questions to configure your access control policy. This information will be used to generate a customized policy document for your organization.'}
-              </p>
-              {editingQuestionnaire && (
-                <div className='mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto'>
-                  <p className='text-blue-800 text-sm'>
-                    💡 You are editing your questionnaire responses. Your previous answers are
-                    loaded and can be modified.
-                  </p>
-                </div>
-              )}
-              {questionnaireProgress.total > 0 && (
-                <div className='mt-4 text-sm text-gray-500'>
-                  Progress: {questionnaireProgress.current} of {questionnaireProgress.total}{' '}
-                  questions
-                </div>
-              )}
+        {/* Main Layout: Sidebar + Content */}
+        <div className='flex flex-1 overflow-hidden'>
+          {/* Sidebar - 25% Fixed */}
+          <div className='w-1/4 flex-shrink-0'>
+            <Sidebar currentStep={1} />
+          </div>
+
+          {/* Main Content - 75% Scrollable */}
+          <div className='w-3/4 bg-gray-50 overflow-y-auto'>
+            <div className='p-6'>
+              <Questionnaire
+                onComplete={handleQuestionnaireComplete}
+                onProgressUpdate={setQuestionnaireProgress}
+              />
             </div>
-
-            <Questionnaire
-              onComplete={handleQuestionnaireComplete}
-              onProgressUpdate={setQuestionnaireProgress}
-            />
           </div>
         </div>
 
@@ -317,72 +313,112 @@ export default function Dashboard() {
   }
 
   // Show main dashboard after questionnaire is completed
-  return (
-    <div className='min-h-screen bg-gray-50'>
-      <div className='container mx-auto px-4 py-6 max-w-7xl'>
-        <Header />
+  // Calculate current step for progress indicator
+  const getCurrentStep = () => {
+    if (files.length > 0) return 4; // Files ready for download
+    if (automationRunning || (progress && progress.step > 0)) return 3; // Automation running
+    if (questionnaireCompleted) return 2; // Ready to start automation
+    return 1; // Still on questionnaire
+  };
 
-        {/* Questionnaire completion banner */}
-        <div className='mb-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 shadow-sm'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center'>
-              <div className='text-green-600 mr-4 text-2xl'>✅</div>
-              <div>
-                <h3 className='text-green-900 font-semibold text-lg'>
-                  Questionnaire Completed Successfully!
-                </h3>
-                <p className='text-green-700 text-sm mt-1'>
-                  Your responses have been saved. <strong>Next step:</strong> Click &quot;Start
-                  Automation&quot; below to generate your custom policy document.
-                </p>
-                <div className='flex items-center mt-2 text-blue-700 text-sm'>
-                  <span className='mr-2'>👇</span>
-                  <span className='font-medium'>
-                    Use the automation panel below to start processing
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className='flex gap-2'>
-              <button
-                onClick={handleEditQuestionnaire}
-                className='px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium'
-              >
-                📝 Edit Questionnaire
-              </button>
-              {/* <button
-                onClick={() => setShowDebugAnswers(!showDebugAnswers)}
-                className='px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors text-sm font-medium'
-              >
-                🔍 {showDebugAnswers ? 'Hide' : 'Show'} Answers
-              </button> */}
-            </div>
-          </div>
+  const getStepSubtitle = () => {
+    const step = getCurrentStep();
+    switch (step) {
+      case 1:
+        return 'Answer questions about your organization';
+      case 2:
+        return 'Review changes and start automation';
+      case 3:
+        return 'Processing your policy document';
+      case 4:
+        return 'Download your customized policy';
+      default:
+        return 'Setting up your policy';
+    }
+  };
+
+  return (
+    <div className='h-screen bg-zinc-50 flex flex-col'>
+      {/* Header - Fixed */}
+      <div className='bg-zinc-50 border-b border-gray-200 px-6 py-3 flex-shrink-0'>
+        <div className='container max-w-7xl'>
+          <Header />
+        </div>
+      </div>
+
+      {/* Main Layout: Sidebar + Content */}
+      <div className='flex flex-1 overflow-hidden'>
+        {/* Sidebar - 25% Fixed */}
+        <div className='w-1/4 flex-shrink-0'>
+          <Sidebar currentStep={getCurrentStep()} />
         </div>
 
-        {/* Document Changes Preview */}
-        <DocumentChangesPreview visible={questionnaireCompleted && !editingQuestionnaire} />
-
-        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-          {/* Left Column - Control Panel & Progress */}
-          <div className='lg:col-span-1 space-y-6'>
-            <div id='automation-panel' className='automation-panel'>
-              <ControlPanel
-                onStartAutomation={handleStartAutomation}
-                onStopAutomation={handleStopAutomation}
-                onClearLogs={handleClearLogs}
-                automationRunning={automationRunning}
+        {/* Main Content - 75% Scrollable */}
+        <div className='w-3/4 bg-gray-50 overflow-y-auto'>
+          <div className='p-6'>
+            {/* Always Show Questionnaire Editor - First Section */}
+            {questionnaireCompleted && (
+              <ExpandableQuestionnaire
+                isExpanded={true}
+                onToggle={() => {}}
+                onComplete={handleQuestionnaireComplete}
+                onProgressUpdate={setQuestionnaireProgress}
               />
+            )}
+
+            {/* Document Changes Preview - Second Section */}
+            <div className='mb-6'>
+              <DocumentChangesPreview visible={questionnaireCompleted && !editingQuestionnaire} />
             </div>
 
-            <ProgressTracker progress={progress} />
+            {/* Centered Control Panel */}
+            <div className='mb-8'>
+              <div id='automation-panel' className='automation-panel'>
+                <ControlPanel
+                  onStartAutomation={handleStartAutomation}
+                  onStopAutomation={handleStopAutomation}
+                  onClearLogs={handleClearLogs}
+                  automationRunning={automationRunning}
+                />
 
-            <DownloadSection files={files} visible={files.length > 0} />
-          </div>
+                {/* Development Test Button - Only visible in dev mode */}
+                {isDev && !automationRunning && (
+                  <div className='mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg'>
+                    <div className='text-center'>
+                      <button
+                        onClick={() => setTestLoaderRunning(!testLoaderRunning)}
+                        className='bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-200 border border-purple-400 shadow-sm'
+                      >
+                        🧪 {testLoaderRunning ? 'Stop' : 'Test'} Loader UI
+                      </button>
+                    </div>
+                    <p className='text-xs text-purple-600 text-center mt-2 font-medium'>
+                      Development Mode: Test the automation loader UI without running actual
+                      automation
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
 
-          {/* Right Column - Logs */}
-          <div className='lg:col-span-2'>
-            <LogsPanel logs={logs} logCount={logs.length} />
+            <div className='flex flex-col gap-6'>
+              {/* Download Section */}
+              <div className='w-full'>
+                <DownloadSection files={files} visible={files.length > 0} />
+              </div>
+
+              {/* Logs Panel */}
+              <div className='w-full'>
+                <LogsPanel logs={logs} logCount={logs.length} />
+              </div>
+
+              {/* Policy Automation Loader - Below Logs */}
+              {(automationRunning || testLoaderRunning) && (
+                <div className='w-full'>
+                  <PolicyAutomationLoader loading={automationRunning || testLoaderRunning} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

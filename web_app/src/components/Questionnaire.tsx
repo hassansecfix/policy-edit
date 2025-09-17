@@ -1,10 +1,11 @@
 'use client';
 
 import { QuestionInput } from '@/components/QuestionInput';
+import { Button } from '@/components/ui';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface QuestionnaireProps {
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => Promise<void>;
@@ -19,9 +20,10 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     isCompleted: false,
   });
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, forceUpdate] = useState({});
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load questions from API
   useEffect(() => {
@@ -82,33 +84,130 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     forceUpdate({});
   }, [state.answers]);
 
-  const handleAnswer = useCallback((answer: QuestionnaireAnswer) => {
-    setState((prev) => {
-      const newAnswers = {
-        ...prev.answers,
-        [answer.field]: answer,
-      };
-
-      // Save to localStorage immediately
-      try {
-        localStorage.setItem(QUESTIONNAIRE_STORAGE_KEY, JSON.stringify(newAnswers));
-      } catch (error) {
-        console.error('Failed to save answers to localStorage:', error);
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-
-      return {
-        ...prev,
-        answers: newAnswers,
-      };
-    });
+    };
   }, []);
 
-  const handleNext = useCallback(async () => {
-    const currentQuestion = questions[state.currentQuestionIndex];
-    const hasAnswer = state.answers[currentQuestion.field];
+  // Save answers to API with debouncing
+  const saveAnswersToAPI = useCallback(async (answers: Record<string, QuestionnaireAnswer>) => {
+    try {
+      setSaving(true);
+      const response = await fetch('/api/answers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers }),
+      });
 
-    if (!hasAnswer) {
-      alert('Please answer this question before continuing.');
+      if (response.ok) {
+        const responseData = await response.json();
+
+        // Store the userId for later use in automation
+        if (responseData.userId) {
+          localStorage.setItem('questionnaire_user_id', responseData.userId);
+        }
+
+        console.log('✅ Answers saved to API in real-time');
+      } else {
+        console.error('❌ Failed to save answers to API');
+      }
+    } catch (error) {
+      console.error('❌ Network error saving answers:', error);
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
+  const debouncedSaveToAPI = useCallback(
+    (answers: Record<string, QuestionnaireAnswer>) => {
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout for debounced save
+      saveTimeoutRef.current = setTimeout(() => {
+        saveAnswersToAPI(answers);
+      }, 1000); // Save 1 second after user stops typing
+    },
+    [saveAnswersToAPI],
+  );
+
+  const handleAnswer = useCallback(
+    (answer: QuestionnaireAnswer) => {
+      setState((prev) => {
+        const newAnswers = {
+          ...prev.answers,
+          [answer.field]: answer,
+        };
+
+        // Save to localStorage immediately
+        try {
+          localStorage.setItem(QUESTIONNAIRE_STORAGE_KEY, JSON.stringify(newAnswers));
+        } catch (error) {
+          console.error('Failed to save answers to localStorage:', error);
+        }
+
+        // Debounced save to API
+        debouncedSaveToAPI(newAnswers);
+
+        return {
+          ...prev,
+          answers: newAnswers,
+        };
+      });
+    },
+    [debouncedSaveToAPI],
+  );
+
+  // Validation function to check if current question has a valid answer
+  const isCurrentQuestionAnswered = useCallback(() => {
+    if (questions.length === 0) return false;
+
+    const currentQuestion = questions[state.currentQuestionIndex];
+    const currentAnswer = state.answers[currentQuestion.field];
+
+    if (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null) {
+      return false;
+    }
+
+    const value = currentAnswer.value;
+
+    // Check based on response type
+    switch (currentQuestion.responseType) {
+      case 'Text input':
+      case 'Email/User selector':
+      case 'Email/User selector/String':
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case 'Number input':
+        return typeof value === 'number' && !isNaN(value) && value >= 0;
+
+      case 'Date picker':
+        return typeof value === 'string' && value.trim().length > 0;
+
+      case 'File upload':
+        return value !== null && typeof value === 'object' && 'name' in value;
+
+      case 'Radio buttons':
+      case 'Dropdown':
+        return typeof value === 'string' && value.trim().length > 0;
+
+      default:
+        // For any other types, just check if value exists and is not empty
+        return value !== '' && value !== null && value !== undefined;
+    }
+  }, [questions, state.currentQuestionIndex, state.answers]);
+
+  const handleNext = useCallback(async () => {
+    // Button should be disabled if no answer, but adding safety check
+    if (!isCurrentQuestionAnswered()) {
       return;
     }
 
@@ -118,19 +217,25 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
         currentQuestionIndex: prev.currentQuestionIndex + 1,
       }));
     } else {
-      // All questions completed - start submission
+      // All questions completed - trigger onComplete for UI updates
       try {
-        setSubmitting(true);
+        // Save immediately to API before completing
+        await saveAnswersToAPI(state.answers);
         await onComplete(state.answers);
-        // Only set completed state after successful submission and navigation
         setState((prev) => ({ ...prev, isCompleted: true }));
       } catch (error) {
         console.error('Failed to complete questionnaire:', error);
-        setSubmitting(false);
         alert('Failed to save questionnaire. Please try again.');
       }
     }
-  }, [state.currentQuestionIndex, state.answers, questions, onComplete]);
+  }, [
+    state.currentQuestionIndex,
+    state.answers,
+    questions,
+    onComplete,
+    saveAnswersToAPI,
+    isCurrentQuestionAnswered,
+  ]);
 
   const handlePrevious = useCallback(() => {
     if (state.currentQuestionIndex > 0) {
@@ -145,7 +250,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     return (
       <div className='flex items-center justify-center min-h-[400px]'>
         <div className='text-center'>
-          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4'></div>
+          <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto mb-4'></div>
           <p className='text-gray-600'>Loading questions...</p>
         </div>
       </div>
@@ -154,7 +259,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
 
   if (error) {
     return (
-      <div className='bg-red-50 border border-red-200 rounded-lg p-6 text-center'>
+      <div className='bg-red-50 border border-red-200 rounded p-6 text-center'>
         <div className='text-red-600 mb-2'>❌ Error</div>
         <p className='text-red-700'>{error}</p>
         <button
@@ -171,25 +276,12 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     return <div className='text-center text-gray-600'>No questions found.</div>;
   }
 
-  if (submitting) {
-    return (
-      <div className='bg-blue-50 border border-blue-200 rounded-lg p-8 text-center'>
-        <div className='text-blue-600 text-2xl mb-4'>🔄 Submitting...</div>
-        <p className='text-blue-700 text-lg'>Saving your responses and preparing automation.</p>
-        <div className='mt-4 flex items-center justify-center text-blue-600'>
-          <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
-          <span className='text-sm'>Processing questionnaire and setting up automation panel</span>
-        </div>
-      </div>
-    );
-  }
-
   if (state.isCompleted) {
     return (
-      <div className='bg-green-50 border border-green-200 rounded-lg p-8 text-center'>
-        <div className='text-green-600 text-2xl mb-4'>✅ Complete!</div>
-        <p className='text-green-700 text-lg'>Successfully redirected to automation panel!</p>
-        <p className='text-green-600 mt-2'>You should now see the automation controls above.</p>
+      <div className='bg-emerald-50 border border-emerald-200 rounded p-8 text-center'>
+        <div className='text-emerald-500 text-2xl mb-4'>✅ Complete!</div>
+        <p className='text-emerald-700 text-lg'>Successfully redirected to automation panel!</p>
+        <p className='text-emerald-600 mt-2'>You should now see the automation controls above.</p>
       </div>
     );
   }
@@ -199,75 +291,95 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
   const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
-    <div className='max-w-2xl mx-auto'>
-      {/* Progress Bar */}
-      <div className='mb-8'>
-        <div className='flex justify-between text-sm text-gray-600 mb-2'>
-          <span>
-            Question {state.currentQuestionIndex + 1} of {questions.length}
-          </span>
-          <span>{Math.round(progress)}% Complete</span>
-        </div>
-        <div className='w-full bg-gray-200 rounded-full h-2'>
-          <div
-            className='bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out'
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
+    <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
+      {/* Card Header */}
+      <div className='px-6 py-4 border-b border-gray-200'>
+        <h3 className='text-lg font-semibold text-gray-900'>Policy Configuration Questionnaire</h3>
+        <p className='text-sm text-gray-600 mt-1'>
+          Please answer the following questions to configure your access control policy. This
+          information will be used to generate a customized policy document for your organization.
+        </p>
       </div>
 
-      {/* Question Card */}
-      <div className='bg-white border border-gray-200 rounded-lg shadow-sm p-8'>
-        <div className='mb-6'>
-          <h2 className='text-xl font-semibold text-gray-900 mb-2'>
+      {/* Card Content */}
+      <div className='px-6 py-6'>
+        {/* Progress Section */}
+        <div className='mb-8'>
+          <div className='flex justify-between items-center mb-3'>
+            <span className='text-sm text-gray-600'>
+              Question {state.currentQuestionIndex + 1} of {questions.length}
+            </span>
+            <div className='flex items-center gap-3'>
+              {saving && (
+                <div className='flex items-center text-violet-600 text-xs'>
+                  <div className='animate-spin rounded-full h-3 w-3 border-b border-violet-600 mr-1'></div>
+                  Saving...
+                </div>
+              )}
+              <span className='text-sm text-gray-600'>{Math.round(progress)}%</span>
+            </div>
+          </div>
+
+          <div className='w-full bg-gray-200 rounded-full h-2'>
+            <div
+              className='bg-violet-600 h-2 rounded-full transition-all duration-300'
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <div className='mt-2 text-center'>
+            <span className='text-xs text-gray-500'>
+              <span className='text-red-500'>*</span> All questions are required
+            </span>
+          </div>
+        </div>
+
+        {/* Question Section */}
+        <div className='mb-8'>
+          <h2 className='text-xl font-semibold text-gray-900 mb-3'>
             {currentQuestion.questionText}
+            <span className='text-red-500 ml-1'>*</span>
           </h2>
           {(() => {
             const dynamicDescription = generateDynamicDescription(currentQuestion);
             return (
               dynamicDescription && (
-                <p className='text-gray-600 text-sm leading-relaxed'>{dynamicDescription}</p>
+                <p className='text-sm text-gray-600 leading-relaxed mb-6'>{dynamicDescription}</p>
               )
             );
           })()}
+
+          <QuestionInput
+            question={currentQuestion}
+            value={currentAnswer?.value}
+            onChange={handleAnswer}
+          />
         </div>
 
-        <QuestionInput
-          question={currentQuestion}
-          value={currentAnswer?.value}
-          onChange={handleAnswer}
-        />
-
-        {/* Navigation */}
-        <div className='flex justify-between mt-8 pt-6 border-t border-gray-200'>
-          <button
+        {/* Navigation Section */}
+        <div className='flex justify-between items-center pt-6 border-t border-gray-200'>
+          <Button
             onClick={handlePrevious}
             disabled={state.currentQuestionIndex === 0}
-            className='px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+            variant='outline'
+            size='default'
           >
             Previous
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={handleNext}
-            disabled={submitting}
-            className={`px-6 py-2 rounded-lg transition-colors ${
-              submitting
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+            disabled={saving || !isCurrentQuestionAnswered()}
+            loading={saving}
+            variant='default'
+            size='default'
           >
-            {submitting ? (
-              <div className='flex items-center'>
-                <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2'></div>
-                Submitting...
-              </div>
-            ) : state.currentQuestionIndex === questions.length - 1 ? (
-              'Complete'
-            ) : (
-              'Next'
-            )}
-          </button>
+            {saving
+              ? 'Saving...'
+              : state.currentQuestionIndex === questions.length - 1
+              ? 'Complete'
+              : 'Next Question'}
+          </Button>
         </div>
       </div>
     </div>
