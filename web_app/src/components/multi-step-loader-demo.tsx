@@ -46,10 +46,7 @@ export default function MultiStepLoaderDemo() {
       <div className='mb-6 text-center'>
         <button
           onClick={() => setLoading(!loading)}
-          className='bg-[#39C3EF] hover:bg-[#39C3EF]/90 text-black text-sm md:text-base transition font-medium duration-200 h-10 rounded-lg px-8 flex items-center justify-center mx-auto'
-          style={{
-            boxShadow: '0px -1px 0px 0px #ffffff40 inset, 0px 1px 0px 0px #ffffff40 inset',
-          }}
+          className='bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors duration-200'
         >
           {loading ? 'Stop' : 'Test'} Policy Automation Loader
         </button>

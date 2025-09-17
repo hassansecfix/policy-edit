@@ -10,7 +10,7 @@ const CheckIcon = ({ className }: { className?: string }) => {
       viewBox='0 0 24 24'
       strokeWidth={1.5}
       stroke='currentColor'
-      className={cn('w-6 h-6 ', className)}
+      className={cn('w-5 h-5', className)}
     >
       <path d='M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z' />
     </svg>
@@ -23,7 +23,7 @@ const CheckFilled = ({ className }: { className?: string }) => {
       xmlns='http://www.w3.org/2000/svg'
       viewBox='0 0 24 24'
       fill='currentColor'
-      className={cn('w-6 h-6 ', className)}
+      className={cn('w-5 h-5', className)}
     >
       <path
         fillRule='evenodd'
@@ -46,34 +46,28 @@ const LoaderCore = ({
   value?: number;
 }) => {
   return (
-    <div className='flex flex-col w-full max-w-4xl mx-auto p-6'>
+    <div className='p-6'>
       {loadingStates.map((loadingState, index) => {
-        const distance = Math.abs(index - value);
-        const opacity = Math.max(1 - distance * 0.2, 0);
-
         return (
           <div
             key={index}
             className={cn(
-              'text-left flex gap-3 mb-3 p-3 rounded-lg transition-all duration-500 ease-out',
+              'flex items-center gap-3 p-3 mb-3 rounded-lg transition-all duration-300 ease-out',
               index < value
-                ? 'bg-green-50 border-l-4 border-green-400 text-green-800'
+                ? 'bg-violet-50 text-violet-800'
                 : index === value
-                ? 'bg-blue-50 border-l-4 border-blue-400 text-blue-800 animate-fadeIn'
-                : 'bg-gray-50 text-gray-600',
+                ? 'bg-gray-100 text-gray-800'
+                : 'bg-gray-50 text-gray-500',
             )}
-            style={{
-              opacity: opacity,
-            }}
           >
-            <div className='flex-shrink-0 mt-0.5'>
-              {index > value && <CheckIcon className='text-gray-400' />}
+            <div className='flex-shrink-0 w-5'>
+              {index > value && <CheckIcon className='text-gray-400 w-5 h-5' />}
               {index === value && (
-                <div className='w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin' />
+                <div className='w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin m-auto' />
               )}
-              {index < value && <CheckFilled className='text-green-500' />}
+              {index < value && <CheckFilled className='text-violet-600 w-5 h-5' />}
             </div>
-            <span className='font-medium text-sm flex-1'>{loadingState.text}</span>
+            <span className='text-sm font-medium flex-1'>{loadingState.text}</span>
           </div>
         );
       })}
@@ -116,10 +110,10 @@ export const MultiStepLoader = ({
   }
 
   return (
-    <div className='w-full bg-white rounded-lg border shadow-sm'>
-      <div className='bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 rounded-t-lg'>
+    <div className='w-full rounded-xl border border-gray-200 bg-white overflow-hidden'>
+      <div className='text-gray-900 px-6 py-4 border-b border-gray-200'>
         <h3 className='font-semibold text-lg'>🤖 Automation Progress</h3>
-        <p className='text-blue-100 text-sm mt-1'>Real-time progress of your policy automation</p>
+        <p className='text-gray-500 text-sm mt-1'>Real-time progress of your policy automation</p>
       </div>
       <LoaderCore value={currentState} loadingStates={loadingStates} />
     </div>

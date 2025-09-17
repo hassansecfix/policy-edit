@@ -256,15 +256,15 @@ export default function Dashboard() {
   }
 
   // Auto-stop test loader when real automation completes
-  useEffect(() => {
-    if (!automationRunning && testLoaderRunning) {
-      // Auto-stop test loader after a delay when real automation finishes
-      const timer = setTimeout(() => {
-        setTestLoaderRunning(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [automationRunning, testLoaderRunning]);
+  // useEffect(() => {
+  //   if (!automationRunning && testLoaderRunning) {
+  //     // Auto-stop test loader after a delay when real automation finishes
+  //     const timer = setTimeout(() => {
+  //       setTestLoaderRunning(false);
+  //     }, 9000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [automationRunning, testLoaderRunning]);
 
   // Show loading state while checking questionnaire status
   if (checkingQuestionnaire) {
