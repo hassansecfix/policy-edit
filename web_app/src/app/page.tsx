@@ -349,7 +349,7 @@ export default function Dashboard() {
       <div className='flex flex-1 overflow-hidden'>
         {/* Main Content - 75% Scrollable */}
         <div className='max-w-3xl mx-auto bg-gray-50 overflow-y-auto'>
-          <div className='p-6'>
+          <div className='px-6 py-12'>
             <PolicyHeader />
 
             {/* Always Show Questionnaire Editor - First Section */}
