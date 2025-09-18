@@ -299,9 +299,7 @@ export default function Dashboard() {
           {/* Main Content - 75% Scrollable */}
           <div className='w-3/4 bg-gray-50 overflow-y-auto'>
             <div className='p-6'>
-              <Questionnaire
-                onComplete={handleQuestionnaireComplete}
-              />
+              <Questionnaire onComplete={handleQuestionnaireComplete} />
             </div>
           </div>
         </div>
@@ -347,13 +345,8 @@ export default function Dashboard() {
 
       {/* Main Layout: Sidebar + Content */}
       <div className='flex flex-1 overflow-hidden'>
-        {/* Sidebar - 25% Fixed */}
-        <div className='w-1/4 flex-shrink-0'>
-          <Sidebar currentStep={getCurrentStep()} />
-        </div>
-
         {/* Main Content - 75% Scrollable */}
-        <div className='w-3/4 bg-gray-50 overflow-y-auto'>
+        <div className='max-w-3xl mx-auto bg-gray-50 overflow-y-auto'>
           <div className='p-6'>
             {/* Always Show Questionnaire Editor - First Section */}
             {questionnaireCompleted && (
