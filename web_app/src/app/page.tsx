@@ -8,6 +8,7 @@ import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
 import { Header } from '@/components/Header';
 import { LogsPanel } from '@/components/LogsPanel';
 import { PolicyAutomationLoader } from '@/components/multi-step-loader-demo';
+import { PolicyHeader } from '@/components/PolicyHeader';
 import { Questionnaire } from '@/components/Questionnaire';
 import { Sidebar } from '@/components/Sidebar';
 import { API_CONFIG, getApiUrl } from '@/config/api';
@@ -299,6 +300,7 @@ export default function Dashboard() {
           {/* Main Content - 75% Scrollable */}
           <div className='w-3/4 bg-gray-50 overflow-y-auto'>
             <div className='p-6'>
+              <PolicyHeader />
               <Questionnaire onComplete={handleQuestionnaireComplete} />
             </div>
           </div>
@@ -348,6 +350,8 @@ export default function Dashboard() {
         {/* Main Content - 75% Scrollable */}
         <div className='max-w-3xl mx-auto bg-gray-50 overflow-y-auto'>
           <div className='p-6'>
+            <PolicyHeader />
+
             {/* Always Show Questionnaire Editor - First Section */}
             {questionnaireCompleted && (
               <ExpandableQuestionnaire
