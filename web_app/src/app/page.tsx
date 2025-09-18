@@ -1,13 +1,10 @@
 'use client';
 
 import { ConnectionStatus } from '@/components/ConnectionStatus';
-import { ControlPanel } from '@/components/ControlPanel';
 import { DocumentChangesPreview } from '@/components/DocumentChangesPreview';
 import { DownloadSection } from '@/components/DownloadSection';
 import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
 import { Header } from '@/components/Header';
-import { LogsPanel } from '@/components/LogsPanel';
-import { PolicyAutomationLoader } from '@/components/multi-step-loader-demo';
 import { PolicyHeader } from '@/components/PolicyHeader';
 import { Questionnaire } from '@/components/Questionnaire';
 import { API_CONFIG, getApiUrl } from '@/config/api';
@@ -305,31 +302,6 @@ export default function Dashboard() {
     );
   }
 
-  // Show main dashboard after questionnaire is completed
-  // Calculate current step for progress indicator
-  const getCurrentStep = () => {
-    if (files.length > 0) return 4; // Files ready for download
-    if (automationRunning || (progress && progress.step > 0)) return 3; // Automation running
-    if (questionnaireCompleted) return 2; // Ready to start automation
-    return 1; // Still on questionnaire
-  };
-
-  // const getStepSubtitle = () => {
-  //   const step = getCurrentStep();
-  //   switch (step) {
-  //     case 1:
-  //       return 'Answer questions about your organization';
-  //     case 2:
-  //       return 'Review changes and start automation';
-  //     case 3:
-  //       return 'Processing your policy document';
-  //     case 4:
-  //       return 'Download your customized policy';
-  //     default:
-  //       return 'Setting up your policy';
-  //   }
-  // };
-
   return (
     <div className='g-gray-50 flex flex-col bg-gray-50'>
       {/* Header - Fixed */}
@@ -363,7 +335,7 @@ export default function Dashboard() {
             </div>
 
             {/* Centered Control Panel */}
-            <div className='mb-8'>
+            {/* <div className='mb-8'>
               <div id='automation-panel' className='automation-panel'>
                 <ControlPanel
                   onStopAutomation={handleStopAutomation}
@@ -371,7 +343,6 @@ export default function Dashboard() {
                   automationRunning={automationRunning}
                 />
 
-                {/* Development Test Button - Only visible in dev mode */}
                 {isDev && !automationRunning && (
                   <div className='mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg'>
                     <div className='text-center'>
@@ -389,25 +360,22 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <div className='flex flex-col gap-6'>
-              {/* Download Section */}
               <div className='w-full'>
                 <DownloadSection files={files} visible={files.length > 0} />
               </div>
 
-              {/* Logs Panel */}
-              <div className='w-full'>
+              {/* <div className='w-full'>
                 <LogsPanel logs={logs} logCount={logs.length} />
               </div>
 
-              {/* Policy Automation Loader - Below Logs */}
               {(automationRunning || testLoaderRunning) && (
                 <div className='w-full'>
                   <PolicyAutomationLoader loading={automationRunning || testLoaderRunning} />
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>

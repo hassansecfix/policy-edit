@@ -1,5 +1,6 @@
 'use client';
 
+import { PolicyGenerationOverlay } from '@/components/PolicyGenerationOverlay';
 import { QuestionInput } from '@/components/QuestionInput';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
@@ -29,6 +30,7 @@ export function Questionnaire({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, forceUpdate] = useState({});
+  const [testOverlay, setTestOverlay] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load questions from API
@@ -294,7 +296,10 @@ export function Questionnaire({
   const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
-    <div className='bg-white rounded-[6px] border border-gray-200 overflow-hidden w-full mx-auto'>
+    <div className='bg-white rounded-[6px] border border-gray-200 overflow-hidden w-full mx-auto relative'>
+      {/* Policy Generation Overlay */}
+      <PolicyGenerationOverlay isVisible={automationRunning || testOverlay} />
+
       {/* Progress Indicator */}
       <div className='flex w-full'>
         {questions.map((_, index) => (
@@ -383,6 +388,18 @@ export function Questionnaire({
           <div className='flex items-center justify-center mt-4 text-violet-600 text-xs'>
             <div className='animate-spin rounded-full h-3 w-3 border-b border-violet-600 mr-1'></div>
             Saving...
+          </div>
+        )}
+
+        {/* Test Overlay Button (Development Mode Only) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className='flex items-center justify-center mt-4'>
+            <button
+              onClick={() => setTestOverlay(!testOverlay)}
+              className='px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors cursor-pointer'
+            >
+              🧪 {testOverlay ? 'Hide' : 'Show'} Test Overlay
+            </button>
           </div>
         )}
       </div>
