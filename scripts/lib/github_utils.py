@@ -55,9 +55,23 @@ class GitHubActionsManager:
             if 'github.com' in repo_url:
                 if repo_url.endswith('.git'):
                     repo_url = repo_url[:-4]
-                parts = repo_url.split('/')
-                self.repo_owner = parts[-2]
-                self.repo_name = parts[-1]
+                
+                # Handle both SSH and HTTPS formats
+                if repo_url.startswith('git@github.com:'):
+                    # SSH format: git@github.com:owner/repo
+                    repo_path = repo_url.replace('git@github.com:', '')
+                    parts = repo_path.split('/')
+                elif 'github.com/' in repo_url:
+                    # HTTPS format: https://github.com/owner/repo
+                    parts = repo_url.split('/')
+                    # Take last two parts for owner/repo
+                    parts = parts[-2:]
+                else:
+                    return
+                
+                if len(parts) >= 2:
+                    self.repo_owner = parts[-2]
+                    self.repo_name = parts[-1]
                 print(f"✅ Repository info from git: {self.repo_owner}/{self.repo_name}")
         except Exception:
             pass
