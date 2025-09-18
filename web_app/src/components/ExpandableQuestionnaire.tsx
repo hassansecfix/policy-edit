@@ -9,11 +9,13 @@ interface ExpandableQuestionnaireProps {
   onToggle: () => void;
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => void;
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
+  onStartAutomation?: () => Promise<void>;
 }
 
 export function ExpandableQuestionnaire({
   onComplete,
   onProgressUpdate,
+  onStartAutomation,
 }: ExpandableQuestionnaireProps) {
   const handleComplete = useCallback(
     async (answers: Record<string, QuestionnaireAnswer>) => {
@@ -24,9 +26,10 @@ export function ExpandableQuestionnaire({
 
   return (
     <div className='mb-6'>
-      <Questionnaire 
-        onComplete={handleComplete} 
-        onProgressUpdate={onProgressUpdate || (() => {})} 
+      <Questionnaire
+        onComplete={handleComplete}
+        onProgressUpdate={onProgressUpdate || (() => {})}
+        onStartAutomation={onStartAutomation}
       />
     </div>
   );

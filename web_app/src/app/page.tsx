@@ -10,7 +10,6 @@ import { LogsPanel } from '@/components/LogsPanel';
 import { PolicyAutomationLoader } from '@/components/multi-step-loader-demo';
 import { PolicyHeader } from '@/components/PolicyHeader';
 import { Questionnaire } from '@/components/Questionnaire';
-import { Sidebar } from '@/components/Sidebar';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import { useSocket } from '@/hooks/useSocket';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
@@ -290,19 +289,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Main Layout: Sidebar + Content */}
         <div className='flex flex-1 overflow-hidden'>
-          {/* Sidebar - 25% Fixed */}
-          <div className='w-1/4 flex-shrink-0'>
-            <Sidebar currentStep={1} />
-          </div>
-
-          {/* Main Content - 75% Scrollable */}
-          <div className='w-3/4 bg-gray-50 overflow-y-auto'>
-            <div className='p-6'>
-              <PolicyHeader />
-              <Questionnaire onComplete={handleQuestionnaireComplete} />
-            </div>
+          <div className='w-3/4 bg-gray-50 overflow-y-auto p-6'>
+            <PolicyHeader />
+            <Questionnaire
+              onComplete={handleQuestionnaireComplete}
+              onStartAutomation={() => handleStartAutomation(false)}
+            />
           </div>
         </div>
 
@@ -337,7 +330,7 @@ export default function Dashboard() {
   // };
 
   return (
-    <div className='h-screen bg-gray-50 flex flex-col'>
+    <div className='g-gray-50 flex flex-col bg-gray-50'>
       {/* Header - Fixed */}
       <div className='bg-zinc-50 border-b border-gray-200 px-6 py-3 flex-shrink-0'>
         <div className='container max-w-7xl'>
@@ -346,9 +339,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main Layout: Sidebar + Content */}
-      <div className='flex flex-1 overflow-hidden'>
+      <div className='flex flex-1'>
         {/* Main Content - 75% Scrollable */}
-        <div className='max-w-3xl mx-auto bg-gray-50 overflow-y-auto'>
+        <div className='max-w-3xl mx-auto bg-gray-50'>
           <div className='px-6 py-12'>
             <PolicyHeader />
 
@@ -358,6 +351,7 @@ export default function Dashboard() {
                 isExpanded={true}
                 onToggle={() => {}}
                 onComplete={handleQuestionnaireComplete}
+                onStartAutomation={() => handleStartAutomation(false)}
               />
             )}
 
@@ -370,7 +364,6 @@ export default function Dashboard() {
             <div className='mb-8'>
               <div id='automation-panel' className='automation-panel'>
                 <ControlPanel
-                  onStartAutomation={handleStartAutomation}
                   onStopAutomation={handleStopAutomation}
                   onClearLogs={handleClearLogs}
                   automationRunning={automationRunning}

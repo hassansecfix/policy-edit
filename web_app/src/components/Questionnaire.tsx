@@ -9,9 +9,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 interface QuestionnaireProps {
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => Promise<void>;
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
+  onStartAutomation?: () => Promise<void>;
 }
 
-export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnaireProps) {
+export function Questionnaire({
+  onComplete,
+  onProgressUpdate,
+  onStartAutomation,
+}: QuestionnaireProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [state, setState] = useState<QuestionnaireState>({
     currentQuestionIndex: 0,
@@ -216,15 +221,20 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
         currentQuestionIndex: prev.currentQuestionIndex + 1,
       }));
     } else {
-      // All questions completed - trigger onComplete for UI updates
+      // All questions completed - save answers and start automation
       try {
         // Save immediately to API before completing
         await saveAnswersToAPI(state.answers);
         await onComplete(state.answers);
         setState((prev) => ({ ...prev, isCompleted: true }));
+
+        // Start automation directly after questionnaire completion
+        if (onStartAutomation) {
+          await onStartAutomation();
+        }
       } catch (error) {
-        console.error('Failed to complete questionnaire:', error);
-        alert('Failed to save questionnaire. Please try again.');
+        console.error('Failed to complete questionnaire or start automation:', error);
+        alert('Failed to complete questionnaire. Please try again.');
       }
     }
   }, [
@@ -234,6 +244,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
     onComplete,
     saveAnswersToAPI,
     isCurrentQuestionAnswered,
+    onStartAutomation,
   ]);
 
   const handlePrevious = useCallback(() => {
@@ -349,7 +360,7 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
             {saving
               ? 'Saving...'
               : state.currentQuestionIndex === questions.length - 1
-              ? 'Complete'
+              ? 'Generate Policy'
               : 'Next'}
           </button>
         </div>

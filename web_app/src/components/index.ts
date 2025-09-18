@@ -12,5 +12,4 @@ export { ProgressIndicator } from './ProgressIndicator';
 export { ProgressTracker } from './ProgressTracker';
 export { QuestionInput } from './QuestionInput';
 export { Questionnaire } from './Questionnaire';
-export { Sidebar } from './Sidebar';
 export { UserAnswersDisplay } from './UserAnswersDisplay';
