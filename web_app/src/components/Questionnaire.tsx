@@ -2,6 +2,7 @@
 
 import { PolicyGenerationOverlay } from '@/components/PolicyGenerationOverlay';
 import { QuestionInput } from '@/components/QuestionInput';
+import { SparkleIcon } from '@/components/ui/SparkleIcon';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
@@ -353,8 +354,8 @@ export function Questionnaire({
               disabled={saving || automationRunning}
               className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
                 saving || automationRunning
-                  ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 cursor-pointer'
+                  ? 'text-gray-400 border border-gray-200 cursor-not-allowed'
+                  : 'text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer'
               } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
             >
               Back
@@ -373,13 +374,20 @@ export function Questionnaire({
                 : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
             } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
           >
-            {saving
-              ? 'Saving...'
-              : automationRunning
-              ? 'Policy Generation in Progress...'
-              : state.currentQuestionIndex === questions.length - 1
-              ? 'Generate Policy'
-              : 'Next'}
+            <div className='flex items-center gap-2'>
+              {state.currentQuestionIndex === questions.length - 1 &&
+                !saving &&
+                !automationRunning && <SparkleIcon className='w-4 h-4' />}
+              <span>
+                {saving
+                  ? 'Saving...'
+                  : automationRunning
+                  ? 'Policy Generation in Progress...'
+                  : state.currentQuestionIndex === questions.length - 1
+                  ? 'Generate Policy'
+                  : 'Next'}
+              </span>
+            </div>
           </button>
         </div>
 
