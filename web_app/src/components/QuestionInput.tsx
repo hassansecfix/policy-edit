@@ -131,14 +131,13 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
     switch (question.responseType) {
       case 'Text input':
         return (
-          <div className='space-y-2'>
-            <label className='block text-sm font-medium text-gray-700'>Your Answer</label>
+          <div>
             <input
               type='text'
               value={(value as string) || ''}
               onChange={(e) => handleChange(e.target.value)}
-              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
-              placeholder='Enter your answer'
+              className='w-full py-3 border-0 border-b border-gray-200 focus:outline-none focus:border-violet-600 bg-transparent text-sm text-gray-900 placeholder-gray-400'
+              placeholder='Type your answer here'
             />
           </div>
         );
@@ -161,14 +160,13 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
       case 'Email/User selector':
       case 'Email/User selector/String':
         return (
-          <div className='space-y-2'>
-            <label className='block text-sm font-medium text-gray-700'>Email Address</label>
+          <div>
             <input
               type='email'
               value={(value as string) || ''}
               onChange={(e) => handleChange(e.target.value)}
-              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
-              placeholder='Enter email address'
+              className='w-full py-3 border-0 border-b border-gray-200 focus:outline-none focus:border-violet-600 bg-transparent text-sm text-gray-900 placeholder-gray-400'
+              placeholder='Type your answer here'
             />
           </div>
         );
@@ -230,8 +228,8 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
             {value && typeof value === 'object' && 'name' in value && (
               <div className='bg-white border border-gray-200 rounded-xl p-4'>
                 <div className='flex items-center gap-4'>
-                  <div className='w-10 h-10 bg-blue-50 rounded flex items-center justify-center'>
-                    <FileText className='h-5 w-5 text-blue-600' />
+                  <div className='w-10 h-10 bg-violet-50 rounded flex items-center justify-center'>
+                    <FileText className='h-5 w-5 text-violet-600' />
                   </div>
                   <div className='flex-1'>
                     <h5 className='font-medium text-gray-900'>
@@ -274,7 +272,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
             ? getRadioOptions(question)
             : question.options || getRadioOptions(question);
         return (
-          <div className='space-y-3'>
+          <div className='flex flex-col gap-3'>
             {radioOptions.map((option) => {
               const isCurrentlySelected =
                 option === 'Other'
@@ -283,16 +281,34 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
 
               return (
                 <div key={option}>
-                  <label className='flex items-center space-x-3 cursor-pointer p-3 rounded border border-gray-200 hover:bg-gray-50'>
-                    <input
-                      type='radio'
-                      name={`question-${question.questionNumber}`}
-                      value={option}
-                      checked={isCurrentlySelected}
-                      onChange={(e) => handleRadioChange(e.target.value)}
-                      className='w-4 h-4 text-violet-600 border-gray-300 focus:ring-violet-600'
-                    />
-                    <span className='text-gray-900'>{option}</span>
+                  <label className='flex items-center gap-2 p-3 rounded border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors duration-200'>
+                    {/* Custom Radio Button */}
+                    <div className='relative'>
+                      <input
+                        type='radio'
+                        name={`question-${question.questionNumber}`}
+                        value={option}
+                        checked={isCurrentlySelected}
+                        onChange={(e) => handleRadioChange(e.target.value)}
+                        className='sr-only'
+                      />
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+                          isCurrentlySelected
+                            ? 'bg-violet-600 border-violet-600'
+                            : 'bg-white border-gray-300'
+                        }`}
+                      >
+                        {isCurrentlySelected && (
+                          <div className='w-2 h-2 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2' />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Option Text */}
+                    <span className='text-sm text-gray-900 font-normal leading-5'>{option}</span>
+
+                    {/* Recommended Badge */}
                     {option.includes('(Recommended)') && (
                       <span className='ml-auto bg-violet-100 text-violet-800 text-xs px-2 py-1 rounded'>
                         Recommended
@@ -302,13 +318,13 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
 
                   {/* Show text input when "Other" is selected */}
                   {option === 'Other' && isOtherSelected && (
-                    <div className='ml-7 mt-3'>
+                    <div className='mt-3 ml-6'>
                       <input
                         type='text'
                         value={customText}
                         onChange={(e) => handleCustomTextChange(e.target.value)}
                         placeholder='Please specify...'
-                        className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+                        className='w-full py-3 border-0 border-b border-gray-200 focus:outline-none focus:border-violet-600 bg-transparent text-sm text-gray-900 placeholder-gray-400'
                       />
                     </div>
                   )}

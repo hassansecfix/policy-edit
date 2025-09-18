@@ -1,7 +1,6 @@
 'use client';
 
 import { QuestionInput } from '@/components/QuestionInput';
-import { Button } from '@/components/ui';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
@@ -291,55 +290,35 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
   const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
-    <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
-      {/* Card Header */}
-      <div className='px-6 py-4 border-b border-gray-200'>
-        <h3 className='text-lg font-semibold text-gray-900'>Policy Configuration Questionnaire</h3>
-        <p className='text-sm text-gray-600 mt-1'>
-          Please answer the following questions to configure your access control policy. This
-          information will be used to generate a customized policy document for your organization.
-        </p>
+    <div className='bg-white rounded-[6px] border border-gray-200 overflow-hidden w-full mx-auto'>
+      {/* Progress Indicator */}
+      <div className='flex w-full'>
+        {questions.map((_, index) => (
+          <div
+            key={index}
+            className={`h-1 flex-1 ${
+              index <= state.currentQuestionIndex ? 'bg-emerald-500' : 'bg-gray-200'
+            } ${index === 0 ? 'rounded-tl-[6px]' : ''} ${
+              index === questions.length - 1 ? 'rounded-tr-[6px]' : ''
+            }`}
+          />
+        ))}
       </div>
 
       {/* Card Content */}
-      <div className='px-6 py-6'>
-        {/* Progress Section */}
-        <div className='mb-8'>
-          <div className='flex justify-between items-center mb-3'>
-            <span className='text-sm text-gray-600'>
-              Question {state.currentQuestionIndex + 1} of {questions.length}
-            </span>
-            <div className='flex items-center gap-3'>
-              {saving && (
-                <div className='flex items-center text-violet-600 text-xs'>
-                  <div className='animate-spin rounded-full h-3 w-3 border-b border-violet-600 mr-1'></div>
-                  Saving...
-                </div>
-              )}
-              <span className='text-sm text-gray-600'>{Math.round(progress)}%</span>
-            </div>
-          </div>
-
-          <div className='w-full bg-gray-200 rounded-full h-2'>
-            <div
-              className='bg-violet-600 h-2 rounded-full transition-all duration-300'
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <div className='mt-2 text-center'>
-            <span className='text-xs text-gray-500'>
-              <span className='text-red-500'>*</span> All questions are required
-            </span>
-          </div>
+      <div className='p-8'>
+        {/* Question Header */}
+        <div className='flex flex-col gap-2'>
+          <p className='text-xs font-normal text-gray-500 leading-4'>
+            Question {state.currentQuestionIndex + 1} of {questions.length}
+          </p>
+          <h2 className='text-base font-medium text-gray-900 leading-6'>
+            {currentQuestion.questionText}
+          </h2>
         </div>
 
-        {/* Question Section */}
+        {/* Question Input */}
         <div className='mb-8'>
-          <h2 className='text-xl font-semibold text-gray-900 mb-3'>
-            {currentQuestion.questionText}
-            <span className='text-red-500 ml-1'>*</span>
-          </h2>
           {(() => {
             const dynamicDescription = generateDynamicDescription(currentQuestion);
             return (
@@ -356,31 +335,32 @@ export function Questionnaire({ onComplete, onProgressUpdate }: QuestionnairePro
           />
         </div>
 
-        {/* Navigation Section */}
-        <div className='flex justify-between items-center pt-6 border-t border-gray-200'>
-          <Button
-            onClick={handlePrevious}
-            disabled={state.currentQuestionIndex === 0}
-            variant='outline'
-            size='default'
-          >
-            Previous
-          </Button>
-
-          <Button
+        {/* Navigation */}
+        <div className='flex justify-end'>
+          <button
             onClick={handleNext}
             disabled={saving || !isCurrentQuestionAnswered()}
-            loading={saving}
-            variant='default'
-            size='default'
+            className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
+              saving || !isCurrentQuestionAnswered()
+                ? 'bg-gray-200 text-gray-700 border border-gray-300 cursor-not-allowed'
+                : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
+            } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
           >
             {saving
               ? 'Saving...'
               : state.currentQuestionIndex === questions.length - 1
               ? 'Complete'
-              : 'Next Question'}
-          </Button>
+              : 'Next'}
+          </button>
         </div>
+
+        {/* Saving indicator */}
+        {saving && (
+          <div className='flex items-center justify-center mt-4 text-violet-600 text-xs'>
+            <div className='animate-spin rounded-full h-3 w-3 border-b border-violet-600 mr-1'></div>
+            Saving...
+          </div>
+        )}
       </div>
     </div>
   );

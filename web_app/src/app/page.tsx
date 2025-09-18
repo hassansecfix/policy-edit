@@ -337,7 +337,7 @@ export default function Dashboard() {
   // };
 
   return (
-    <div className='h-screen bg-zinc-50 flex flex-col'>
+    <div className='h-screen bg-gray-50 flex flex-col'>
       {/* Header - Fixed */}
       <div className='bg-zinc-50 border-b border-gray-200 px-6 py-3 flex-shrink-0'>
         <div className='container max-w-7xl'>
