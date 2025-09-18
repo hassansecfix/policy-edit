@@ -295,6 +295,7 @@ export default function Dashboard() {
             <Questionnaire
               onComplete={handleQuestionnaireComplete}
               onStartAutomation={() => handleStartAutomation(false)}
+              automationRunning={automationRunning}
             />
           </div>
         </div>
@@ -352,6 +353,7 @@ export default function Dashboard() {
                 onToggle={() => {}}
                 onComplete={handleQuestionnaireComplete}
                 onStartAutomation={() => handleStartAutomation(false)}
+                automationRunning={automationRunning}
               />
             )}
 

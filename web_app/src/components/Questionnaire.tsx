@@ -10,12 +10,14 @@ interface QuestionnaireProps {
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => Promise<void>;
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
   onStartAutomation?: () => Promise<void>;
+  automationRunning?: boolean;
 }
 
 export function Questionnaire({
   onComplete,
   onProgressUpdate,
   onStartAutomation,
+  automationRunning = false,
 }: QuestionnaireProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [state, setState] = useState<QuestionnaireState>({
@@ -210,8 +212,8 @@ export function Questionnaire({
   }, [questions, state.currentQuestionIndex, state.answers]);
 
   const handleNext = useCallback(async () => {
-    // Button should be disabled if no answer, but adding safety check
-    if (!isCurrentQuestionAnswered()) {
+    // Button should be disabled if no answer or automation running, but adding safety check
+    if (!isCurrentQuestionAnswered() || automationRunning) {
       return;
     }
 
@@ -228,8 +230,8 @@ export function Questionnaire({
         await onComplete(state.answers);
         setState((prev) => ({ ...prev, isCompleted: true }));
 
-        // Start automation directly after questionnaire completion
-        if (onStartAutomation) {
+        // Start automation directly after questionnaire completion (only if not already running)
+        if (onStartAutomation && !automationRunning) {
           await onStartAutomation();
         }
       } catch (error) {
@@ -245,6 +247,7 @@ export function Questionnaire({
     saveAnswersToAPI,
     isCurrentQuestionAnswered,
     onStartAutomation,
+    automationRunning,
   ]);
 
   const handlePrevious = useCallback(() => {
@@ -286,15 +289,6 @@ export function Questionnaire({
     return <div className='text-center text-gray-600'>No questions found.</div>;
   }
 
-  if (state.isCompleted) {
-    return (
-      <div className='bg-emerald-50 border border-emerald-200 rounded p-8 text-center'>
-        <div className='text-emerald-500 text-2xl mb-4'>✅ Complete!</div>
-        <p className='text-emerald-700 text-lg'>Successfully redirected to automation panel!</p>
-        <p className='text-emerald-600 mt-2'>You should now see the automation controls above.</p>
-      </div>
-    );
-  }
 
   const currentQuestion = questions[state.currentQuestionIndex];
   const currentAnswer = state.answers[currentQuestion.field];
@@ -350,15 +344,17 @@ export function Questionnaire({
         <div className='flex justify-end'>
           <button
             onClick={handleNext}
-            disabled={saving || !isCurrentQuestionAnswered()}
+            disabled={saving || !isCurrentQuestionAnswered() || automationRunning}
             className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
-              saving || !isCurrentQuestionAnswered()
+              saving || !isCurrentQuestionAnswered() || automationRunning
                 ? 'bg-gray-200 text-gray-700 border border-gray-300 cursor-not-allowed'
                 : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
             } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
           >
             {saving
               ? 'Saving...'
+              : automationRunning
+              ? 'Policy Generation in Progress...'
               : state.currentQuestionIndex === questions.length - 1
               ? 'Generate Policy'
               : 'Next'}
