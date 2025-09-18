@@ -8,7 +8,7 @@ interface ExpandableQuestionnaireProps {
   isExpanded: boolean;
   onToggle: () => void;
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => void;
-  onProgressUpdate: (progress: { current: number; total: number }) => void;
+  onProgressUpdate?: (progress: { current: number; total: number }) => void;
 }
 
 export function ExpandableQuestionnaire({
@@ -24,7 +24,10 @@ export function ExpandableQuestionnaire({
 
   return (
     <div className='mb-6'>
-      <Questionnaire onComplete={handleComplete} onProgressUpdate={onProgressUpdate} />
+      <Questionnaire 
+        onComplete={handleComplete} 
+        onProgressUpdate={onProgressUpdate || (() => {})} 
+      />
     </div>
   );
 }

@@ -58,7 +58,7 @@ export function LogsPanel({ logs, logCount }: LogsPanelProps) {
                     <span>--:--:--</span>
                   </div>
                   <div className='text-blue-100'>
-                    🤖 Policy Automation Dashboard ready. Click "Start Policy Automation" to begin.
+                    🤖 Policy Automation Dashboard ready. Click &quot;Start Policy Automation&quot; to begin.
                   </div>
                 </div>
               </div>

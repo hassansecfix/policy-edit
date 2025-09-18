@@ -157,7 +157,7 @@ export function DocumentChangesPreview({ visible = true }: DocumentChangesPrevie
     // Termination timeframe
     const terminationTime = answers['user_response.termination_timeframe'];
     if (terminationTime && typeof terminationTime.value === 'string') {
-      let timeframeText = terminationTime.value
+      const timeframeText = terminationTime.value
         .replace(' (Recommended)', '')
         .replace(/^Other:\s*/, '') // Remove "Other: " prefix
         .toLowerCase();

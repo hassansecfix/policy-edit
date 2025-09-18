@@ -1,8 +1,10 @@
+import Image from 'next/image';
+
 export function Header() {
   return (
     <header className='flex items-center'>
       <div className='flex items-center py-1'>
-        <img src='/company_logo_default.png' alt='Secfix Logo' className='h-5' />
+        <Image src='/company_logo_default.png' alt='Secfix Logo' className='h-5' width={20} height={20} />
       </div>
     </header>
   );

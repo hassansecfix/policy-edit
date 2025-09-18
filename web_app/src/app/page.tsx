@@ -22,7 +22,7 @@ export default function Dashboard() {
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
-  const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
+  // const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
 
   // Development state for testing loader
   const [testLoaderRunning, setTestLoaderRunning] = useState(false);
@@ -301,7 +301,6 @@ export default function Dashboard() {
             <div className='p-6'>
               <Questionnaire
                 onComplete={handleQuestionnaireComplete}
-                onProgressUpdate={setQuestionnaireProgress}
               />
             </div>
           </div>
@@ -321,21 +320,21 @@ export default function Dashboard() {
     return 1; // Still on questionnaire
   };
 
-  const getStepSubtitle = () => {
-    const step = getCurrentStep();
-    switch (step) {
-      case 1:
-        return 'Answer questions about your organization';
-      case 2:
-        return 'Review changes and start automation';
-      case 3:
-        return 'Processing your policy document';
-      case 4:
-        return 'Download your customized policy';
-      default:
-        return 'Setting up your policy';
-    }
-  };
+  // const getStepSubtitle = () => {
+  //   const step = getCurrentStep();
+  //   switch (step) {
+  //     case 1:
+  //       return 'Answer questions about your organization';
+  //     case 2:
+  //       return 'Review changes and start automation';
+  //     case 3:
+  //       return 'Processing your policy document';
+  //     case 4:
+  //       return 'Download your customized policy';
+  //     default:
+  //       return 'Setting up your policy';
+  //   }
+  // };
 
   return (
     <div className='h-screen bg-zinc-50 flex flex-col'>
@@ -362,7 +361,6 @@ export default function Dashboard() {
                 isExpanded={true}
                 onToggle={() => {}}
                 onComplete={handleQuestionnaireComplete}
-                onProgressUpdate={setQuestionnaireProgress}
               />
             )}
 

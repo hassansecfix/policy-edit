@@ -45,7 +45,6 @@ export function Timeline({
           <VerticalTimelineItem
             key={step.id}
             step={step}
-            index={index}
             isLast={index === animatedSteps.length - 1}
           />
         ))}
@@ -194,15 +193,7 @@ function HorizontalTimelineStep({
   );
 }
 
-function VerticalTimelineItem({
-  step,
-  index,
-  isLast,
-}: {
-  step: TimelineStep;
-  index: number;
-  isLast: boolean;
-}) {
+function VerticalTimelineItem({ step, isLast }: { step: TimelineStep; isLast: boolean }) {
   const isCompleted = step.status === 'completed';
   const isActive = step.status === 'active';
   const isPending = step.status === 'pending';

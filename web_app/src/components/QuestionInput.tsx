@@ -2,6 +2,7 @@
 
 import { FileUpload, Question, QuestionnaireAnswer } from '@/types';
 import { FileText, Upload } from 'lucide-react';
+import Image from 'next/image';
 import { useCallback, useEffect, useState } from 'react';
 
 interface QuestionInputProps {
@@ -248,10 +249,12 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
                   (value as FileUpload).data !== 'existing-file' && (
                     <div className='mt-4 p-3 bg-gray-50 rounded'>
                       <div className='text-xs font-medium text-gray-700 mb-2'>Preview:</div>
-                      <img
+                      <Image
                         src={(value as FileUpload).data}
                         alt={`Preview of ${(value as FileUpload).name}`}
                         className='max-w-full max-h-32 object-contain rounded border bg-white'
+                        width={200}
+                        height={128}
                         onError={(e) => {
                           console.error('Image preview load error:', e);
                           (e.target as HTMLImageElement).style.display = 'none';
@@ -322,10 +325,10 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
             ? 'Other'
             : (value as string) || '';
 
-        const selectOptions = dropdownOptions.map((option) => ({
-          value: option,
-          label: option,
-        }));
+        // const selectOptions = dropdownOptions.map((option) => ({
+        //   value: option,
+        //   label: option,
+        // }));
 
         return (
           <div className='space-y-4'>

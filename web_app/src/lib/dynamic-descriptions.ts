@@ -25,17 +25,17 @@ export function generateDynamicDescription(question: Question): string {
         }
 
         let frequency = '';
-        let organizationType = '';
+        // let organizationType = '';
 
         if (totalUsers < 50) {
           frequency = 'Annual';
-          organizationType = 'small';
+          // organizationType = 'small';
         } else if (totalUsers < 1000) {
           frequency = 'Quarterly';
-          organizationType = 'medium';
+          // organizationType = 'medium';
         } else {
           frequency = 'Monthly';
-          organizationType = 'large';
+          // organizationType = 'large';
         }
 
         return `Based on your organization size (${totalUsers} people), we recommend ${frequency.toLowerCase()} reviews. Guidance: If you operate in highly critical industries with complex or large company structure (1000+ employees), you might consider monthly reviews. Small companies and startups can get away with annual reviews. Pick any frequency that works for your company. Auditors only care that you consistently follow whatever schedule you document here.`;

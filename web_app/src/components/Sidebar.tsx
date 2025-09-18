@@ -40,7 +40,7 @@ export function Sidebar({ currentStep, className }: SidebarProps) {
         </div>
 
         <div className='flex flex-col flex-1 gap-1 bg-white border border-gray-200 rounded-lg p-6'>
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <div key={step.id} className='flex flex-col flex-1'>
               {/* Step Content and Line Container */}
               <div className='flex items-center h-full gap-2'>
@@ -82,7 +82,7 @@ export function Sidebar({ currentStep, className }: SidebarProps) {
               <p className='text-xs text-gray-600 leading-relaxed'>
                 Complete the questionnaire to unlock our intelligent document generator. Our AI will
                 analyze your responses and create a fully customized access control policy tailored
-                to your organization's specific needs.
+                to your organization&apos;s specific needs.
               </p>
             </div>
           </div>

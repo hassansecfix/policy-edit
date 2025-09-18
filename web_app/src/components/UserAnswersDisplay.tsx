@@ -1,6 +1,7 @@
 'use client';
 
 import { QuestionnaireAnswer } from '@/types';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 interface FileUploadValue {
@@ -237,10 +238,12 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                           {(answer.value as FileUploadValue).type?.startsWith('image/') &&
                             (answer.value as FileUploadValue).data && (
                               <div className='border rounded p-2 bg-white'>
-                                <img
+                                <Image
                                   src={(answer.value as FileUploadValue).data}
                                   alt={`Uploaded ${(answer.value as FileUploadValue).name}`}
                                   className='max-w-full max-h-32 object-contain rounded'
+                                  width={200}
+                                  height={128}
                                   onError={(e) => {
                                     console.error('Image load error:', e);
                                     (e.target as HTMLImageElement).style.display = 'none';
