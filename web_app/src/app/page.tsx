@@ -4,6 +4,7 @@ import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { DocumentChangesPreview } from '@/components/DocumentChangesPreview';
 import { DownloadSection } from '@/components/DownloadSection';
 import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
+import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
 import { PolicyHeader } from '@/components/PolicyHeader';
 import { Questionnaire } from '@/components/Questionnaire';
@@ -287,13 +288,18 @@ export default function Dashboard() {
         </div>
 
         <div className='flex flex-1 overflow-hidden'>
-          <div className='w-3/4 bg-gray-50 overflow-y-auto p-6'>
-            <PolicyHeader />
-            <Questionnaire
-              onComplete={handleQuestionnaireComplete}
-              onStartAutomation={() => handleStartAutomation(false)}
-              automationRunning={automationRunning}
-            />
+          <div className='w-3/4 bg-gray-50 overflow-y-auto p-6 flex flex-col'>
+            <div className='flex-1'>
+              <PolicyHeader />
+              <Questionnaire
+                onComplete={handleQuestionnaireComplete}
+                onStartAutomation={() => handleStartAutomation(false)}
+                automationRunning={automationRunning}
+              />
+            </div>
+
+            {/* Footer - Added at the bottom of questionnaire view */}
+            <Footer />
           </div>
         </div>
 
@@ -315,7 +321,7 @@ export default function Dashboard() {
       <div className='flex flex-1'>
         {/* Main Content - 75% Scrollable */}
         <div className='max-w-3xl mx-auto bg-gray-50'>
-          <div className='px-6 py-12'>
+          <div className='px-6 pt-12'>
             <PolicyHeader />
 
             {/* Always Show Questionnaire Editor - First Section */}
@@ -378,6 +384,9 @@ export default function Dashboard() {
               )} */}
             </div>
           </div>
+
+          {/* Footer - Added at the bottom of the main content */}
+          <Footer />
         </div>
       </div>
 
