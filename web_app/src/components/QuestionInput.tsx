@@ -387,7 +387,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
     }
   };
 
-  return <div className='space-y-2'>{renderInput()}</div>;
+  return <div className='space-y-2 mt-6'>{renderInput()}</div>;
 }
 
 // Helper functions to get options for different question types

@@ -289,7 +289,6 @@ export function Questionnaire({
     return <div className='text-center text-gray-600'>No questions found.</div>;
   }
 
-
   const currentQuestion = questions[state.currentQuestionIndex];
   const currentAnswer = state.answers[currentQuestion.field];
   const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
@@ -328,7 +327,7 @@ export function Questionnaire({
             const dynamicDescription = generateDynamicDescription(currentQuestion);
             return (
               dynamicDescription && (
-                <p className='text-sm text-gray-600 leading-relaxed mb-6'>{dynamicDescription}</p>
+                <p className='text-sm text-gray-600 leading-relaxed'>{dynamicDescription}</p>
               )
             );
           })()}
@@ -341,7 +340,25 @@ export function Questionnaire({
         </div>
 
         {/* Navigation */}
-        <div className='flex justify-end'>
+        <div className='flex justify-between items-center'>
+          {/* Back Button - Only show if not on first question */}
+          {state.currentQuestionIndex > 0 ? (
+            <button
+              onClick={handlePrevious}
+              disabled={saving || automationRunning}
+              className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
+                saving || automationRunning
+                  ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 cursor-pointer'
+              } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
+            >
+              Back
+            </button>
+          ) : (
+            <div></div>
+          )}
+
+          {/* Next Button */}
           <button
             onClick={handleNext}
             disabled={saving || !isCurrentQuestionAnswered() || automationRunning}
