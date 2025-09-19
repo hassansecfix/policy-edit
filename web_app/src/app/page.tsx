@@ -1,7 +1,6 @@
 'use client';
 
 import { ConnectionStatus } from '@/components/ConnectionStatus';
-import { DocumentChangesPreview } from '@/components/DocumentChangesPreview';
 import { DownloadSection } from '@/components/DownloadSection';
 import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
 import { Footer } from '@/components/Footer';
@@ -267,7 +266,7 @@ export default function Dashboard() {
   // Show loading state while checking questionnaire status
   if (checkingQuestionnaire) {
     return (
-      <div className='h-screen bg-zinc-50 flex items-center justify-center'>
+      <div className='h-screen bg-gray-50 flex items-center justify-center'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4'></div>
           <p className='text-gray-600'>Loading...</p>
@@ -279,16 +278,16 @@ export default function Dashboard() {
   // Show questionnaire if not completed (but not if just editing)
   if (!questionnaireCompleted && !editingQuestionnaire) {
     return (
-      <div className='h-screen bg-zinc-50 flex flex-col'>
+      <div className='h-screen bg-gray-50 flex flex-col'>
         {/* Header - Fixed */}
-        <div className='bg-zinc-50 border-b border-gray-200 px-4 py-3 flex-shrink-0'>
+        <div className='bg-gray-50 border-b border-gray-200 px-4 py-3 flex-shrink-0'>
           <div className='container mx-auto max-w-7xl'>
             <Header />
           </div>
         </div>
 
-        <div className='flex flex-1 overflow-hidden'>
-          <div className='w-3/4 bg-gray-50 overflow-y-auto p-6 flex flex-col'>
+        <div className='flex flex-1 overflow-hidden items-center justify-center'>
+          <div className='w-full max-w-3xl bg-gray-50 overflow-y-auto overflow-x-hidden p-6 flex flex-col min-w-0'>
             <div className='flex-1'>
               <PolicyHeader />
               <Questionnaire
@@ -309,39 +308,33 @@ export default function Dashboard() {
   }
 
   return (
-    <div className='g-gray-50 flex flex-col bg-gray-50'>
+    <div className='h-screen flex flex-col bg-gray-50 overflow-hidden'>
       {/* Header - Fixed */}
-      <div className='bg-zinc-50 border-b border-gray-200 px-6 py-3 flex-shrink-0'>
+      <div className='bg-gray-50 border-b border-gray-200 px-6 py-3 flex-shrink-0 sticky top-0 z-10'>
         <div className='container max-w-7xl'>
           <Header />
         </div>
       </div>
 
       {/* Main Layout: Sidebar + Content */}
-      <div className='flex flex-1'>
+      <div className='flex flex-1 bg-gray-50 overflow-auto justify-center'>
         {/* Main Content - 75% Scrollable */}
-        <div className='max-w-3xl mx-auto bg-gray-50'>
-          <div className='px-6 pt-12'>
-            <PolicyHeader />
+        <div className='w-full max-w-3xl px-6 py-12 overflow-hidden min-w-0'>
+          <PolicyHeader />
 
-            {/* Always Show Questionnaire Editor - First Section */}
-            {questionnaireCompleted && (
-              <ExpandableQuestionnaire
-                isExpanded={true}
-                onToggle={() => {}}
-                onComplete={handleQuestionnaireComplete}
-                onStartAutomation={() => handleStartAutomation(false)}
-                automationRunning={automationRunning}
-              />
-            )}
+          {/* Always Show Questionnaire Editor - First Section */}
+          {questionnaireCompleted && (
+            <ExpandableQuestionnaire
+              isExpanded={true}
+              onToggle={() => {}}
+              onComplete={handleQuestionnaireComplete}
+              onStartAutomation={() => handleStartAutomation(false)}
+              automationRunning={automationRunning}
+            />
+          )}
 
-            {/* Document Changes Preview - Second Section */}
-            <div className='mb-6'>
-              <DocumentChangesPreview visible={questionnaireCompleted && !editingQuestionnaire} />
-            </div>
-
-            {/* Centered Control Panel */}
-            {/* <div className='mb-8'>
+          {/* Centered Control Panel */}
+          {/* <div className='mb-8'>
               <div id='automation-panel' className='automation-panel'>
                 <ControlPanel
                   onStopAutomation={handleStopAutomation}
@@ -368,12 +361,12 @@ export default function Dashboard() {
               </div>
             </div> */}
 
-            <div className='flex flex-col gap-6'>
-              <div className='w-full'>
-                <DownloadSection files={files} visible={files.length > 0} />
-              </div>
+          <div className='flex flex-col gap-6'>
+            <div className='w-full'>
+              <DownloadSection files={files} visible={files.length > 0} />
+            </div>
 
-              {/* <div className='w-full'>
+            {/* <div className='w-full'>
                 <LogsPanel logs={logs} logCount={logs.length} />
               </div>
 
@@ -382,7 +375,6 @@ export default function Dashboard() {
                   <PolicyAutomationLoader loading={automationRunning || testLoaderRunning} />
                 </div>
               )} */}
-            </div>
           </div>
 
           {/* Footer - Added at the bottom of the main content */}

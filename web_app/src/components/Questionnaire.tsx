@@ -8,6 +8,21 @@ import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+interface FileUploadValue {
+  name: string;
+  size: number;
+  type: string;
+  data: string;
+}
+
+interface DocumentChange {
+  type: 'replace' | 'remove' | 'add' | 'logo' | 'info';
+  description: string;
+  oldText: string;
+  newText: string;
+  field: string;
+}
+
 interface QuestionnaireProps {
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => Promise<void>;
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
@@ -32,7 +47,10 @@ export function Questionnaire({
   const [error, setError] = useState<string | null>(null);
   const [, forceUpdate] = useState({});
   const [testOverlay, setTestOverlay] = useState(false);
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [documentChanges, setDocumentChanges] = useState<DocumentChange[]>([]);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnswersRef = useRef<string>('');
 
   // Load questions from API
   useEffect(() => {
@@ -101,6 +119,261 @@ export function Questionnaire({
       }
     };
   }, []);
+
+  // Generate document changes based on answers
+  const generateChanges = useCallback((answers: Record<string, QuestionnaireAnswer>) => {
+    const changes: DocumentChange[] = [];
+
+    // Company Name replacements
+    const companyName = answers['onboarding.company_legal_name'];
+    if (companyName && typeof companyName.value === 'string') {
+      changes.push({
+        type: 'replace',
+        description: 'Company name placeholders throughout the document',
+        oldText: '<Company Name>',
+        newText: companyName.value,
+        field: 'onboarding.company_legal_name',
+      });
+    }
+
+    // Company Name + Address replacements
+    const companyAddress = answers['onboarding.company_address'];
+    if (
+      companyName &&
+      companyAddress &&
+      typeof companyName.value === 'string' &&
+      typeof companyAddress.value === 'string'
+    ) {
+      changes.push({
+        type: 'replace',
+        description: 'Company name and address placeholders',
+        oldText: '<Company Name, Address>',
+        newText: `${companyName.value}, ${companyAddress.value}`,
+        field: 'onboarding.company_address',
+      });
+    }
+
+    // Physical office - guest network removal
+    const hasOffice = answers['onboarding.has_office'];
+    if (hasOffice && hasOffice.value === 'No') {
+      changes.push({
+        type: 'remove',
+        description: 'Guest network policy sections',
+        oldText: 'Guest network access procedures and related bullet points',
+        newText: '',
+        field: 'onboarding.has_office',
+      });
+    }
+
+    // Company logo
+    const companyLogo = answers['onboarding.company_logo'];
+    if (
+      companyLogo &&
+      typeof companyLogo.value === 'object' &&
+      companyLogo.value &&
+      'name' in companyLogo.value
+    ) {
+      changes.push({
+        type: 'logo',
+        description: 'Company logo insertion in document header',
+        oldText: '[ADD COMPANY LOGO]',
+        newText: `Uploaded logo: ${(companyLogo.value as FileUploadValue).name}`,
+        field: 'onboarding.company_logo',
+      });
+    }
+
+    // Policy owner
+    const policyOwner = answers['user_response.policy_owner_email'];
+    if (policyOwner && typeof policyOwner.value === 'string') {
+      changes.push({
+        type: 'replace',
+        description: 'Policy owner contact information',
+        oldText: '<Policy Owner Email>',
+        newText: policyOwner.value,
+        field: 'user_response.policy_owner_email',
+      });
+    }
+
+    // Employee and contractor counts
+    const employeeCount = parseInt(String(answers['user_response.employee_count']?.value || '0'));
+    const contractorCount = parseInt(
+      String(answers['user_response.contractor_count']?.value || '0'),
+    );
+    const totalUsers = employeeCount + contractorCount;
+
+    // Review frequency (auto-calculated)
+    let reviewFrequency = 'quarterly'; // default
+    let frequencyDescription = 'Quarterly (default)';
+
+    if (totalUsers > 0) {
+      if (totalUsers < 50) {
+        reviewFrequency = 'annual';
+        frequencyDescription = `Annually (auto-determined for ${totalUsers} total users - small organization)`;
+      } else if (totalUsers < 1000) {
+        reviewFrequency = 'quarterly';
+        frequencyDescription = `Quarterly (auto-determined for ${totalUsers} total users - medium organization)`;
+      } else {
+        reviewFrequency = 'monthly';
+        frequencyDescription = `Monthly (auto-determined for ${totalUsers} total users - large organization)`;
+      }
+
+      changes.push({
+        type: 'replace',
+        description: `User access review schedule - ${frequencyDescription}`,
+        oldText: 'quarterly',
+        newText: reviewFrequency,
+        field: 'user_response.review_frequency',
+      });
+    }
+
+    // Termination timeframe
+    const terminationTime = answers['user_response.termination_timeframe'];
+    if (terminationTime && typeof terminationTime.value === 'string') {
+      const timeframeText = terminationTime.value
+        .replace(' (Recommended)', '')
+        .replace(/^Other:\s*/, '') // Remove "Other: " prefix
+        .toLowerCase();
+      changes.push({
+        type: 'replace',
+        description: 'Access revocation timeframe when employee leaves',
+        oldText: '24 business hours',
+        newText: timeframeText,
+        field: 'user_response.termination_timeframe',
+      });
+    }
+
+    // Exception approver
+    const exceptionApprover = answers['user_response.exception_approver'];
+    if (exceptionApprover && typeof exceptionApprover.value === 'string') {
+      changes.push({
+        type: 'replace',
+        description: 'Policy exception approval authority',
+        oldText: '<Exceptions: IT Manager>',
+        newText: exceptionApprover.value,
+        field: 'user_response.exception_approver',
+      });
+    }
+
+    // Violations reporter
+    const violationsReporter = answers['user_response.violations_reporter'];
+    if (violationsReporter && typeof violationsReporter.value === 'string') {
+      changes.push({
+        type: 'replace',
+        description: 'Policy violation reporting contact',
+        oldText: '<Violations: IT Manager>',
+        newText: violationsReporter.value,
+        field: 'user_response.violations_reporter',
+      });
+    }
+
+    // Version control tools - source code access sections
+    const versionControl = answers['onboarding.version_control_tools'];
+    if (versionControl && typeof versionControl.value === 'string') {
+      if (versionControl.value === 'None') {
+        changes.push({
+          type: 'remove',
+          description: 'Source code access sections (no version control)',
+          oldText: 'Access to Program Source Code sections and related content',
+          newText: '',
+          field: 'onboarding.version_control_tools',
+        });
+      } else {
+        changes.push({
+          type: 'add',
+          description: 'Source code access policy sections',
+          oldText: '',
+          newText: `Source code protection for ${versionControl.value}`,
+          field: 'onboarding.version_control_tools',
+        });
+      }
+    }
+
+    // Password management tool
+    const passwordTool = answers['onboarding.password_management_tool'];
+    if (passwordTool && typeof passwordTool.value === 'string') {
+      if (passwordTool.value === 'None') {
+        changes.push({
+          type: 'remove',
+          description: 'Password management tool sections',
+          oldText: 'Password management systems requirements and related content',
+          newText: '',
+          field: 'onboarding.password_management_tool',
+        });
+      } else {
+        const toolName = passwordTool.value.replace(' (recommended)', '');
+        changes.push({
+          type: 'replace',
+          description: 'Password management tool requirements',
+          oldText: 'Password management systems should be user-friendly',
+          newText: `${toolName} systems should be user-friendly`,
+          field: 'onboarding.password_management_tool',
+        });
+      }
+    }
+
+    // Ticket management tools
+    const ticketTool = answers['onboarding.ticket_management_tools'];
+    if (ticketTool && typeof ticketTool.value === 'string') {
+      if (ticketTool.value === 'None') {
+        changes.push({
+          type: 'remove',
+          description: 'Ticketing system references',
+          oldText: 'Ticket management tool sections and related content',
+          newText: '',
+          field: 'onboarding.ticket_management_tools',
+        });
+      } else {
+        changes.push({
+          type: 'replace',
+          description: 'Ticketing system references',
+          oldText: '<Ticket Management Tool>',
+          newText: ticketTool.value,
+          field: 'onboarding.ticket_management_tools',
+        });
+      }
+    }
+
+    // Access request method
+    const accessMethod = answers['user_response.access_request_method'];
+    if (accessMethod && typeof accessMethod.value === 'string') {
+      if (accessMethod.value.includes('Email')) {
+        changes.push({
+          type: 'replace',
+          description: 'Access request process (email-based)',
+          oldText: 'All requests will be sent by email to <email>',
+          newText: 'All requests will be sent by email to [designated email]',
+          field: 'user_response.access_request_method',
+        });
+      } else if (accessMethod.value.includes('Ticketing')) {
+        changes.push({
+          type: 'replace',
+          description: 'Access request process (ticketing system)',
+          oldText: 'All requests will be sent by email to <email>',
+          newText: 'All requests will be submitted through the ticketing system',
+          field: 'user_response.access_request_method',
+        });
+      } else {
+        changes.push({
+          type: 'replace',
+          description: 'Access request and approval process',
+          oldText: 'All requests will be sent by email to <email>',
+          newText: `Access requests will be handled via ${accessMethod.value.toLowerCase()}`,
+          field: 'user_response.access_request_method',
+        });
+      }
+    }
+
+    setDocumentChanges(changes);
+  }, []);
+
+  // Update document changes when answers change
+  useEffect(() => {
+    const currentAnswersString = JSON.stringify(state.answers);
+    if (currentAnswersString !== lastAnswersRef.current && Object.keys(state.answers).length > 0) {
+      lastAnswersRef.current = currentAnswersString;
+      generateChanges(state.answers);
+    }
+  }, [state.answers, generateChanges]);
 
   // Save answers to API with debouncing
   const saveAnswersToAPI = useCallback(async (answers: Record<string, QuestionnaireAnswer>) => {
@@ -297,7 +570,10 @@ export function Questionnaire({
   const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
-    <div className='bg-white rounded-[6px] border border-gray-200 overflow-hidden w-full mx-auto relative'>
+    <div
+      className='bg-white rounded-[6px] border border-gray-200 w-full max-w-full mx-auto relative overflow-hidden flex-shrink min-w-0'
+      style={{ width: '100%', maxWidth: '100%' }}
+    >
       {/* Policy Generation Overlay */}
       <PolicyGenerationOverlay isVisible={automationRunning || testOverlay} />
 
@@ -411,6 +687,115 @@ export function Questionnaire({
           </div>
         )}
       </div>
+
+      {/* Document Changes Preview - Attached to bottom of card */}
+      {documentChanges.length > 0 && (
+        <div
+          className='border-t border-gray-200 w-full max-w-full'
+          style={{ width: '100%', maxWidth: '100%' }}
+        >
+          <button
+            onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+            className='w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors duration-200 cursor-pointer'
+          >
+            <div className='flex items-center gap-3'>
+              <div className='text-sm font-medium text-gray-900'>Document Changes Preview</div>
+              <div className='bg-violet-100 text-violet-700 text-xs font-medium px-2 py-1 rounded-full'>
+                {documentChanges.length} {documentChanges.length === 1 ? 'change' : 'changes'}
+              </div>
+            </div>
+            <div
+              className={`transition-transform duration-200 ${
+                isPreviewExpanded ? 'rotate-180' : ''
+              }`}
+            >
+              <svg
+                className='w-5 h-5 text-gray-400'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M19 9l-7 7-7-7'
+                />
+              </svg>
+            </div>
+          </button>
+
+          {isPreviewExpanded && (
+            <div
+              className='p-6 w-full max-w-full overflow-hidden'
+              style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-word' }}
+            >
+              <p className='text-sm text-gray-600 mb-4'>
+                Preview of changes that will be applied to your policy document:
+              </p>
+              <div
+                className='space-y-3 max-h-64 overflow-y-auto overflow-x-hidden w-full max-w-full'
+                style={{ width: '100%', maxWidth: '100%' }}
+              >
+                {documentChanges.map((change, index) => (
+                  <div
+                    key={index}
+                    className='bg-gray-50 rounded-lg p-3 break-words overflow-hidden w-full max-w-full'
+                    style={{
+                      width: '100%',
+                      maxWidth: '100%',
+                      wordBreak: 'break-all',
+                      overflowWrap: 'anywhere',
+                    }}
+                  >
+                    {/* Text replacements */}
+                    {change.type === 'replace' && change.oldText && change.newText && (
+                      <div className='text-sm leading-relaxed break-words'>
+                        <span className='line-through text-gray-500 break-words'>
+                          {change.oldText}
+                        </span>
+                        <span className='mx-2 text-gray-400'>→</span>
+                        <span className='text-gray-900 font-medium break-words'>
+                          {change.newText}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Content removal */}
+                    {change.type === 'remove' && (
+                      <div className='text-sm text-gray-500 break-words'>
+                        <span className='line-through break-words'>
+                          {change.oldText || change.description}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Content addition */}
+                    {change.type === 'add' && (
+                      <div className='text-sm text-gray-900 font-medium break-words'>
+                        <span className='break-words'>{change.newText}</span>
+                      </div>
+                    )}
+
+                    {/* Logo changes */}
+                    {change.type === 'logo' && (
+                      <div className='text-sm leading-relaxed break-words'>
+                        <span className='line-through text-gray-500 break-words'>
+                          {change.oldText}
+                        </span>
+                        <span className='mx-2 text-gray-400'>→</span>
+                        <span className='text-gray-900 font-medium break-words'>
+                          {change.newText}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -27,10 +27,10 @@ export function ExpandableQuestionnaire({
   );
 
   return (
-    <div className='mb-6'>
-      <Questionnaire 
-        onComplete={handleComplete} 
-        onProgressUpdate={onProgressUpdate || (() => {})} 
+    <div className='mb-6 w-full max-w-full overflow-hidden min-w-0'>
+      <Questionnaire
+        onComplete={handleComplete}
+        onProgressUpdate={onProgressUpdate || (() => {})}
         onStartAutomation={onStartAutomation}
         automationRunning={automationRunning}
       />
