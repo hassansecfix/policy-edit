@@ -286,7 +286,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className='flex flex-1 overflow-hidden items-center justify-center'>
+        <div className='flex flex-1 items-center justify-center'>
           <div className='w-full max-w-3xl bg-gray-50 overflow-y-auto overflow-x-hidden p-6 flex flex-col min-w-0'>
             <div className='flex-1'>
               <PolicyHeader />
@@ -319,7 +319,7 @@ export default function Dashboard() {
       {/* Main Layout: Sidebar + Content */}
       <div className='flex flex-1 bg-gray-50 overflow-auto justify-center'>
         {/* Main Content - 75% Scrollable */}
-        <div className='w-full max-w-3xl px-6 py-12 overflow-hidden min-w-0'>
+        <div className='w-full max-w-3xl px-6 py-12 min-w-0'>
           <PolicyHeader />
 
           {/* Always Show Questionnaire Editor - First Section */}
@@ -361,20 +361,55 @@ export default function Dashboard() {
               </div>
             </div> */}
 
+          {/* Automation Control Button */}
+          <div className='mb-8 flex justify-center'>
+            <div className='bg-white rounded-lg shadow-md border border-gray-200 p-6 w-full max-w-md'>
+              <div className='text-center'>
+                <h3 className='text-lg font-semibold text-gray-900 mb-3'>Policy Automation</h3>
+                <p className='text-sm text-gray-600 mb-6'>
+                  Generate your customized policy document based on your questionnaire responses.
+                </p>
+
+                {!automationRunning ? (
+                  <button
+                    onClick={() => handleStartAutomation(false)}
+                    className='w-full bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2'
+                  >
+                    <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                        strokeWidth='2'
+                        d='M12 3v18m9-9l-9-9-9 9'
+                      />
+                    </svg>
+                    Start Automation
+                  </button>
+                ) : (
+                  <div className='w-full bg-amber-100 text-amber-800 font-medium px-6 py-3 rounded-lg border border-amber-200 flex items-center justify-center gap-2'>
+                    <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600'></div>
+                    Automation Running...
+                  </div>
+                )}
+
+                {/* {isDev && (
+                  <button
+                    onClick={() => setTestLoaderRunning(!testLoaderRunning)}
+                    className='mt-3 w-full bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer text-sm border border-purple-200'
+                  >
+                    🧪 {testLoaderRunning ? 'Stop' : 'Test'} Loader UI
+                  </button>
+                )} */}
+              </div>
+            </div>
+          </div>
+
           <div className='flex flex-col gap-6'>
             <div className='w-full'>
               <DownloadSection files={files} visible={files.length > 0} />
             </div>
 
-            {/* <div className='w-full'>
-                <LogsPanel logs={logs} logCount={logs.length} />
-              </div>
-
-              {(automationRunning || testLoaderRunning) && (
-                <div className='w-full'>
-                  <PolicyAutomationLoader loading={automationRunning || testLoaderRunning} />
-                </div>
-              )} */}
+            {/* <LogsPanel logs={logs} logCount={logs.length} /> */}
           </div>
 
           {/* Footer - Added at the bottom of the main content */}
