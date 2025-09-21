@@ -5,7 +5,7 @@ import { QuestionInput } from '@/components/QuestionInput';
 import { SparkleIcon } from '@/components/ui/SparkleIcon';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
-import { Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
+import { ProgressUpdate, Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface FileUploadValue {
@@ -28,6 +28,8 @@ interface QuestionnaireProps {
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
   onStartAutomation?: () => Promise<void>;
   automationRunning?: boolean;
+  progress?: ProgressUpdate | null;
+  filesReady?: boolean;
 }
 
 export function Questionnaire({
@@ -35,6 +37,8 @@ export function Questionnaire({
   onProgressUpdate,
   onStartAutomation,
   automationRunning = false,
+  progress,
+  filesReady = false,
 }: QuestionnaireProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [state, setState] = useState<QuestionnaireState>({
@@ -567,7 +571,7 @@ export function Questionnaire({
 
   const currentQuestion = questions[state.currentQuestionIndex];
   const currentAnswer = state.answers[currentQuestion.field];
-  const progress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
+  const questionProgress = ((state.currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
     <div
@@ -575,7 +579,11 @@ export function Questionnaire({
       style={{ width: '100%', maxWidth: '100%' }}
     >
       {/* Policy Generation Overlay */}
-      <PolicyGenerationOverlay isVisible={automationRunning || testOverlay} />
+      <PolicyGenerationOverlay
+        isVisible={automationRunning || testOverlay}
+        progress={progress}
+        filesReady={filesReady}
+      />
 
       {/* Progress Indicator */}
       <div className='flex w-full'>

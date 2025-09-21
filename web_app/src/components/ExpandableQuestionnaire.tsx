@@ -1,7 +1,7 @@
 'use client';
 
 import { Questionnaire } from '@/components/Questionnaire';
-import type { QuestionnaireAnswer } from '@/types';
+import type { ProgressUpdate, QuestionnaireAnswer } from '@/types';
 import { useCallback } from 'react';
 
 interface ExpandableQuestionnaireProps {
@@ -11,6 +11,8 @@ interface ExpandableQuestionnaireProps {
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
   onStartAutomation?: () => Promise<void>;
   automationRunning?: boolean;
+  progress?: ProgressUpdate | null;
+  filesReady?: boolean;
 }
 
 export function ExpandableQuestionnaire({
@@ -18,6 +20,8 @@ export function ExpandableQuestionnaire({
   onProgressUpdate,
   onStartAutomation,
   automationRunning,
+  progress,
+  filesReady = false,
 }: ExpandableQuestionnaireProps) {
   const handleComplete = useCallback(
     async (answers: Record<string, QuestionnaireAnswer>) => {
@@ -33,6 +37,8 @@ export function ExpandableQuestionnaire({
         onProgressUpdate={onProgressUpdate || (() => {})}
         onStartAutomation={onStartAutomation}
         automationRunning={automationRunning}
+        progress={progress}
+        filesReady={filesReady}
       />
     </div>
   );

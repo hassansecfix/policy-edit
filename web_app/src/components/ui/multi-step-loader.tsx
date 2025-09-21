@@ -30,11 +30,25 @@ export const MultiStepLoader = ({
 }) => {
   const [currentState, setCurrentState] = useState(0);
 
+  // Reset to first state when loading starts
+  useEffect(() => {
+    if (loading && loadingStates.length > 0) {
+      setCurrentState(0);
+    }
+  }, [loading, loadingStates.length]);
+
   useEffect(() => {
     if (!loading) {
       setCurrentState(0);
       return;
     }
+
+    // If we only have one state, don't set up a timeout (stay on that state)
+    if (loadingStates.length === 1) {
+      setCurrentState(0); // Make sure we show the single state
+      return;
+    }
+
     const timeout = setTimeout(() => {
       setCurrentState((prevState) =>
         loop
