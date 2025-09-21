@@ -20,13 +20,11 @@ export default function Dashboard() {
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(true);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState(false);
-  // const [questionnaireProgress, setQuestionnaireProgress] = useState({ current: 0, total: 0 });
 
   // Development state for testing loader
   const [testLoaderRunning, setTestLoaderRunning] = useState(false);
   const isDev = process.env.NODE_ENV === 'development';
-  // const [showDebugAnswers, setShowDebugAnswers] = useState(false); // Removed - replaced with DocumentChangesPreview
-  const { isConnected, logs, progress, files, clearLogs, addLog } = useSocket();
+  const { isConnected, logs, progress, files, clearLogs, clearFiles, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
   useEffect(() => {
@@ -50,33 +48,15 @@ export default function Dashboard() {
 
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
-      // Note: setAutomationRunning(true) is now handled in Questionnaire component for instant UI feedback
-      setTestLoaderRunning(false); // Stop test loader when real automation starts
+      setTestLoaderRunning(false);
 
       try {
         // Get questionnaire answers from localStorage
         const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
-        console.log('🔍 DEBUG: Raw localStorage data:', savedAnswers);
-
         const questionnaireAnswers = savedAnswers ? JSON.parse(savedAnswers) : {};
-        console.log('🔍 DEBUG: Parsed questionnaire answers:', questionnaireAnswers);
-        console.log('🔍 DEBUG: Answer count:', Object.keys(questionnaireAnswers).length);
-        console.log('🔍 DEBUG: Answer keys:', Object.keys(questionnaireAnswers));
-
-        // Keep base64 logo data for internal automation (filtering only needed for external APIs)
-        // The logo data will be processed internally by the automation scripts
-        console.log('🔍 DEBUG: Keeping base64 logo data for automation processing');
-
-        console.log('🔍 DEBUG: Answers for automation:', Object.keys(questionnaireAnswers).length);
-        console.log(
-          '🚀 Starting automation with answers:',
-          Object.keys(questionnaireAnswers).length,
-          'fields',
-        );
 
         // Get the stored userId for this session
         const userId = localStorage.getItem('questionnaire_user_id');
-        console.log('🔍 Using stored user ID for automation:', userId);
 
         const response = await fetch(getApiUrl(API_CONFIG.endpoints.start), {
           method: 'POST',
@@ -104,7 +84,6 @@ export default function Dashboard() {
 
           // If backend says automation is already running, keep the frontend state as running
           if (error.error && error.error.includes('already running')) {
-            // State is already set to true above, so just log the sync message
             addLog({
               timestamp: formatTime(new Date()),
               message: '🔄 Syncing with existing automation process...',
@@ -122,7 +101,6 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error('Failed to start automation:', error);
-        // Reset automation state on network errors
         setAutomationRunning(false);
         addLog({
           timestamp: formatTime(new Date()),
@@ -321,6 +299,7 @@ export default function Dashboard() {
                 onComplete={handleQuestionnaireComplete}
                 onStartAutomation={() => handleStartAutomation(false)}
                 onSetAutomationRunning={setAutomationRunning}
+                onClearFiles={clearFiles}
                 automationRunning={automationRunning}
                 progress={progress}
                 filesReady={files.length > 0}
@@ -360,6 +339,7 @@ export default function Dashboard() {
               onComplete={handleQuestionnaireComplete}
               onStartAutomation={() => handleStartAutomation(false)}
               onSetAutomationRunning={setAutomationRunning}
+              onClearFiles={clearFiles}
               automationRunning={automationRunning}
               progress={progress}
               filesReady={files.length > 0}

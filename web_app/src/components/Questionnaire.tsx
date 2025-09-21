@@ -28,6 +28,7 @@ interface QuestionnaireProps {
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
   onStartAutomation?: () => Promise<void>;
   onSetAutomationRunning?: (running: boolean) => void;
+  onClearFiles?: () => void;
   automationRunning?: boolean;
   progress?: ProgressUpdate | null;
   filesReady?: boolean;
@@ -38,6 +39,7 @@ export function Questionnaire({
   onProgressUpdate,
   onStartAutomation,
   onSetAutomationRunning,
+  onClearFiles,
   automationRunning = false,
   progress,
   filesReady = false,
@@ -505,7 +507,11 @@ export function Questionnaire({
         currentQuestionIndex: prev.currentQuestionIndex + 1,
       }));
     } else {
-      // All questions completed - set automation state immediately for instant UI feedback
+      // All questions completed - clear files FIRST to prevent race condition, then set automation state
+      if (onClearFiles) {
+        onClearFiles();
+      }
+
       if (onSetAutomationRunning) {
         onSetAutomationRunning(true);
       }
@@ -538,6 +544,7 @@ export function Questionnaire({
     isCurrentQuestionAnswered,
     onStartAutomation,
     onSetAutomationRunning,
+    onClearFiles,
     automationRunning,
   ]);
 

@@ -12,6 +12,7 @@ interface UseSocketReturn {
   progress: ProgressUpdate | null;
   files: FileDownload[];
   clearLogs: () => void;
+  clearFiles: () => void;
   addLog: (log: LogEntry) => void;
 }
 
@@ -72,6 +73,10 @@ export function useSocket(url: string = getApiUrl()): UseSocketReturn {
     }
   };
 
+  const clearFiles = () => {
+    setFiles([]);
+  };
+
   const addLog = (log: LogEntry) => {
     setLogs((prev) => [...prev, log]);
   };
@@ -83,6 +88,7 @@ export function useSocket(url: string = getApiUrl()): UseSocketReturn {
     progress,
     files,
     clearLogs,
+    clearFiles,
     addLog,
   };
 }

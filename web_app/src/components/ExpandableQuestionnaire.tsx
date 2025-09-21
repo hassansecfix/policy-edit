@@ -11,6 +11,7 @@ interface ExpandableQuestionnaireProps {
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
   onStartAutomation?: () => Promise<void>;
   onSetAutomationRunning?: (running: boolean) => void;
+  onClearFiles?: () => void;
   automationRunning?: boolean;
   progress?: ProgressUpdate | null;
   filesReady?: boolean;
@@ -21,6 +22,7 @@ export function ExpandableQuestionnaire({
   onProgressUpdate,
   onStartAutomation,
   onSetAutomationRunning,
+  onClearFiles,
   automationRunning,
   progress,
   filesReady = false,
@@ -39,6 +41,7 @@ export function ExpandableQuestionnaire({
         onProgressUpdate={onProgressUpdate || (() => {})}
         onStartAutomation={onStartAutomation}
         onSetAutomationRunning={onSetAutomationRunning}
+        onClearFiles={onClearFiles}
         automationRunning={automationRunning}
         progress={progress}
         filesReady={filesReady}
