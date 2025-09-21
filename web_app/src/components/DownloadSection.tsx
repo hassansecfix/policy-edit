@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { API_CONFIG, getApiUrl } from '@/config/api';
 import type { FileDownload } from '@/types';
 import { Download, FileText } from 'lucide-react';
@@ -33,24 +33,7 @@ export function DownloadSection({ files, visible }: DownloadSectionProps) {
   };
 
   return (
-    <Card className='border-0 overflow-hidden'>
-      <CardHeader className='bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <CardTitle className='text-lg font-semibold text-gray-900 flex items-center gap-2'>
-              <Download className='h-5 w-5 text-green-600' />
-              Download Files
-            </CardTitle>
-            <CardDescription className='mt-1'>
-              Your customized policy documents are ready
-            </CardDescription>
-          </div>
-          <Badge variant='success' className='bg-emerald-100 text-emerald-800'>
-            {files.length} {files.length === 1 ? 'file' : 'files'} ready
-          </Badge>
-        </div>
-      </CardHeader>
-
+    <Card>
       <CardContent className='p-0'>
         <div className='divide-y divide-gray-50'>
           {files.map((file, index) => (
@@ -96,7 +79,7 @@ export function DownloadSection({ files, visible }: DownloadSectionProps) {
 
       <div className='px-6 py-4 bg-gray-50 border-t border-gray-100'>
         <p className='text-xs text-gray-600 text-center'>
-          🎉 Your customized policy documents have been generated successfully
+          🎉 Your customized policy document has been generated successfully
         </p>
       </div>
     </Card>

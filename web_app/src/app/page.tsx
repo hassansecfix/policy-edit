@@ -359,61 +359,63 @@ export default function Dashboard() {
             />
           )}
 
-          {/* Automation Control Button */}
-          <div className='mb-8 flex justify-center'>
-            <div className='bg-white rounded-lg shadow-md border border-gray-200 p-6 w-full max-w-md'>
-              <div className='text-center'>
-                <h3 className='text-lg font-semibold text-gray-900 mb-3'>Policy Automation</h3>
-                <p className='text-sm text-gray-600 mb-6'>
-                  Generate your customized policy document based on your questionnaire responses.
-                </p>
+          {/* Automation Control Button - Dev Only */}
+          {isDev && (
+            <div className='mb-8 flex justify-center'>
+              <div className='bg-white rounded-lg shadow-md border border-gray-200 p-6 w-full max-w-md'>
+                <div className='text-center'>
+                  <h3 className='text-lg font-semibold text-gray-900 mb-3'>Policy Automation</h3>
+                  <p className='text-sm text-gray-600 mb-6'>
+                    Generate your customized policy document based on your questionnaire responses.
+                  </p>
 
-                {!automationRunning ? (
-                  <div className='space-y-2'>
-                    <button
-                      onClick={() => handleStartAutomation(false)}
-                      className='w-full bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2'
-                    >
-                      <svg
-                        className='w-5 h-5'
-                        fill='none'
-                        stroke='currentColor'
-                        viewBox='0 0 24 24'
+                  {!automationRunning ? (
+                    <div className='space-y-2'>
+                      <button
+                        onClick={() => handleStartAutomation(false)}
+                        className='w-full bg-violet-600 hover:bg-violet-700 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2'
                       >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          strokeWidth='2'
-                          d='M12 3v18m9-9l-9-9-9 9'
-                        />
-                      </svg>
-                      Start Automation
-                    </button>
-                  </div>
-                ) : (
-                  <div className='space-y-2'>
-                    <div className='w-full bg-amber-100 text-amber-800 font-medium px-6 py-3 rounded-lg border border-amber-200 flex items-center justify-center gap-2'>
-                      <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600'></div>
-                      Automation Running...
+                        <svg
+                          className='w-5 h-5'
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth='2'
+                            d='M12 3v18m9-9l-9-9-9 9'
+                          />
+                        </svg>
+                        Start Automation
+                      </button>
                     </div>
-                    <button
-                      onClick={handleStopAutomation}
-                      className='w-full bg-red-100 hover:bg-red-200 text-red-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer text-sm border border-red-200'
-                    >
-                      Force Stop Automation
-                    </button>
-                  </div>
-                )}
+                  ) : (
+                    <div className='space-y-2'>
+                      <div className='w-full bg-amber-100 text-amber-800 font-medium px-6 py-3 rounded-lg border border-amber-200 flex items-center justify-center gap-2'>
+                        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600'></div>
+                        Automation Running...
+                      </div>
+                      <button
+                        onClick={handleStopAutomation}
+                        className='w-full bg-red-100 hover:bg-red-200 text-red-700 font-medium px-4 py-2 rounded-lg transition-colors duration-200 cursor-pointer text-sm border border-red-200'
+                      >
+                        Force Stop Automation
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className='flex flex-col gap-6'>
             <div className='w-full'>
               <DownloadSection files={files} visible={files.length > 0} />
             </div>
 
-            <LogsPanel logs={logs} logCount={logs.length} />
+            {isDev && <LogsPanel logs={logs} logCount={logs.length} />}
           </div>
 
           {/* Footer - Added at the bottom of the main content */}

@@ -689,16 +689,16 @@ export function Questionnaire({
       {/* Document Changes Preview - Attached to bottom of card */}
       {documentChanges.length > 0 && (
         <div
-          className='border-t border-gray-200 w-full max-w-full'
+          className='border-t border-gray-100 w-full max-w-full bg-gray-50'
           style={{ width: '100%', maxWidth: '100%' }}
         >
           <button
             onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
-            className='w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors duration-200 cursor-pointer'
+            className='w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-100 transition-colors duration-200 cursor-pointer'
           >
             <div className='flex items-center gap-3'>
               <div className='text-sm font-medium text-gray-900'>Document Changes Preview</div>
-              <div className='bg-violet-100 text-violet-700 text-xs font-medium px-2 py-1 rounded-full'>
+              <div className='border border-violet-600 text-violet-600 text-xs font-medium px-2.5 py-1 rounded-full'>
                 {documentChanges.length} {documentChanges.length === 1 ? 'change' : 'changes'}
               </div>
             </div>
@@ -732,13 +732,13 @@ export function Questionnaire({
                 Preview of changes that will be applied to your policy document:
               </p>
               <div
-                className='space-y-3 max-h-64 overflow-y-auto overflow-x-hidden w-full max-w-full'
+                className='max-h-64 overflow-y-auto overflow-x-hidden w-full max-w-full'
                 style={{ width: '100%', maxWidth: '100%' }}
               >
                 {documentChanges.map((change, index) => (
                   <div
                     key={index}
-                    className='bg-gray-50 rounded-lg p-3 break-words overflow-hidden w-full max-w-full'
+                    className='bg-gray-50 rounded-lg p-2 break-words overflow-hidden w-full max-w-full'
                     style={{
                       width: '100%',
                       maxWidth: '100%',
