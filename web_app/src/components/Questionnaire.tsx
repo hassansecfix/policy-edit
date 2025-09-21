@@ -27,6 +27,7 @@ interface QuestionnaireProps {
   onComplete: (answers: Record<string, QuestionnaireAnswer>) => Promise<void>;
   onProgressUpdate?: (progress: { current: number; total: number }) => void;
   onStartAutomation?: () => Promise<void>;
+  onSetAutomationRunning?: (running: boolean) => void;
   automationRunning?: boolean;
   progress?: ProgressUpdate | null;
   filesReady?: boolean;
@@ -36,6 +37,7 @@ export function Questionnaire({
   onComplete,
   onProgressUpdate,
   onStartAutomation,
+  onSetAutomationRunning,
   automationRunning = false,
   progress,
   filesReady = false,
@@ -503,7 +505,11 @@ export function Questionnaire({
         currentQuestionIndex: prev.currentQuestionIndex + 1,
       }));
     } else {
-      // All questions completed - save answers and start automation
+      // All questions completed - set automation state immediately for instant UI feedback
+      if (onSetAutomationRunning) {
+        onSetAutomationRunning(true);
+      }
+
       try {
         // Save immediately to API before completing
         await saveAnswersToAPI(state.answers);
@@ -516,6 +522,10 @@ export function Questionnaire({
         }
       } catch (error) {
         console.error('Failed to complete questionnaire or start automation:', error);
+        // Reset automation state on error
+        if (onSetAutomationRunning) {
+          onSetAutomationRunning(false);
+        }
         alert('Failed to complete questionnaire. Please try again.');
       }
     }
@@ -527,6 +537,7 @@ export function Questionnaire({
     saveAnswersToAPI,
     isCurrentQuestionAnswered,
     onStartAutomation,
+    onSetAutomationRunning,
     automationRunning,
   ]);
 

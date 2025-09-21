@@ -50,8 +50,7 @@ export default function Dashboard() {
 
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
-      // Set automation running state immediately for instant UI feedback
-      setAutomationRunning(true);
+      // Note: setAutomationRunning(true) is now handled in Questionnaire component for instant UI feedback
       setTestLoaderRunning(false); // Stop test loader when real automation starts
 
       try {
@@ -321,6 +320,7 @@ export default function Dashboard() {
               <Questionnaire
                 onComplete={handleQuestionnaireComplete}
                 onStartAutomation={() => handleStartAutomation(false)}
+                onSetAutomationRunning={setAutomationRunning}
                 automationRunning={automationRunning}
                 progress={progress}
                 filesReady={files.length > 0}
@@ -359,6 +359,7 @@ export default function Dashboard() {
               onToggle={() => {}}
               onComplete={handleQuestionnaireComplete}
               onStartAutomation={() => handleStartAutomation(false)}
+              onSetAutomationRunning={setAutomationRunning}
               automationRunning={automationRunning}
               progress={progress}
               filesReady={files.length > 0}
