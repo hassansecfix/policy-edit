@@ -627,9 +627,9 @@ export function Questionnaire({
           {state.currentQuestionIndex > 0 ? (
             <button
               onClick={handlePrevious}
-              disabled={saving || automationRunning}
+              disabled={automationRunning}
               className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
-                saving || automationRunning
+                automationRunning
                   ? 'text-gray-400 border border-gray-200 cursor-not-allowed'
                   : 'text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer'
               } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
@@ -643,21 +643,19 @@ export function Questionnaire({
           {/* Next Button */}
           <button
             onClick={handleNext}
-            disabled={saving || !isCurrentQuestionAnswered() || automationRunning}
+            disabled={!isCurrentQuestionAnswered() || automationRunning}
             className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
-              saving || !isCurrentQuestionAnswered() || automationRunning
+              !isCurrentQuestionAnswered() || automationRunning
                 ? 'bg-gray-200 text-gray-700 border border-gray-300 cursor-not-allowed'
                 : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
             } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
           >
             <div className='flex items-center gap-2'>
-              {state.currentQuestionIndex === questions.length - 1 &&
-                !saving &&
-                !automationRunning && <SparkleIcon className='w-4 h-4' />}
+              {state.currentQuestionIndex === questions.length - 1 && !automationRunning && (
+                <SparkleIcon className='w-4 h-4' />
+              )}
               <span>
-                {saving
-                  ? 'Saving...'
-                  : automationRunning
+                {automationRunning
                   ? 'Policy Generation in Progress...'
                   : state.currentQuestionIndex === questions.length - 1
                   ? 'Generate Policy'
@@ -666,14 +664,6 @@ export function Questionnaire({
             </div>
           </button>
         </div>
-
-        {/* Saving indicator */}
-        {saving && (
-          <div className='flex items-center justify-center mt-4 text-violet-600 text-xs'>
-            <div className='animate-spin rounded-full h-3 w-3 border-b border-violet-600 mr-1'></div>
-            Saving...
-          </div>
-        )}
 
         {/* Test Overlay Button (Development Mode Only) */}
         {process.env.NODE_ENV === 'development' && (
