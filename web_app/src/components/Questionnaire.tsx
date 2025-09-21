@@ -590,11 +590,7 @@ export function Questionnaire({
       style={{ width: '100%', maxWidth: '100%' }}
     >
       {/* Policy Generation Overlay */}
-      <PolicyGenerationOverlay
-        isVisible={automationRunning || testOverlay}
-        progress={progress}
-        filesReady={filesReady}
-      />
+      <PolicyGenerationOverlay isVisible={automationRunning || testOverlay} progress={progress} />
 
       {/* Progress Indicator */}
       <div className='flex w-full'>

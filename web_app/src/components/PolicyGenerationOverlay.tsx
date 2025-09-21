@@ -6,7 +6,6 @@ import type { ProgressUpdate } from '@/types';
 interface PolicyGenerationOverlayProps {
   isVisible: boolean;
   progress?: ProgressUpdate | null;
-  filesReady?: boolean;
 }
 
 const loadingStates = [
@@ -19,31 +18,17 @@ const loadingStates = [
   { text: 'Almost ready! AI completing final checks...' },
 ];
 
-export const PolicyGenerationOverlay = ({
-  isVisible,
-  progress,
-  filesReady,
-}: PolicyGenerationOverlayProps) => {
+export const PolicyGenerationOverlay = ({ isVisible, progress }: PolicyGenerationOverlayProps) => {
   if (!isVisible) {
     return null;
   }
 
-  // Get current loading states - show ALL states to cycle through once
-  const getCurrentLoadingStates = () => {
-    if (filesReady) {
-      return [{ text: '✅ Policy document generated successfully!' }];
-    }
-
-    // Show all loading states - MultiStepLoader will cycle through them once and stop at last
-    return loadingStates;
-  };
-
-  const currentStates = getCurrentLoadingStates();
+  // If overlay is visible, automation is running, so always show loading states
 
   return (
     <div className='absolute inset-0 bg-white/90 backdrop-blur-sm rounded-[6px] flex items-center justify-center z-50'>
       <MultiStepLoader
-        loadingStates={currentStates}
+        loadingStates={loadingStates}
         loading={isVisible}
         duration={25000}
         loop={false}
