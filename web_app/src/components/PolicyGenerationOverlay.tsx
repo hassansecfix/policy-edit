@@ -45,7 +45,7 @@ export const PolicyGenerationOverlay = ({
       <MultiStepLoader
         loadingStates={currentStates}
         loading={isVisible}
-        duration={50000}
+        duration={25000}
         loop={false}
       />
     </div>
