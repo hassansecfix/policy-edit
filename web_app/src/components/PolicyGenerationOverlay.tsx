@@ -10,13 +10,13 @@ interface PolicyGenerationOverlayProps {
 }
 
 const loadingStates = [
-  { text: 'Gathering your answers...' },
-  { text: 'Understanding your organization details...' },
-  { text: 'Reviewing your security requirements...' },
-  { text: 'Analyzing policy document...' },
-  { text: 'Applying your answers to the policy document...' },
-  { text: 'Finalizing document structure...' },
-  { text: 'Almost ready! Adding finishing touches...' },
+  { text: 'Processing your answers...' },
+  { text: 'AI understanding your organization details...' },
+  { text: 'Analyzing your security requirements...' },
+  { text: 'Reviewing policy document structure...' },
+  { text: 'AI generating personalized policy content...' },
+  { text: 'Finalizing document formatting...' },
+  { text: 'Almost ready! AI completing final checks...' },
 ];
 
 export const PolicyGenerationOverlay = ({
@@ -45,7 +45,7 @@ export const PolicyGenerationOverlay = ({
       <MultiStepLoader
         loadingStates={currentStates}
         loading={isVisible}
-        duration={2000}
+        duration={100000}
         loop={false}
       />
     </div>
