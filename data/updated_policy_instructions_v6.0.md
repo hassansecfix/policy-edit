@@ -134,8 +134,8 @@ _These rules are specific to the Access Control Policy document_
 ### **RULE_09: Access Termination Timeframe**
 
 - **Placeholder:** `<24 business hours>`
-- **Scenario:** Always Scenario B
-- **CRITICAL replacement rule:** Always rewrite the entire sentence to sound naturaly
+- **Scenario:** Always Scenario B. Rewrite the entire sentence to sound naturaly and grammatically correct.
+- **CRITICAL replacement rule:** Always rewrite the entire sentence to sound naturaly and grammatically correct.
 
 ### **RULE_10: Policy Owner**
 
