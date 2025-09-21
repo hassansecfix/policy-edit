@@ -50,6 +50,10 @@ export default function Dashboard() {
 
   const handleStartAutomation = useCallback(
     async (skipApi: boolean) => {
+      // Set automation running state immediately for instant UI feedback
+      setAutomationRunning(true);
+      setTestLoaderRunning(false); // Stop test loader when real automation starts
+
       try {
         // Get questionnaire answers from localStorage
         const savedAnswers = localStorage.getItem(QUESTIONNAIRE_STORAGE_KEY);
@@ -89,8 +93,6 @@ export default function Dashboard() {
         });
 
         if (response.ok) {
-          setAutomationRunning(true);
-          setTestLoaderRunning(false); // Stop test loader when real automation starts
           addLog({
             timestamp: formatTime(new Date()),
             message: `🚀 Automation started successfully with ${
@@ -101,15 +103,17 @@ export default function Dashboard() {
         } else {
           const error = await response.json();
 
-          // If backend says automation is already running, sync the frontend state
+          // If backend says automation is already running, keep the frontend state as running
           if (error.error && error.error.includes('already running')) {
-            setAutomationRunning(true); // Sync frontend with backend
+            // State is already set to true above, so just log the sync message
             addLog({
               timestamp: formatTime(new Date()),
               message: '🔄 Syncing with existing automation process...',
               level: 'info',
             });
           } else {
+            // Reset automation state on other errors
+            setAutomationRunning(false);
             addLog({
               timestamp: formatTime(new Date()),
               message: `❌ Failed to start automation: ${error.error}`,
@@ -119,6 +123,8 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error('Failed to start automation:', error);
+        // Reset automation state on network errors
+        setAutomationRunning(false);
         addLog({
           timestamp: formatTime(new Date()),
           message: '❌ Failed to start automation: Network error',
