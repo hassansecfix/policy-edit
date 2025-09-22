@@ -41,8 +41,8 @@ export function DownloadSection({ files, visible }: DownloadSectionProps) {
               <div className='flex items-center gap-4'>
                 {/* File Icon */}
                 <div className='flex-shrink-0'>
-                  <div className='w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors'>
-                    <FileText className='h-5 w-5 text-blue-600' />
+                  <div className='w-10 h-10 bg-violet-50 rounded-lg flex items-center justify-center group-hover:bg-violet-100 transition-colors'>
+                    <FileText className='h-5 w-5 text-violet-600' />
                   </div>
                 </div>
 
@@ -65,10 +65,10 @@ export function DownloadSection({ files, visible }: DownloadSectionProps) {
                     onClick={() => handleDownload(file)}
                     variant='default'
                     size='sm'
-                    className=''
+                    className='text-sm font-medium'
                   >
                     <Download className='h-4 w-4' />
-                    <span className='hidden sm:inline ml-2'>Download</span>
+                    <span className='hidden sm:inline'>Download</span>
                   </Button>
                 </div>
               </div>
