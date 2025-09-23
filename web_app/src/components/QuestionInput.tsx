@@ -145,7 +145,6 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
       case 'Number input':
         return (
           <div className='space-y-2'>
-            <label className='block text-sm font-medium text-gray-700'>Number</label>
             <input
               type='number'
               value={String(value || '')}
@@ -174,7 +173,6 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
       case 'Date picker':
         return (
           <div className='space-y-2'>
-            <label className='block text-sm font-medium text-gray-700'>Select Date</label>
             <input
               type='date'
               value={(value as string) || ''}
