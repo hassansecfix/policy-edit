@@ -214,10 +214,10 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
                     }
                   }}
                   className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
-                  accept='image/*,.pdf,.doc,.docx'
+                  accept='image/*'
                 />
                 <div className='text-xs text-gray-500'>
-                  Supported formats: Images, PDF, Word documents
+                  Supported formats: Images only (PNG, JPG, JPEG, GIF, WebP, etc.)
                 </div>
               </div>
             </div>
