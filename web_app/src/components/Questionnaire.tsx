@@ -702,10 +702,7 @@ export function Questionnaire({
 
       {/* Document Changes Preview - Attached to bottom of card */}
       {documentChanges.length > 0 && (
-        <div
-          className='border-t border-gray-100 w-full max-w-full bg-gray-50'
-          style={{ width: '100%', maxWidth: '100%' }}
-        >
+        <div className='border-t border-gray-100 bg-gray-50'>
           <button
             onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
             className='w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-100 transition-colors duration-200 cursor-pointer'
@@ -738,67 +735,42 @@ export function Questionnaire({
           </button>
 
           {isPreviewExpanded && (
-            <div
-              className='p-6 w-full max-w-full overflow-hidden'
-              style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-word' }}
-            >
+            <div className='px-6 pb-6 pt-4'>
               <p className='text-sm text-gray-600 mb-4'>
                 Preview of changes that will be applied to your policy document:
               </p>
-              <div
-                className='max-h-64 overflow-y-auto overflow-x-hidden w-full max-w-full'
-                style={{ width: '100%', maxWidth: '100%' }}
-              >
+              <div className='max-h-64 overflow-y-auto space-y-2'>
                 {documentChanges.map((change, index) => (
-                  <div
-                    key={index}
-                    className='bg-gray-50 rounded-lg p-2 break-words overflow-hidden w-full max-w-full'
-                    style={{
-                      width: '100%',
-                      maxWidth: '100%',
-                      wordBreak: 'break-all',
-                      overflowWrap: 'anywhere',
-                    }}
-                  >
+                  <div key={index} className='bg-white rounded-lg p-3 border border-gray-200'>
                     {/* Text replacements */}
                     {change.type === 'replace' && change.oldText && change.newText && (
-                      <div className='text-sm leading-relaxed break-words'>
-                        <span className='line-through text-gray-500 break-words'>
-                          {change.oldText}
-                        </span>
+                      <div className='text-sm leading-relaxed'>
+                        <span className='line-through text-gray-500'>{change.oldText}</span>
                         <span className='mx-2 text-gray-400'>→</span>
-                        <span className='text-gray-900 font-medium break-words'>
-                          {change.newText}
-                        </span>
+                        <span className='text-gray-900 font-medium'>{change.newText}</span>
                       </div>
                     )}
 
                     {/* Content removal */}
                     {change.type === 'remove' && (
-                      <div className='text-sm text-gray-500 break-words'>
-                        <span className='line-through break-words'>
-                          {change.oldText || change.description}
-                        </span>
+                      <div className='text-sm text-gray-500'>
+                        <span className='line-through'>{change.oldText || change.description}</span>
                       </div>
                     )}
 
                     {/* Content addition */}
                     {change.type === 'add' && (
-                      <div className='text-sm text-gray-900 font-medium break-words'>
-                        <span className='break-words'>{change.newText}</span>
+                      <div className='text-sm text-gray-900 font-medium'>
+                        <span>{change.newText}</span>
                       </div>
                     )}
 
                     {/* Logo changes */}
                     {change.type === 'logo' && (
-                      <div className='text-sm leading-relaxed break-words'>
-                        <span className='line-through text-gray-500 break-words'>
-                          {change.oldText}
-                        </span>
+                      <div className='text-sm leading-relaxed'>
+                        <span className='line-through text-gray-500'>{change.oldText}</span>
                         <span className='mx-2 text-gray-400'>→</span>
-                        <span className='text-gray-900 font-medium break-words'>
-                          {change.newText}
-                        </span>
+                        <span className='text-gray-900 font-medium'>{change.newText}</span>
                       </div>
                     )}
                   </div>

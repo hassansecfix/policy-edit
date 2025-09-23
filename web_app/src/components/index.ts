@@ -1,7 +1,5 @@
 // Main Components Export
-export { ConnectionStatus } from './ConnectionStatus';
 export { ControlPanel } from './ControlPanel';
-export { DocumentChangesPreview } from './DocumentChangesPreview';
 export { DownloadSection } from './DownloadSection';
 export { ExpandableQuestionnaire } from './ExpandableQuestionnaire';
 export { FeedbackButton } from './FeedbackButton';

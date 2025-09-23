@@ -1,7 +1,6 @@
 'use client';
 
 import { LogsPanel } from '@/components';
-import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { DownloadSection } from '@/components/DownloadSection';
 import { ExpandableQuestionnaire } from '@/components/ExpandableQuestionnaire';
 import { Footer } from '@/components/Footer';
@@ -310,8 +309,6 @@ export default function Dashboard() {
             <Footer />
           </div>
         </div>
-
-        <ConnectionStatus isConnected={isConnected} />
       </div>
     );
   }
@@ -409,8 +406,6 @@ export default function Dashboard() {
           <Footer />
         </div>
       </div>
-
-      <ConnectionStatus isConnected={isConnected} />
     </div>
   );
 }
