@@ -584,6 +584,13 @@ export function Questionnaire({
     setIsCollapsed((prev) => !prev);
   }, []);
 
+  // Auto-collapse questionnaire when automation completes and files are ready
+  useEffect(() => {
+    if (filesReady && !automationRunning) {
+      setIsCollapsed(true);
+    }
+  }, [filesReady, automationRunning]);
+
   if (loading) {
     return (
       <div className='flex items-center justify-center min-h-[400px]'>
