@@ -151,7 +151,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
               onChange={(e) => handleChange(parseInt(e.target.value) || 0)}
               min='0'
               className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
-              placeholder='Enter a number'
+              placeholder={getNumberInputPlaceholder(question)}
             />
           </div>
         );
@@ -386,6 +386,30 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
   };
 
   return <div className='space-y-2 mt-6'>{renderInput()}</div>;
+}
+
+// Helper function to get dynamic placeholder for number inputs
+function getNumberInputPlaceholder(question: Question): string {
+  switch (question.field) {
+    case 'user_response.employee_count':
+      return 'Enter number of employees';
+    case 'user_response.contractor_count':
+      return 'Enter number of contractors';
+    case 'user_response.retention_period':
+      return 'Enter retention period in years';
+    case 'user_response.backup_frequency':
+      return 'Enter backup frequency in days';
+    case 'user_response.max_failed_attempts':
+      return 'Enter maximum failed login attempts';
+    case 'user_response.session_timeout':
+      return 'Enter session timeout in minutes';
+    case 'user_response.password_min_length':
+      return 'Enter minimum password length';
+    case 'user_response.audit_log_retention':
+      return 'Enter audit log retention in days';
+    default:
+      return 'Enter a number';
+  }
 }
 
 // Helper functions to get options for different question types
