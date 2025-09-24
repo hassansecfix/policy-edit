@@ -5,7 +5,13 @@ import { QuestionInput } from '@/components/QuestionInput';
 import { SparkleIcon } from '@/components/ui/SparkleIcon';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
-import { ProgressUpdate, Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
+import {
+  FileUpload,
+  ProgressUpdate,
+  Question,
+  QuestionnaireAnswer,
+  QuestionnaireState,
+} from '@/types';
 import { ChevronDown, Edit3, Eye } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -580,6 +586,26 @@ export function Questionnaire({
     }
   }, [state.currentQuestionIndex]);
 
+  const handleAutoNext = useCallback(
+    (selectedValue?: string | number | File | FileUpload) => {
+      // Only auto-advance if not on last question and automation is not running
+      const hasValidAnswer =
+        selectedValue !== undefined && selectedValue !== null && selectedValue !== '';
+
+      if (
+        state.currentQuestionIndex < questions.length - 1 &&
+        !automationRunning &&
+        hasValidAnswer
+      ) {
+        setState((prev) => ({
+          ...prev,
+          currentQuestionIndex: prev.currentQuestionIndex + 1,
+        }));
+      }
+    },
+    [state.currentQuestionIndex, questions.length, automationRunning],
+  );
+
   const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => !prev);
   }, []);
@@ -713,6 +739,7 @@ export function Questionnaire({
               question={currentQuestion}
               value={currentAnswer?.value}
               onChange={handleAnswer}
+              onAutoNext={handleAutoNext}
             />
           </div>
 

@@ -9,9 +9,10 @@ interface QuestionInputProps {
   question: Question;
   value?: string | number | File | FileUpload;
   onChange: (answer: QuestionnaireAnswer) => void;
+  onAutoNext?: (value?: string | number | File | FileUpload) => void;
 }
 
-export function QuestionInput({ question, value, onChange }: QuestionInputProps) {
+export function QuestionInput({ question, value, onChange, onAutoNext }: QuestionInputProps) {
   const [customText, setCustomText] = useState('');
   const [isOtherSelected, setIsOtherSelected] = useState(false);
   const [, forceUpdate] = useState({});
@@ -111,9 +112,17 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
         setIsOtherSelected(false);
         setCustomText('');
         handleChange(selectedValue);
+
+        // Auto-advance to next question after a short delay for non-"Other" selections
+        // Pass the selectedValue directly to avoid race condition with state updates
+        if (onAutoNext) {
+          setTimeout(() => {
+            onAutoNext(selectedValue);
+          }, 300); // Small delay for smooth UX
+        }
       }
     },
-    [customText, handleChange],
+    [customText, handleChange, onAutoNext],
   );
 
   const handleCustomTextChange = useCallback(
