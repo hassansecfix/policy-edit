@@ -160,8 +160,8 @@ export function QuestionInput({ question, value, onChange, onAutoNext }: Questio
               onChange={(e) => {
                 const inputValue = e.target.value;
                 if (inputValue === '') {
-                  // Handle empty input - don't set to 0, set to undefined
-                  handleChange(undefined as any);
+                  // Handle empty input - pass empty string to indicate no value
+                  handleChange('');
                 } else {
                   const numValue = parseInt(inputValue);
                   if (!isNaN(numValue)) {

@@ -503,6 +503,8 @@ export function Questionnaire({
           return typeof value === 'string' && value.trim().length > 0;
 
         case 'Number input':
+          // For number inputs, empty string means no value entered
+          if (value === '') return false;
           return typeof value === 'number' && !isNaN(value) && value >= 0;
 
         case 'Date picker':
