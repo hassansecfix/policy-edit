@@ -6,6 +6,7 @@ import { SparkleIcon } from '@/components/ui/SparkleIcon';
 import { generateDynamicDescription } from '@/lib/dynamic-descriptions';
 import { QUESTIONNAIRE_STORAGE_KEY } from '@/lib/questionnaire-utils';
 import { ProgressUpdate, Question, QuestionnaireAnswer, QuestionnaireState } from '@/types';
+import { ChevronDown, Edit3 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface FileUploadValue {
@@ -56,6 +57,7 @@ export function Questionnaire({
   const [, forceUpdate] = useState({});
   const [testOverlay, setTestOverlay] = useState(false);
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [documentChanges, setDocumentChanges] = useState<DocumentChange[]>([]);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastAnswersRef = useRef<string>('');
@@ -578,6 +580,10 @@ export function Questionnaire({
     }
   }, [state.currentQuestionIndex]);
 
+  const toggleCollapse = useCallback(() => {
+    setIsCollapsed((prev) => !prev);
+  }, []);
+
   if (loading) {
     return (
       <div className='flex items-center justify-center min-h-[400px]'>
@@ -620,194 +626,229 @@ export function Questionnaire({
       {/* Policy Generation Overlay */}
       <PolicyGenerationOverlay isVisible={automationRunning || testOverlay} progress={progress} />
 
-      {/* Progress Indicator */}
-      <div className='flex w-full'>
-        {questions.map((_, index) => (
-          <div
-            key={index}
-            className={`h-1 flex-1 ${
-              index <= state.currentQuestionIndex ? 'bg-emerald-500' : 'bg-gray-200'
-            } ${index === 0 ? 'rounded-tl-[6px]' : ''} ${
-              index === questions.length - 1 ? 'rounded-tr-[6px]' : ''
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Card Content */}
-      <div className='p-8'>
-        {/* Question Header */}
-        <div className='flex flex-col gap-2'>
-          <p className='text-xs font-normal text-gray-500 leading-4'>
-            Question {state.currentQuestionIndex + 1} of {questions.length}
-          </p>
-          <div className='flex items-center gap-2'>
-            <h2 className='text-base font-medium text-gray-900 leading-6'>
-              {currentQuestion.questionText}
-            </h2>
-            {currentQuestion.required === false && (
-              <span className='text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded'>
-                Optional
-              </span>
-            )}
+      {/* Collapsible Header */}
+      <div
+        className='flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer'
+        onClick={toggleCollapse}
+      >
+        <div className='flex items-center gap-3'>
+          <h3 className='text-lg font-semibold text-gray-900'>Policy Questionnaire</h3>
+          {!isCollapsed && (
+            <div className='text-sm text-gray-600'>
+              Question {state.currentQuestionIndex + 1} of {questions.length}
+            </div>
+          )}
+        </div>
+        <div className='flex items-center gap-2'>
+          {!isCollapsed && (
+            <div className='text-sm text-gray-500'>
+              {Math.round(((state.currentQuestionIndex + 1) / questions.length) * 100)}% Complete
+            </div>
+          )}
+          {isCollapsed && (
+            <div className='flex items-center gap-1.5 text-sm text-gray-500'>
+              <Edit3 className='w-4 h-4' />
+              <span>Edit</span>
+            </div>
+          )}
+          <div className={`transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`}>
+            <ChevronDown className='w-5 h-5 text-gray-400' />
           </div>
         </div>
+      </div>
 
-        {/* Question Input */}
-        <div className='mb-8'>
-          {(() => {
-            const dynamicDescription = generateDynamicDescription(currentQuestion);
-            return (
-              dynamicDescription && (
-                <p className='text-sm text-gray-600 leading-relaxed'>{dynamicDescription}</p>
-              )
-            );
-          })()}
-
-          <QuestionInput
-            question={currentQuestion}
-            value={currentAnswer?.value}
-            onChange={handleAnswer}
-          />
+      {/* Collapsible Content */}
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+          isCollapsed ? 'max-h-0' : 'max-h-[2000px]'
+        }`}
+      >
+        {/* Progress Indicator */}
+        <div className='flex w-full'>
+          {questions.map((_, index) => (
+            <div
+              key={index}
+              className={`h-1 flex-1 ${
+                index <= state.currentQuestionIndex ? 'bg-emerald-500' : 'bg-gray-200'
+              }`}
+            />
+          ))}
         </div>
 
-        {/* Navigation */}
-        <div className='flex justify-between items-center'>
-          {/* Back Button - Only show if not on first question */}
-          {state.currentQuestionIndex > 0 ? (
+        {/* Card Content */}
+        <div className='p-8'>
+          {/* Question Header */}
+          <div className='flex flex-col gap-2'>
+            <div className='flex items-center gap-2'>
+              <h2 className='text-base font-medium text-gray-900 leading-6'>
+                {currentQuestion.questionText}
+              </h2>
+              {currentQuestion.required === false && (
+                <span className='text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded'>
+                  Optional
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Question Input */}
+          <div className='mb-8'>
+            {(() => {
+              const dynamicDescription = generateDynamicDescription(currentQuestion);
+              return (
+                dynamicDescription && (
+                  <p className='text-sm text-gray-600 leading-relaxed'>{dynamicDescription}</p>
+                )
+              );
+            })()}
+
+            <QuestionInput
+              question={currentQuestion}
+              value={currentAnswer?.value}
+              onChange={handleAnswer}
+            />
+          </div>
+
+          {/* Navigation */}
+          <div className='flex justify-between items-center'>
+            {/* Back Button - Only show if not on first question */}
+            {state.currentQuestionIndex > 0 ? (
+              <button
+                onClick={handlePrevious}
+                disabled={automationRunning}
+                className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
+                  automationRunning
+                    ? 'text-gray-400 border border-gray-200 cursor-not-allowed'
+                    : 'text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer'
+                } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
+              >
+                Back
+              </button>
+            ) : (
+              <div></div>
+            )}
+
+            {/* Next Button */}
             <button
-              onClick={handlePrevious}
-              disabled={automationRunning}
+              onClick={handleNext}
+              disabled={!isCurrentQuestionAnswered() || automationRunning}
               className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
-                automationRunning
-                  ? 'text-gray-400 border border-gray-200 cursor-not-allowed'
-                  : 'text-gray-700 border border-gray-300 hover:bg-gray-100 cursor-pointer'
+                !isCurrentQuestionAnswered() || automationRunning
+                  ? 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'
+                  : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
               } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
             >
-              Back
+              <div className='flex items-center gap-2'>
+                {state.currentQuestionIndex === questions.length - 1 && !automationRunning && (
+                  <SparkleIcon className='w-4 h-4' />
+                )}
+                <span>
+                  {automationRunning
+                    ? 'Policy Generation in Progress...'
+                    : state.currentQuestionIndex === questions.length - 1
+                    ? 'Generate Policy'
+                    : 'Next'}
+                </span>
+              </div>
             </button>
-          ) : (
-            <div></div>
-          )}
+          </div>
 
-          {/* Next Button */}
-          <button
-            onClick={handleNext}
-            disabled={!isCurrentQuestionAnswered() || automationRunning}
-            className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
-              !isCurrentQuestionAnswered() || automationRunning
-                ? 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'
-                : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
-            } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
-          >
-            <div className='flex items-center gap-2'>
-              {state.currentQuestionIndex === questions.length - 1 && !automationRunning && (
-                <SparkleIcon className='w-4 h-4' />
-              )}
-              <span>
-                {automationRunning
-                  ? 'Policy Generation in Progress...'
-                  : state.currentQuestionIndex === questions.length - 1
-                  ? 'Generate Policy'
-                  : 'Next'}
-              </span>
+          {/* Test Overlay Button (Development Mode Only) */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className='flex items-center justify-center mt-4'>
+              <button
+                onClick={() => setTestOverlay(!testOverlay)}
+                className='px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors cursor-pointer'
+              >
+                🧪 {testOverlay ? 'Hide' : 'Show'} Test Overlay
+              </button>
             </div>
-          </button>
+          )}
         </div>
 
-        {/* Test Overlay Button (Development Mode Only) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className='flex items-center justify-center mt-4'>
+        {/* Document Changes Preview - Attached to bottom of card */}
+        {documentChanges.length > 0 && (
+          <div className='border-t border-gray-100 bg-gray-50'>
             <button
-              onClick={() => setTestOverlay(!testOverlay)}
-              className='px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors cursor-pointer'
+              onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+              className='w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-100 transition-colors duration-200 cursor-pointer'
             >
-              🧪 {testOverlay ? 'Hide' : 'Show'} Test Overlay
+              <div className='flex items-center gap-3'>
+                <div className='text-sm font-medium text-gray-900'>Document Changes Preview</div>
+                <div className='border border-violet-600 text-violet-600 text-xs font-medium px-2.5 py-1 rounded-full'>
+                  {documentChanges.length} {documentChanges.length === 1 ? 'change' : 'changes'}
+                </div>
+              </div>
+              <div
+                className={`transition-transform duration-200 ${
+                  isPreviewExpanded ? 'rotate-180' : ''
+                }`}
+              >
+                <svg
+                  className='w-5 h-5 text-gray-400'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M19 9l-7 7-7-7'
+                  />
+                </svg>
+              </div>
             </button>
+
+            {isPreviewExpanded && (
+              <div className='px-6 pb-6 pt-4'>
+                <p className='text-sm text-gray-600 mb-4'>
+                  Preview of changes that will be applied to your policy document:
+                </p>
+                <div className='max-h-64 overflow-y-auto space-y-2'>
+                  {documentChanges.map((change, index) => (
+                    <div key={index} className='bg-white rounded-lg p-3 border border-gray-200'>
+                      {/* Text replacements */}
+                      {change.type === 'replace' && change.oldText && change.newText && (
+                        <div className='text-sm leading-relaxed'>
+                          <span className='line-through text-gray-500'>{change.oldText}</span>
+                          <span className='mx-2 text-gray-400'>→</span>
+                          <span className='text-gray-900 font-medium'>{change.newText}</span>
+                        </div>
+                      )}
+
+                      {/* Content removal */}
+                      {change.type === 'remove' && (
+                        <div className='text-sm text-gray-500'>
+                          <span className='line-through'>
+                            {change.oldText || change.description}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Content addition */}
+                      {change.type === 'add' && (
+                        <div className='text-sm text-gray-900 font-medium'>
+                          <span>{change.newText}</span>
+                        </div>
+                      )}
+
+                      {/* Logo changes */}
+                      {change.type === 'logo' && (
+                        <div className='text-sm leading-relaxed'>
+                          <span className='line-through text-gray-500'>{change.oldText}</span>
+                          <span className='mx-2 text-gray-400'>→</span>
+                          <span className='text-gray-900 font-medium'>{change.newText}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
-
-      {/* Document Changes Preview - Attached to bottom of card */}
-      {documentChanges.length > 0 && (
-        <div className='border-t border-gray-100 bg-gray-50'>
-          <button
-            onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
-            className='w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-100 transition-colors duration-200 cursor-pointer'
-          >
-            <div className='flex items-center gap-3'>
-              <div className='text-sm font-medium text-gray-900'>Document Changes Preview</div>
-              <div className='border border-violet-600 text-violet-600 text-xs font-medium px-2.5 py-1 rounded-full'>
-                {documentChanges.length} {documentChanges.length === 1 ? 'change' : 'changes'}
-              </div>
-            </div>
-            <div
-              className={`transition-transform duration-200 ${
-                isPreviewExpanded ? 'rotate-180' : ''
-              }`}
-            >
-              <svg
-                className='w-5 h-5 text-gray-400'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M19 9l-7 7-7-7'
-                />
-              </svg>
-            </div>
-          </button>
-
-          {isPreviewExpanded && (
-            <div className='px-6 pb-6 pt-4'>
-              <p className='text-sm text-gray-600 mb-4'>
-                Preview of changes that will be applied to your policy document:
-              </p>
-              <div className='max-h-64 overflow-y-auto space-y-2'>
-                {documentChanges.map((change, index) => (
-                  <div key={index} className='bg-white rounded-lg p-3 border border-gray-200'>
-                    {/* Text replacements */}
-                    {change.type === 'replace' && change.oldText && change.newText && (
-                      <div className='text-sm leading-relaxed'>
-                        <span className='line-through text-gray-500'>{change.oldText}</span>
-                        <span className='mx-2 text-gray-400'>→</span>
-                        <span className='text-gray-900 font-medium'>{change.newText}</span>
-                      </div>
-                    )}
-
-                    {/* Content removal */}
-                    {change.type === 'remove' && (
-                      <div className='text-sm text-gray-500'>
-                        <span className='line-through'>{change.oldText || change.description}</span>
-                      </div>
-                    )}
-
-                    {/* Content addition */}
-                    {change.type === 'add' && (
-                      <div className='text-sm text-gray-900 font-medium'>
-                        <span>{change.newText}</span>
-                      </div>
-                    )}
-
-                    {/* Logo changes */}
-                    {change.type === 'logo' && (
-                      <div className='text-sm leading-relaxed'>
-                        <span className='line-through text-gray-500'>{change.oldText}</span>
-                        <span className='mx-2 text-gray-400'>→</span>
-                        <span className='text-gray-900 font-medium'>{change.newText}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
