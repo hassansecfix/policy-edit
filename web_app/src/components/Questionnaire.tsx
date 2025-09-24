@@ -461,19 +461,25 @@ export function Questionnaire({
     if (questions.length === 0) return false;
 
     const currentQuestion = questions[state.currentQuestionIndex];
-    
+
     // All questions are required by default (backward compatibility)
     const isRequired = currentQuestion.required !== false;
-    
+
     const currentAnswer = state.answers[currentQuestion.field];
 
     // If no answer exists for required question, disable button
-    if (isRequired && (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null)) {
+    if (
+      isRequired &&
+      (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null)
+    ) {
       return false;
     }
 
     // If question is optional and no answer, allow progression
-    if (!isRequired && (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null)) {
+    if (
+      !isRequired &&
+      (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null)
+    ) {
       return true;
     }
 

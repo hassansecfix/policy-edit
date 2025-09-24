@@ -75,15 +75,14 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
   );
 
   // Auto-select recommended frequency when employee/contractor counts are available
-  // TEMPORARILY DISABLED FOR DEBUGGING - This might be causing validation issues
-  // useEffect(() => {
-  //   if (question.field === 'user_response.review_frequency' && !value) {
-  //     const recommended = getRecommendedFrequency();
-  //     if (recommended) {
-  //       handleChange(recommended);
-  //     }
-  //   }
-  // }, [question.field, value, getRecommendedFrequency, handleChange]);
+  useEffect(() => {
+    if (question.field === 'user_response.review_frequency' && !value) {
+      const recommended = getRecommendedFrequency();
+      if (recommended) {
+        handleChange(recommended);
+      }
+    }
+  }, [question.field, value, getRecommendedFrequency, handleChange]);
 
   // Force re-render when employee/contractor counts change (for dynamic recommended labels)
   useEffect(() => {
