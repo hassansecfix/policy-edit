@@ -150,7 +150,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
               value={String(value || '')}
               onChange={(e) => handleChange(parseInt(e.target.value) || 0)}
               min='0'
-              className='w-full px-3 py-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-violet-600 text-gray-900'
+              className='w-full px-3 py-2 border-2 border-gray-200 rounded focus:outline-none focus:border-violet-600 text-gray-900 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]'
               placeholder={getNumberInputPlaceholder(question)}
             />
           </div>
