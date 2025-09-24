@@ -157,7 +157,18 @@ export function QuestionInput({ question, value, onChange, onAutoNext }: Questio
             <input
               type='number'
               value={String(value || '')}
-              onChange={(e) => handleChange(parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                const inputValue = e.target.value;
+                if (inputValue === '') {
+                  // Handle empty input - don't set to 0, set to undefined
+                  handleChange(undefined as any);
+                } else {
+                  const numValue = parseInt(inputValue);
+                  if (!isNaN(numValue)) {
+                    handleChange(numValue);
+                  }
+                }
+              }}
               min='0'
               className='w-full px-3 py-2 border-2 border-gray-200 rounded focus:outline-none focus:border-violet-600 text-gray-900 transition-colors duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]'
               placeholder={getNumberInputPlaceholder(question)}
