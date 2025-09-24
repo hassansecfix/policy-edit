@@ -456,43 +456,58 @@ export function Questionnaire({
     [debouncedSaveToAPI],
   );
 
-  // Validation function to check if current question has a valid answer
+  // Validation function to check if current question has a valid answer or is optional
   const isCurrentQuestionAnswered = useCallback(() => {
     if (questions.length === 0) return false;
 
     const currentQuestion = questions[state.currentQuestionIndex];
+    
+    // All questions are required by default (backward compatibility)
+    const isRequired = currentQuestion.required !== false;
+    
     const currentAnswer = state.answers[currentQuestion.field];
 
-    if (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null) {
+    // If no answer exists for required question, disable button
+    if (isRequired && (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null)) {
       return false;
     }
 
-    const value = currentAnswer.value;
-
-    // Check based on response type
-    switch (currentQuestion.responseType) {
-      case 'Text input':
-      case 'Email/User selector':
-      case 'Email/User selector/String':
-        return typeof value === 'string' && value.trim().length > 0;
-
-      case 'Number input':
-        return typeof value === 'number' && !isNaN(value) && value >= 0;
-
-      case 'Date picker':
-        return typeof value === 'string' && value.trim().length > 0;
-
-      case 'File upload':
-        return value !== null && typeof value === 'object' && 'name' in value;
-
-      case 'Radio buttons':
-      case 'Dropdown':
-        return typeof value === 'string' && value.trim().length > 0;
-
-      default:
-        // For any other types, just check if value exists and is not empty
-        return value !== '' && value !== null && value !== undefined;
+    // If question is optional and no answer, allow progression
+    if (!isRequired && (!currentAnswer || currentAnswer.value === undefined || currentAnswer.value === null)) {
+      return true;
     }
+
+    // If we have an answer, validate it based on response type
+    if (currentAnswer && currentAnswer.value !== undefined && currentAnswer.value !== null) {
+      const value = currentAnswer.value;
+
+      // Check based on response type
+      switch (currentQuestion.responseType) {
+        case 'Text input':
+        case 'Email/User selector':
+        case 'Email/User selector/String':
+          return typeof value === 'string' && value.trim().length > 0;
+
+        case 'Number input':
+          return typeof value === 'number' && !isNaN(value) && value >= 0;
+
+        case 'Date picker':
+          return typeof value === 'string' && value.trim().length > 0;
+
+        case 'File upload':
+          return value !== null && typeof value === 'object' && 'name' in value;
+
+        case 'Radio buttons':
+        case 'Dropdown':
+          return typeof value === 'string' && value.trim().length > 0;
+
+        default:
+          // For any other types, just check if value exists and is not empty
+          return value !== '' && value !== null && value !== undefined;
+      }
+    }
+
+    return false;
   }, [questions, state.currentQuestionIndex, state.answers]);
 
   const handleNext = useCallback(async () => {
@@ -620,9 +635,16 @@ export function Questionnaire({
           <p className='text-xs font-normal text-gray-500 leading-4'>
             Question {state.currentQuestionIndex + 1} of {questions.length}
           </p>
-          <h2 className='text-base font-medium text-gray-900 leading-6'>
-            {currentQuestion.questionText}
-          </h2>
+          <div className='flex items-center gap-2'>
+            <h2 className='text-base font-medium text-gray-900 leading-6'>
+              {currentQuestion.questionText}
+            </h2>
+            {currentQuestion.required === false && (
+              <span className='text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded'>
+                Optional
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Question Input */}
@@ -668,7 +690,7 @@ export function Questionnaire({
             disabled={!isCurrentQuestionAnswered() || automationRunning}
             className={`px-3 py-2 rounded text-sm font-medium leading-4 transition-colors duration-200 ${
               !isCurrentQuestionAnswered() || automationRunning
-                ? 'bg-gray-200 text-gray-700 border border-gray-300 cursor-not-allowed'
+                ? 'bg-gray-200 text-gray-500 border border-gray-300 cursor-not-allowed'
                 : 'bg-violet-600 text-white hover:bg-violet-700 cursor-pointer'
             } shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]`}
           >

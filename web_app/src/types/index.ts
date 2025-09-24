@@ -54,6 +54,7 @@ export interface Question {
     | 'Email/User selector/String'
     | 'Date picker';
   options?: string[];
+  required?: boolean; // Defaults to true - all questions are required unless explicitly marked as optional
 }
 
 export interface FileUpload {
