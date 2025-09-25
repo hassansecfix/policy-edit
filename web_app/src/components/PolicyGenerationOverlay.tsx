@@ -10,12 +10,12 @@ interface PolicyGenerationOverlayProps {
 
 const loadingStates = [
   { text: 'Processing your answers...' },
-  { text: 'AI understanding your organization details...' },
+  { text: 'AI is understanding your organization details...' },
   { text: 'Analyzing your security requirements...' },
   { text: 'Reviewing policy document structure...' },
-  { text: 'AI generating personalized policy content...' },
+  { text: 'AI is generating personalized policy content...' },
   { text: 'Finalizing document formatting...' },
-  { text: 'Almost ready! AI completing final checks...' },
+  { text: 'Almost ready! AI is completing final checks...' },
 ];
 
 export const PolicyGenerationOverlay = ({ isVisible, progress }: PolicyGenerationOverlayProps) => {
