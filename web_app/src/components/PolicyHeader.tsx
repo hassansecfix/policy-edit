@@ -1,7 +1,7 @@
 const PolicyHeader = () => {
   return (
     <div className='text-center mb-8 px-4'>
-      <h2 className='text-base font-medium text-gray-700 mb-2'>POL-11 Access control</h2>
+      <h2 className='text-base font-medium text-gray-700 mb-2'>POL-11 Access Control</h2>
 
       <h2 className='text-xl font-semibold text-gray-900 mb-2'>Policy scoping questionnaire</h2>
 
