@@ -211,7 +211,7 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
         {/* Local Storage Answers */}
         <div>
-          <h4 className='font-medium text-gray-800 mb-3'>📱 Local Storage (Your Browser)</h4>
+          <h4 className='font-medium text-gray-800 mb-3'>📱 Local Storage (your browser)</h4>
           <div className='bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto'>
             {answers ? (
               <div className='space-y-2'>
@@ -276,7 +276,7 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
             {loading ? (
               <div className='flex items-center'>
                 <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2'></div>
-                <span className='text-sm text-gray-600'>Checking server...</span>
+                <span className='text-sm text-gray-600'>Checking the server...</span>
               </div>
             ) : serverAnswers ? (
               <div className='space-y-2'>
@@ -310,7 +310,7 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                     )}
                     {serverAnswers.directoryFallbackUsed && (
                       <p className='text-xs text-orange-600 font-medium'>
-                        ⚠️ Directory fallback used - original location was not writable
+                        ⚠️ Directory fallback used — original location was not writable
                       </p>
                     )}
                     {serverAnswers.availableUserFiles &&
@@ -355,7 +355,7 @@ export function UserAnswersDisplay({ visible = false }: UserAnswersDisplayProps)
                               </div>
                             ) : (
                               <p className='text-sm text-orange-600'>
-                                ⚠️ No answers found in server file
+                                ⚠️ No answers found in the server file
                               </p>
                             )}
 

@@ -79,7 +79,7 @@ export function DownloadSection({ files, visible }: DownloadSectionProps) {
 
       <div className='px-6 py-4 bg-gray-50 border-t border-gray-100'>
         <p className='text-xs text-gray-600 text-center'>
-          🎉 Your customized policy document has been generated successfully
+          🎉 Your customized policy document has been generated successfully.
         </p>
       </div>
     </Card>

@@ -367,7 +367,7 @@ export function QuestionInput({ question, value, onChange, onAutoNext }: Questio
         return (
           <div className='space-y-4'>
             <div className='space-y-2'>
-              <label className='block text-sm font-medium text-gray-700'>Select Option</label>
+              <label className='block text-sm font-medium text-gray-700'>Select an option</label>
               <select
                 value={dropdownValue}
                 onChange={(e) => handleRadioChange(e.target.value)}
