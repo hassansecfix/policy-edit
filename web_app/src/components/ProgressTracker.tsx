@@ -49,7 +49,7 @@ export function ProgressTracker({ progress }: ProgressTrackerProps) {
             />
           </div>
           <div className='text-sm text-gray-600 mt-2 text-center'>
-            {Math.round(progressPercentage)}% Complete
+            {Math.round(progressPercentage)}% complete
           </div>
         </div>
 
