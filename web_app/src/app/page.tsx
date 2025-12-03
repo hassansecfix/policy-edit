@@ -22,7 +22,8 @@ export default function Dashboard() {
 
   // Development state for testing loader
   const [testLoaderRunning, setTestLoaderRunning] = useState(false);
-  const isDev = process.env.NODE_ENV === 'development';
+  const isDev =
+    process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_LOGS === 'true';
   const { isConnected, logs, progress, files, clearLogs, clearFiles, addLog } = useSocket();
 
   // Check if questionnaire is already completed (from localStorage)
